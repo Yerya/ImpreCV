@@ -187,7 +187,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 relative z-10">
         <div className="container mx-auto px-4 relative z-10">
-          <Card className="glass-card-gradient max-w-4xl mx-auto p-12 text-center relative z-10">
+          <Card className="glass-card max-w-4xl mx-auto p-12 text-center relative z-10">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="gradient-text">Ready to Land Your Dream Job?</span>
             </h2>

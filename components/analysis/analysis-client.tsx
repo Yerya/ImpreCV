@@ -109,7 +109,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Match Score Card */}
-            <Card className="glass-card-gradient p-8 relative z-10">
+            <Card className="glass-card p-8 relative z-10">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">Match Score</h2>
                 <div className={`text-5xl font-bold ${getScoreColor(matchScore)}`}>{matchScore}%</div>

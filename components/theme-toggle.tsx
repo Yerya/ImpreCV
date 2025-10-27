@@ -26,7 +26,6 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="hover:bg-accent"
     >
       {theme === "dark" ? (
         <Sun className="h-5 w-5" />
