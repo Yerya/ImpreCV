@@ -15,7 +15,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.4 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -51,7 +51,7 @@
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: oklch(0.78 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.396 0.141 25.723);
@@ -121,5 +121,80 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Custom gradient utilities */
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.radial-glow {
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+}
+
+.dark .radial-glow {
+  background: radial-gradient(circle at center, rgba(251, 251, 251, 0.1) 0%, transparent 70%);
+}
+
+.radial-glow-strong {
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+}
+
+.dark .radial-glow-strong {
+  background: radial-gradient(circle at center, rgba(251, 251, 251, 0.15) 0%, transparent 60%);
+}
+
+/* Glass morphism effect */
+.glass-card {
+  background: oklch(from var(--card) l c h / 0.5);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(from var(--border) l c h / 0.3);
+}
+
+/* Glass card with gradient background */
+.glass-card-gradient {
+  background: oklch(from var(--card) l c h / 0.8);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(from var(--border) l c h / 0.3);
+}
+
+/* Glass card with primary gradient */
+.glass-card-primary {
+  background: oklch(from var(--primary) l c h / 0.1);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(from var(--primary) l c h / 0.2);
+}
+
+.glass-header {
+  background: oklch(from var(--background) l c h / 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid oklch(from var(--border) l c h / 0.4);
+}
+
+/* Drop-like header with rounded bottom edges - Liquid glass effect */
+.glass-header-drop {
+  background: oklch(from var(--background) l c h / 0.3);
+  backdrop-filter: blur(24px) saturate(200%) brightness(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.1);
+  border-bottom: 1px solid oklch(from var(--border) l c h / 0.2);
+  border-radius: 0 0 40px 40px;
+  box-shadow: 
+    0 8px 32px oklch(from var(--background) l c h / 0.1),
+    inset 0 1px 0 oklch(from var(--background) l c h / 0.2);
 }

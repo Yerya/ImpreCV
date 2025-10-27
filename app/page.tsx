@@ -152,9 +152,9 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <div className="text-center">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-border/50">
-                <Upload className="h-8 w-8 text-primary" />
+                <Upload className="h-8 w-8 text-foreground" />
               </div>
-              <div className="text-4xl font-bold text-primary/20 mb-4">01</div>
+              <div className="text-4xl font-bold text-foreground mb-4">01</div>
               <h3 className="text-xl font-semibold mb-3">Upload & Input</h3>
               <p className="text-muted-foreground">
                 Upload your current resume and paste the job posting you're applying for.
@@ -162,9 +162,9 @@ export default function LandingPage() {
             </div>
             <div className="text-center">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-border/50">
-                <Brain className="h-8 w-8 text-primary" />
+                <Brain className="h-8 w-8 text-foreground" />
               </div>
-              <div className="text-4xl font-bold text-primary/20 mb-4">02</div>
+              <div className="text-4xl font-bold text-foreground mb-4">02</div>
               <h3 className="text-xl font-semibold mb-3">AI Analysis</h3>
               <p className="text-muted-foreground">
                 Our AI analyzes the match, identifies gaps, and provides detailed recommendations.
@@ -172,9 +172,9 @@ export default function LandingPage() {
             </div>
             <div className="text-center">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-border/50">
-                <Download className="h-8 w-8 text-primary" />
+                <Download className="h-8 w-8 text-foreground" />
               </div>
-              <div className="text-4xl font-bold text-primary/20 mb-4">03</div>
+              <div className="text-4xl font-bold text-foreground mb-4">03</div>
               <h3 className="text-xl font-semibold mb-3">Get Results</h3>
               <p className="text-muted-foreground">
                 Download your optimized resume and personalized cover letter ready to submit.
