@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, Suspense } from "react"
 import type React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -8,33 +8,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Loader2 } from "lucide-react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
 
   const supabaseConfigured = isSupabaseConfigured()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,20 +67,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.5) 0%, transparent 50%)`,
-          transition: "background 0.1s ease-out",
-        }}
-      />
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x * 0.7 + 15}% ${mousePosition.y * 0.7 + 15}%, rgba(139, 92, 246, 0.4) 0%, transparent 40%)`,
-          transition: "background 0.15s ease-out",
-        }}
-      />
+      <AnimatedBackground intensity={0.5} className="fixed inset-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0" />
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>
@@ -112,7 +89,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <Card className="p-8 bg-card/80 backdrop-blur border-border/50">
+        <Card className="glass-card p-8 relative z-10">
           <div className="flex items-center gap-2 mb-8">
             <Sparkles className="h-6 w-6" />
             <span className="text-2xl font-bold">CVify</span>
@@ -181,5 +158,17 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

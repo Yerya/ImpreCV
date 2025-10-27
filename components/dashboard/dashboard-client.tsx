@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -8,6 +8,7 @@ import { Sparkles, LogOut, Settings, Loader2, ArrowRight, CheckCircle2 } from "l
 import Link from "next/link"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
@@ -31,18 +32,6 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
     inputType: "paste" as "paste" | "link",
   })
   const [analyzing, setAnalyzing] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
 
   const handleLogout = async () => {
     const supabase = getSupabaseBrowserClient()
@@ -99,9 +88,11 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const canAnalyze = selectedResumeId && jobPosting.title && hasJobInfo
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
       {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="glass-header-drop relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="h-6 w-6" />
@@ -123,7 +114,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
@@ -138,64 +129,46 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Step 1: Upload Resume */}
-            <Card className="p-6 bg-gradient-to-br from-card/80 to-secondary/30 backdrop-blur border-border/50 relative overflow-hidden">
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.15) 0%, transparent 60%)`,
-                  transition: "background 0.1s ease-out",
-                }}
-              />
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                    1
-                  </div>
-                  <h2 className="text-2xl font-bold">Upload Your Resume</h2>
-                  {selectedResumeId && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
+            <Card className="glass-card p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  1
                 </div>
-
-                <ResumeUpload onResumeUploaded={handleResumeUploaded} />
-
-                {resumes.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-sm font-medium mb-3 text-muted-foreground">
-                      Or select from your uploaded resumes:
-                    </h3>
-                    <ResumeList
-                      resumes={resumes}
-                      selectedResumeId={selectedResumeId}
-                      onSelectResume={setSelectedResumeId}
-                    />
-                  </div>
-                )}
+                <h2 className="text-2xl font-bold">Upload Your Resume</h2>
+                {selectedResumeId && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
               </div>
+
+              <ResumeUpload onResumeUploaded={handleResumeUploaded} />
+
+              {resumes.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium mb-3 text-muted-foreground">
+                    Or select from your uploaded resumes:
+                  </h3>
+                  <ResumeList
+                    resumes={resumes}
+                    selectedResumeId={selectedResumeId}
+                    onSelectResume={setSelectedResumeId}
+                  />
+                </div>
+                )}
             </Card>
 
             {/* Step 2: Add Job Posting */}
-            <Card className="p-6 bg-gradient-to-br from-card/80 to-secondary/30 backdrop-blur border-border/50 relative overflow-hidden">
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at ${mousePosition.x * 0.8 + 10}% ${mousePosition.y * 0.8 + 10}%, rgba(139, 92, 246, 0.12) 0%, transparent 50%)`,
-                  transition: "background 0.15s ease-out",
-                }}
-              />
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                    2
-                  </div>
-                  <h2 className="text-2xl font-bold">Add Job Posting</h2>
-                  {hasJobInfo && jobPosting.title && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
+            <Card className="glass-card p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  2
                 </div>
-
-                <JobPostingForm jobPosting={jobPosting} onChange={setJobPosting} />
+                <h2 className="text-2xl font-bold">Add Job Posting</h2>
+                {hasJobInfo && jobPosting.title && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
               </div>
+
+              <JobPostingForm jobPosting={jobPosting} onChange={setJobPosting} />
             </Card>
 
             {/* Analyze Button */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <Button onClick={handleAnalyze} disabled={!canAnalyze || analyzing} size="lg" className="w-full">
                 {analyzing ? (
                   <>
@@ -220,21 +193,21 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
                     (jobPosting.inputType === "paste"
                       ? "Please paste the job description"
                       : "Please enter the job posting link")}
-                </p>
-              )}
+              </p>
+            )}
             </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Recent Analyses */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Recent Analyses</h3>
               <AnalysisList analyses={recentAnalyses} />
             </Card>
 
             {/* Quick Stats */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
               <div className="space-y-4">
                 <div>

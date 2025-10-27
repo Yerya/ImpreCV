@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -19,18 +20,6 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
   const [isEditing, setIsEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content)
@@ -71,9 +60,11 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
       {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="glass-header-drop relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href={`/analysis/${rewrittenResume.analyses?.id}`}
@@ -92,7 +83,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
@@ -107,16 +98,9 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Card className="p-8 bg-card/50 backdrop-blur border-border/50 relative overflow-hidden">
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.1) 0%, transparent 60%)`,
-                  transition: "background 0.1s ease-out",
-                }}
-              />
+            <Card className="glass-card p-8 relative z-10">
               {/* Toolbar */}
-              <div className="flex items-center justify-between mb-6 pb-6 border-b border-border/50 relative z-10">
+              <div className="flex items-center justify-between mb-6 pb-6 border-b border-border/50">
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -185,7 +169,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions */}
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-card/50 backdrop-blur border-primary/20">
+            <Card className="glass-card-primary p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Actions</h3>
               <div className="space-y-3">
                 <Button onClick={handleDownload} className="w-full justify-start" size="lg">
@@ -215,7 +199,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
 
             {/* Match Score */}
             {rewrittenResume.analyses?.match_score && (
-              <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+              <Card className="glass-card p-6 relative z-10">
                 <h3 className="text-lg font-semibold mb-4">Match Score</h3>
                 <div className="text-center">
                   <div className="text-5xl font-bold gradient-text mb-2">{rewrittenResume.analyses.match_score}%</div>
@@ -225,7 +209,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
             )}
 
             {/* Tips */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Customization Tips</h3>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
@@ -248,7 +232,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
             </Card>
 
             {/* Export Formats */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Export Formats</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Currently available in Markdown format. Copy the content and paste into your preferred document editor.

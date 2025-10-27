@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Download, Copy, CheckCircle2, Edit3, Eye, Mail } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 
@@ -18,19 +19,6 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
   const [isEditing, setIsEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
-
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content)
     setCopied(true)
@@ -70,9 +58,11 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
       {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="glass-header-drop relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href={`/analysis/${coverLetter.analyses?.id}`}
@@ -91,7 +81,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
@@ -106,16 +96,9 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Card className="p-8 bg-card/50 backdrop-blur border-border/50 relative overflow-hidden">
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.1) 0%, transparent 60%)`,
-                  transition: "background 0.1s ease-out",
-                }}
-              />
+            <Card className="glass-card p-8 relative z-10">
               {/* Toolbar */}
-              <div className="flex items-center justify-between mb-6 pb-6 border-b border-border/50 relative z-10">
+              <div className="flex items-center justify-between mb-6 pb-6 border-b border-border/50">
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -149,7 +132,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
               </div>
 
               {/* Content */}
-              <div className="relative z-10">
+              <div>
                 {isEditing ? (
                   <Textarea
                     value={content}
@@ -167,7 +150,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions */}
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-card/50 backdrop-blur border-primary/20">
+            <Card className="glass-card-primary p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Actions</h3>
               <div className="space-y-3">
                 <Button onClick={handleDownload} className="w-full justify-start" size="lg">
@@ -196,7 +179,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
             </Card>
 
             {/* Job Details */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Job Details</h3>
               <div className="space-y-3">
                 <div>
@@ -219,7 +202,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
             </Card>
 
             {/* Writing Tips */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Writing Tips</h3>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
@@ -246,7 +229,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
             </Card>
 
             {/* Structure Guide */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Cover Letter Structure</h3>
               <div className="space-y-3 text-sm">
                 <div>
@@ -265,7 +248,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
             </Card>
 
             {/* Email Template */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <Mail className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Email Template</h3>

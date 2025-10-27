@@ -183,3 +183,43 @@
 .dark .radial-glow-strong {
   background: radial-gradient(circle at center, rgba(251, 251, 251, 0.15) 0%, transparent 60%);
 }
+
+/* Glass morphism effect %.base */
+.glass-card {
+  background: oklch(from var(--card) l c h / 0.5);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(from var(--border) l c h / 0.3);
+}
+
+/* Glass card with gradient background */
+.glass-card-gradient {
+  background: oklch(from var(--card) l c h / 0.8);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(from var(--border) l c h / 0.3);
+}
+
+/* Glass card with primary gradient */
+.glass-card-primary {
+  background: oklch(from var(--primary) l c h / 0.1);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(from var(--primary) l c h / 0.2);
+}
+
+.glass-header {
+  background: oklch(from var(--background) l c h / 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid oklch(from var(--border) l c h / 0.4);
+}
+
+/* Drop-like header with rounded bottom edges */
+.glass-header-drop {
+  background: oklch(from var(--background) l c h / 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: none;
+  border-radius: 0 0 40px 40px;
+}

@@ -3,16 +3,15 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { useEffect, useRef, useState } from "react"
+import { useState, useEffect } from "react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
 export default function LandingPage() {
   const router = useRouter()
-  const orbRef = useRef<HTMLDivElement>(null)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -45,17 +44,6 @@ export default function LandingPage() {
     return () => subscription.unsubscribe()
   }, [])
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -69,23 +57,10 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <div
-        ref={orbRef}
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.5) 0%, transparent 50%)`,
-          transition: "background 0.1s ease-out",
-        }}
-      />
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x * 0.7 + 15}% ${mousePosition.y * 0.7 + 15}%, rgba(139, 92, 246, 0.4) 0%, transparent 40%)`,
-          transition: "background 0.15s ease-out",
-        }}
-      />
+      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <header className="glass-header-drop fixed top-0 left-0 right-0 z-50 relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="h-6 w-6" />
@@ -144,7 +119,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20">
+      <section className="relative z-10 pt-32 pb-20">
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border mb-8">
@@ -189,7 +164,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20">
+      <section id="features" className="py-20 relative z-10">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -200,7 +175,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-border transition-all">
+            <Card className="glass-card p-6 hover:border-border transition-all relative z-10">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Brain className="h-6 w-6 text-primary" />
               </div>
@@ -209,7 +184,7 @@ export default function LandingPage() {
                 Advanced AI analyzes your resume against job requirements to identify strengths and gaps.
               </p>
             </Card>
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-border transition-all">
+            <Card className="glass-card p-6 hover:border-border transition-all relative z-10">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Target className="h-6 w-6 text-primary" />
               </div>
@@ -218,7 +193,7 @@ export default function LandingPage() {
                 Get a detailed compatibility score showing how well your resume matches the job posting.
               </p>
             </Card>
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-border transition-all">
+            <Card className="glass-card p-6 hover:border-border transition-all relative z-10">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <FileText className="h-6 w-6 text-primary" />
               </div>
@@ -227,7 +202,7 @@ export default function LandingPage() {
                 AI rewrites your resume to highlight relevant experience and match job requirements.
               </p>
             </Card>
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-border transition-all">
+            <Card className="glass-card p-6 hover:border-border transition-all relative z-10">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
@@ -236,7 +211,7 @@ export default function LandingPage() {
                 Generate personalized cover letters that showcase your fit for the specific role.
               </p>
             </Card>
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-border transition-all">
+            <Card className="glass-card p-6 hover:border-border transition-all relative z-10">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Zap className="h-6 w-6 text-primary" />
               </div>
@@ -245,7 +220,7 @@ export default function LandingPage() {
                 Optimize your resume with relevant keywords to pass ATS systems and get noticed.
               </p>
             </Card>
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-border transition-all">
+            <Card className="glass-card p-6 hover:border-border transition-all relative z-10">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Download className="h-6 w-6 text-primary" />
               </div>
@@ -305,9 +280,9 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
+      <section className="py-20 relative z-10">
         <div className="container mx-auto px-4 relative z-10">
-          <Card className="max-w-4xl mx-auto p-12 text-center bg-gradient-to-br from-card/80 to-secondary/50 backdrop-blur border-border/50">
+          <Card className="glass-card-gradient max-w-4xl mx-auto p-12 text-center relative z-10">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="gradient-text">Ready to Land Your Dream Job?</span>
             </h2>
@@ -334,7 +309,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 py-12">
+      <footer className="py-12 relative z-10">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -402,7 +377,7 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-border/40 text-center text-sm text-muted-foreground">
+          <div className="pt-8 text-center text-sm text-muted-foreground">
             <p>&copy; 2025 CVify. All rights reserved.</p>
           </div>
         </div>

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import {
   Sparkles,
   ArrowLeft,
@@ -28,19 +29,6 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
   const router = useRouter()
   const [generatingResume, setGeneratingResume] = useState(false)
   const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
-
   const handleGenerateResume = async () => {
     setGeneratingResume(true)
     try {
@@ -97,9 +85,11 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
       {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="glass-header-drop relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
@@ -115,7 +105,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Job Info Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
@@ -136,26 +126,17 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Match Score Card */}
-            <Card className="p-8 bg-gradient-to-br from-card/80 to-secondary/30 backdrop-blur border-border/50 relative overflow-hidden">
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.2) 0%, transparent 70%)`,
-                  transition: "background 0.1s ease-out",
-                }}
-              />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">Match Score</h2>
-                  <div className={`text-5xl font-bold ${getScoreColor(matchScore)}`}>{matchScore}%</div>
-                </div>
-                <Progress value={matchScore} className="h-3 mb-4" />
-                <p className="text-muted-foreground">{getScoreLabel(matchScore)}</p>
+            <Card className="glass-card-gradient p-8 relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Match Score</h2>
+                <div className={`text-5xl font-bold ${getScoreColor(matchScore)}`}>{matchScore}%</div>
               </div>
+              <Progress value={matchScore} className="h-3 mb-4" />
+              <p className="text-muted-foreground">{getScoreLabel(matchScore)}</p>
             </Card>
 
             {/* Strengths */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -173,7 +154,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
             </Card>
 
             {/* Gaps */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
                   <AlertCircle className="h-5 w-5 text-yellow-500" />
@@ -191,7 +172,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
             </Card>
 
             {/* Recommendations */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Lightbulb className="h-5 w-5 text-primary" />
@@ -212,7 +193,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
 
             {/* Keyword Analysis */}
             {analysis.keyword_analysis && (
-              <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+              <Card className="glass-card p-6 relative z-10">
                 <h3 className="text-xl font-semibold mb-4">Keyword Analysis</h3>
                 <div className="space-y-4">
                   <div>
@@ -249,7 +230,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Next Steps */}
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-card/50 backdrop-blur border-primary/20">
+            <Card className="glass-card-primary p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Next Steps</h3>
               <div className="space-y-3">
                 <Button
@@ -281,7 +262,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
             </Card>
 
             {/* Resume Info */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Resume Used</h3>
               <div className="flex items-start gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -295,7 +276,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
             </Card>
 
             {/* Tips */}
-            <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+            <Card className="glass-card p-6 relative z-10">
               <h3 className="text-lg font-semibold mb-4">Pro Tips</h3>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">

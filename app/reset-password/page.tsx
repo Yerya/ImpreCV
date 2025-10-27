@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import type React from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,6 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -97,7 +96,7 @@ export default function ResetPasswordPage() {
         <div className="absolute top-4 right-4 z-20">
           <ThemeToggle />
         </div>
-        <Card className="p-8 bg-card/80 backdrop-blur border-border/50 max-w-md w-full text-center relative z-10">
+        <Card className="glass-card p-8 max-w-md w-full text-center relative z-10">
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="h-8 w-8 text-primary" />
           </div>
@@ -145,7 +144,7 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
-        <Card className="p-8 bg-card/80 backdrop-blur border-border/50">
+        <Card className="glass-card p-8 relative z-10">
           <div className="flex items-center gap-2 mb-8">
             <Sparkles className="h-6 w-6" />
             <span className="text-2xl font-bold">CVify</span>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Loader2 } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
@@ -47,9 +48,11 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
       {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="glass-header-drop relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
@@ -65,7 +68,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
             <span className="gradient-text">Settings</span>
@@ -75,7 +78,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
 
         <div className="space-y-6">
           {/* Profile Settings */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+          <Card className="glass-card p-6 relative z-10">
             <h2 className="text-2xl font-semibold mb-6">Profile</h2>
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="space-y-2">
@@ -107,7 +110,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
           </Card>
 
           {/* Appearance */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+          <Card className="glass-card p-6 relative z-10">
             <h2 className="text-2xl font-semibold mb-6">Appearance</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -121,7 +124,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
           </Card>
 
           {/* API Configuration */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+          <Card className="glass-card p-6 relative z-10">
             <h2 className="text-2xl font-semibold mb-6">API Configuration</h2>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -135,7 +138,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
           </Card>
 
           {/* Account Actions */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+          <Card className="glass-card p-6 relative z-10">
             <h2 className="text-2xl font-semibold mb-6">Account</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between py-3 border-b border-border/50">
