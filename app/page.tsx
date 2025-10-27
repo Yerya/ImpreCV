@@ -5,118 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { useState, useEffect } from "react"
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { GlobalHeader } from "@/components/global-header"
+import { useAuth } from "@/components/auth-provider"
 
 export default function LandingPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isLoading } = useAuth()
 
-  useEffect(() => {
-    const checkUser = async () => {
-      if (!isSupabaseConfigured()) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const supabase = getSupabaseBrowserClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (error) {
-        console.error("Error checking user:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkUser()
-
-    // Listen for auth changes
-    const supabase = getSupabaseBrowserClient()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 animate-spin" />
-          <span>Loading...</span>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background relative">
       <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
       <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
-      {/* Header */}
-      <header className="glass-header-drop fixed top-0 left-0 right-0 z-50 relative">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6" />
-            <span className="text-xl font-bold">CVify</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
-            <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Features
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              How It Works
-            </Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            {user ? (
-              <>
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    Dashboard
-                  </Button>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={async () => {
-                    const supabase = getSupabaseBrowserClient()
-                    await supabase.auth.signOut()
-                    router.push("/")
-                    router.refresh()
-                  }}
-                >
-                  Log Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button size="sm">
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      
+      <GlobalHeader variant="landing" />
 
       {/* Hero Section */}
       <section className="relative z-10 pt-32 pb-20">
@@ -136,26 +37,30 @@ export default function LandingPage() {
               materials to match perfectly.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {user ? (
-                <Link href="/dashboard">
-                  <Button size="lg" className="text-base px-8">
-                    Go to Dashboard
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              ) : (
+              {!isLoading && (
                 <>
-                  <Link href="/signup">
-                    <Button size="lg" className="text-base px-8">
-                      Get Started Free
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link href="#how-it-works">
-                    <Button size="lg" variant="outline" className="text-base px-8 bg-transparent">
-                      See How It Works
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <Link href="/dashboard">
+                      <Button size="lg" className="text-base px-8">
+                        Go to Dashboard
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/signup">
+                        <Button size="lg" className="text-base px-8">
+                          Get Started Free
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                      </Link>
+                      <Link href="#how-it-works">
+                        <Button size="lg" variant="outline" className="text-base px-8 bg-transparent">
+                          See How It Works
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -289,20 +194,24 @@ export default function LandingPage() {
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join thousands of job seekers who have transformed their applications with CVify.
             </p>
-            {user ? (
-              <Link href="/dashboard">
-                <Button size="lg" className="text-base px-8">
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/signup">
-                <Button size="lg" className="text-base px-8">
-                  Get Started Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+            {!isLoading && (
+              <>
+                {user ? (
+                  <Link href="/dashboard">
+                    <Button size="lg" className="text-base px-8">
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/signup">
+                    <Button size="lg" className="text-base px-8">
+                      Get Started Free
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                )}
+              </>
             )}
           </Card>
         </div>

@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { AnimatedBackground } from "@/components/ui/animated-background"
+import { GlobalHeader } from "@/components/global-header"
 import {
-  Sparkles,
-  ArrowLeft,
   CheckCircle2,
   AlertCircle,
   Lightbulb,
@@ -19,7 +18,6 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 interface AnalysisClientProps {
   analysis: any
@@ -88,22 +86,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
     <div className="min-h-screen bg-background relative">
       <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
       <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
-      {/* Header */}
-      <header className="glass-header-drop relative">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Dashboard</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Link href="/" className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6" />
-              <span className="text-xl font-bold">CVify</span>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <GlobalHeader variant="back" backHref="/dashboard" backLabel="Back to Dashboard" />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Job Info Header */}

@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { AnimatedBackground } from "@/components/ui/animated-background"
-import { Sparkles, ArrowLeft, Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
+import { GlobalHeader } from "@/components/global-header"
+import { Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import ReactMarkdown from "react-markdown"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 interface ResumeRewriteClientProps {
   rewrittenResume: any
@@ -63,25 +63,11 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
     <div className="min-h-screen bg-background relative">
       <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
       <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
-      {/* Header */}
-      <header className="glass-header-drop relative">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link
-            href={`/analysis/${rewrittenResume.analyses?.id}`}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Analysis</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Link href="/" className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6" />
-              <span className="text-xl font-bold">CVify</span>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <GlobalHeader 
+        variant="back" 
+        backHref={`/analysis/${rewrittenResume.analyses?.id}`} 
+        backLabel="Back to Analysis" 
+      />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header Section */}

@@ -4,11 +4,11 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Sparkles, LogOut, Settings, Loader2, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { AnimatedBackground } from "@/components/ui/animated-background"
+import { GlobalHeader } from "@/components/global-header"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
@@ -33,12 +33,6 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   })
   const [analyzing, setAnalyzing] = useState(false)
 
-  const handleLogout = async () => {
-    const supabase = getSupabaseBrowserClient()
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
-  }
 
   const handleResumeUploaded = (newResume: any) => {
     setResumes([newResume, ...resumes])
@@ -91,28 +85,8 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
     <div className="min-h-screen bg-background relative">
       <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
       <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
-      {/* Header */}
-      <header className="glass-header-drop relative">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6" />
-            <span className="text-xl font-bold">CVify</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Link href="/settings">
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </Link>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Log Out
-            </Button>
-          </div>
-        </div>
-      </header>
+      
+      <GlobalHeader variant="dashboard" />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Welcome Section */}
