@@ -162,6 +162,43 @@
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid oklch(from var(--border) l c h / 0.3);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: glass-pulse 3s ease-in-out infinite;
+}
+
+.dark .glass-card {
+  box-shadow: 
+    0 4px 6px -1px rgba(255, 255, 255, 0.1), 
+    0 2px 4px -1px rgba(255, 255, 255, 0.06);
+  animation: glass-pulse-dark 3s ease-in-out infinite;
+}
+
+@keyframes glass-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    box-shadow: 
+      0 8px 12px -2px rgba(0, 0, 0, 0.15), 
+      0 4px 8px -2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes glass-pulse-dark {
+  0%, 100% {
+    box-shadow: 
+      0 4px 6px -1px rgba(255, 255, 255, 0.1), 
+      0 2px 4px -1px rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow: 
+      0 8px 12px -2px rgba(255, 255, 255, 0.15), 
+      0 4px 8px -2px rgba(255, 255, 255, 0.1);
+  }
 }
 
 /* Glass card with gradient background */
@@ -170,6 +207,43 @@
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid oklch(from var(--border) l c h / 0.3);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: glass-pulse-gradient 3s ease-in-out infinite;
+}
+
+.dark .glass-card-gradient {
+  box-shadow: 
+    0 4px 6px -1px rgba(255, 255, 255, 0.1), 
+    0 2px 4px -1px rgba(255, 255, 255, 0.06);
+  animation: glass-pulse-gradient-dark 3s ease-in-out infinite;
+}
+
+@keyframes glass-pulse-gradient {
+  0%, 100% {
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    box-shadow: 
+      0 8px 12px -2px rgba(0, 0, 0, 0.15), 
+      0 4px 8px -2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes glass-pulse-gradient-dark {
+  0%, 100% {
+    box-shadow: 
+      0 4px 6px -1px rgba(255, 255, 255, 0.1), 
+      0 2px 4px -1px rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow: 
+      0 8px 12px -2px rgba(255, 255, 255, 0.15), 
+      0 4px 8px -2px rgba(255, 255, 255, 0.1);
+  }
 }
 
 /* Glass card with primary gradient */
@@ -178,6 +252,43 @@
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid oklch(from var(--primary) l c h / 0.2);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: glass-pulse-primary 3s ease-in-out infinite;
+}
+
+.dark .glass-card-primary {
+  box-shadow: 
+    0 4px 6px -1px rgba(255, 255, 255, 0.1), 
+    0 2px 4px -1px rgba(255, 255, 255, 0.06);
+  animation: glass-pulse-primary-dark 3s ease-in-out infinite;
+}
+
+@keyframes glass-pulse-primary {
+  0%, 100% {
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    box-shadow: 
+      0 8px 12px -2px rgba(0, 0, 0, 0.15), 
+      0 4px 8px -2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes glass-pulse-primary-dark {
+  0%, 100% {
+    box-shadow: 
+      0 4px 6px -1px rgba(255, 255, 255, 0.1), 
+      0 2px 4px -1px rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow: 
+      0 8px 12px -2px rgba(255, 255, 255, 0.15), 
+      0 4px 8px -2px rgba(255, 255, 255, 0.1);
+  }
 }
 
 .glass-header {
