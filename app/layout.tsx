@@ -1,9 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { LoadingProvider } from "@/components/loading-provider"
-import { AuthProvider } from "@/components/auth-provider"
+import { Providers } from "@/components/providers"
 import "../styles/globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -21,13 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="cvify-theme">
-          <LoadingProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </LoadingProvider>
-        </ThemeProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

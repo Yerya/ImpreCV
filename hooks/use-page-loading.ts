@@ -1,9 +1,8 @@
 "use client"
 
-import { useLoading } from "@/components/loading-provider"
+import { useAppSelector } from "@/lib/redux/hooks"
 
 export function usePageLoading() {
-  const { isInitialLoading } = useLoading()
-
+  const isInitialLoading = useAppSelector((s) => s.app.isInitialLoading)
   return { isInitialLoading }
 }

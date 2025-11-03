@@ -6,10 +6,10 @@ import { Card } from "@/components/ui/card"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
-import { useAuth } from "@/components/auth-provider"
+import { useAppSelector } from "@/lib/redux/hooks"
 
 export default function LandingPage() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading } = useAppSelector((s) => s.auth)
 
 
   return (

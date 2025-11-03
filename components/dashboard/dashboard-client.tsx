@@ -9,6 +9,7 @@ import Link from "next/link"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import { GlobalHeader } from "@/components/global-header"
+import { useAppSelector } from "@/lib/redux/hooks"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
@@ -22,6 +23,7 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ user, resumes: initialResumes, recentAnalyses }: DashboardClientProps) {
   const router = useRouter()
+  const authUser = useAppSelector((s) => s.auth.user)
   const [resumes, setResumes] = useState(initialResumes)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
   const [jobPosting, setJobPosting] = useState({
@@ -32,6 +34,9 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
     inputType: "paste" as "paste" | "link",
   })
   const [analyzing, setAnalyzing] = useState(false)
+  
+  // Use Redux user name if available, fallback to props
+  const displayName = authUser?.user_metadata?.full_name || user?.user_metadata?.full_name || "there"
 
 
   const handleResumeUploaded = (newResume: any) => {
@@ -92,7 +97,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Welcome back, <span className="gradient-text">{user.user_metadata?.full_name || "there"}</span>
+            Welcome back, <span className="gradient-text">{displayName}</span>
           </h1>
           <p className="text-muted-foreground">
             Follow the simple steps below to analyze your resume against a job posting

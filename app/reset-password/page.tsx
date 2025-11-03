@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
@@ -20,20 +21,8 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
 
   const supabaseConfigured = isSupabaseConfigured()
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,20 +68,8 @@ export default function ResetPasswordPage() {
   if (success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.5) 0%, transparent 50%)`,
-            transition: "background 0.1s ease-out",
-          }}
-        />
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at ${mousePosition.x * 0.7 + 15}% ${mousePosition.y * 0.7 + 15}%, rgba(139, 92, 246, 0.4) 0%, transparent 40%)`,
-            transition: "background 0.15s ease-out",
-          }}
-        />
+        <AnimatedBackground intensity={0.5} className="fixed inset-0" />
+        <AnimatedBackground intensity={0.4} className="fixed inset-0" />
         <div className="absolute top-4 right-4 z-20">
           <ThemeToggle />
         </div>
@@ -110,20 +87,8 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.5) 0%, transparent 50%)`,
-          transition: "background 0.1s ease-out",
-        }}
-      />
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x * 0.7 + 15}% ${mousePosition.y * 0.7 + 15}%, rgba(139, 92, 246, 0.4) 0%, transparent 40%)`,
-          transition: "background 0.15s ease-out",
-        }}
-      />
+      <AnimatedBackground intensity={0.5} className="fixed inset-0" />
+      <AnimatedBackground intensity={0.4} className="fixed inset-0" />
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>

@@ -11,7 +11,7 @@ interface AnimatedBackgroundProps {
 
 export function AnimatedBackground({ className = "", intensity = 0.15 }: AnimatedBackgroundProps) {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-  const [hasDetectedCursor, setHasDetectedCursor] = useState(false)
+  const [shouldRender, setShouldRender] = useState(false)
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const { isInitialLoading } = usePageLoading()
@@ -29,51 +29,41 @@ export function AnimatedBackground({ className = "", intensity = 0.15 }: Animate
   useEffect(() => {
     setMounted(true)
     
+    let mouseMoved = false
+    let initialPos = { x: 50, y: 50 }
+    
     const handleMouseMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth) * 100
       const y = (e.clientY / window.innerHeight) * 100
-      setMousePosition({ x, y })
       
-      // Устанавливаем флаг, что курсор был обнаружен
-      if (!hasDetectedCursor) {
-        setHasDetectedCursor(true)
+      if (!mouseMoved) {
+        mouseMoved = true
+        initialPos = { x, y }
+        setMousePosition({ x, y })
+      } else {
+        setMousePosition({ x, y })
       }
     }
 
-    const handleMouseEnter = () => {
-      if (!hasDetectedCursor) {
-        setHasDetectedCursor(true)
-      }
-    }
 
-    const handleMouseOver = () => {
-      if (!hasDetectedCursor) {
-        setHasDetectedCursor(true)
-      }
-    }
-
-    // Добавляем обработчики для различных событий мыши
     window.addEventListener("mousemove", handleMouseMove)
-    window.addEventListener("mouseenter", handleMouseEnter)
-    window.addEventListener("mouseover", handleMouseOver)
     
-    // Fallback таймаут - если через 1 секунду курсор так и не был обнаружен,
-    // показываем овал в центре экрана
-    const fallbackTimer = setTimeout(() => {
-      if (!hasDetectedCursor) {
-        setHasDetectedCursor(true)
+    // Задержка для того, чтобы дать мышке время двинуться
+
+    const delayTimer = setTimeout(() => {
+      if (!mouseMoved) {
+        setMousePosition(initialPos)
       }
-    }, 1000)
+      setShouldRender(true)
+    }, 500) 
     
     return () => {
       window.removeEventListener("mousemove", handleMouseMove)
-      window.removeEventListener("mouseenter", handleMouseEnter)
-      window.removeEventListener("mouseover", handleMouseOver)
-      clearTimeout(fallbackTimer)
+      clearTimeout(delayTimer)
     }
-  }, [hasDetectedCursor])
+  }, []) 
 
-  if (!mounted || isInitialLoading || !hasDetectedCursor) {
+  if (!mounted || isInitialLoading || !shouldRender) {
     return null
   }
 

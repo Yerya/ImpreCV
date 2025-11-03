@@ -15,6 +15,8 @@ import { Loader2 } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 
 interface SettingsClientProps {
   user: any
@@ -26,27 +28,42 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
   const { theme } = useTheme()
   const [fullName, setFullName] = useState(initialProfile?.full_name || "")
   const [saving, setSaving] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState("")
+  const [deleting, setDeleting] = useState(false)
+  const [updateProfile] = useUpdateProfileMutation()
+  const [deleteAccount] = useDeleteAccountMutation()
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
     try {
-      const supabase = getSupabaseBrowserClient()
-      const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id)
-
-      if (error) throw error
-
-      alert("Profile updated successfully!")
-      router.refresh()
-    } catch (error) {
-      console.error("Profile update error:", error)
-      alert("Failed to update profile. Please try again.")
+      const res = await updateProfile({ id: user.id, fullName })
+      if ('data' in res && res.data?.ok) {
+        router.refresh()
+      } else {
+        console.error("Profile update error:", (res as any))
+      }
     } finally {
       setSaving(false)
     }
   }
 
+  const handleDeleteAccount = async () => {
+    setDeleting(true)
+    try {
+      const res = await deleteAccount()
+      if ('data' in res && res.data?.ok) {
+        router.push("/login")
+        router.refresh()
+      }
+    } finally {
+      setDeleting(false)
+      setConfirmOpen(false)
+      setConfirmText("")
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -141,9 +158,57 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
                   <p className="font-medium text-destructive">Delete Account</p>
                   <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
                 </div>
-                <Button variant="destructive" disabled>
-                  Delete
-                </Button>
+                <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive">
+                      Delete
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md glass-card">
+                    <DialogHeader>
+                      <DialogTitle>Delete Account</DialogTitle>
+                      <DialogDescription>
+                        This action is permanent. To confirm, type <span className="font-medium">Delete</span>.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmDelete">Confirmation</Label>
+                      <Input
+                        id="confirmDelete"
+                        placeholder="Delete"
+                        value={confirmText}
+                        onChange={(e) => setConfirmText(e.target.value)}
+                        className="bg-background/50"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setConfirmOpen(false)
+                          setConfirmText("")
+                        }}
+                        disabled={deleting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleDeleteAccount}
+                        disabled={confirmText !== "Delete" || deleting}
+                      >
+                        {deleting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Confirm Delete"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </Card>

@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
+import { isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useSignUpMutation } from "@/features/api/authApi"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -22,6 +23,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [signUp] = useSignUpMutation()
 
   const supabaseConfigured = isSupabaseConfigured()
 
@@ -51,29 +53,23 @@ export default function SignupPage() {
 
     setLoading(true)
     setError(null)
-
     try {
-      const supabase = getSupabaseBrowserClient()
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-          data: {
-            full_name: fullName,
-          },
-        },
-      })
-
-      if (error) throw error
-
+      const redirectTo = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`
+      const res = await signUp({ fullName, email, password, redirectTo })
+      if ('data' in res) {
+        if (res.data?.ok) {
       setSuccess(true)
       setTimeout(() => {
         router.push("/dashboard")
         router.refresh()
       }, 2000)
-    } catch (err: any) {
-      setError(err.message || "Failed to sign up")
+        } else {
+          setError(res.data?.message || "Failed to sign up")
+        }
+      } else if ('error' in res) {
+        const errMsg = (res.error as any)?.data?.message || (res.error as any)?.error || "Failed to sign up"
+        setError(errMsg)
+      }
     } finally {
       setLoading(false)
     }

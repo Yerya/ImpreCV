@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sparkles, ArrowLeft, LogOut, Settings } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { useAuth } from "@/components/auth-provider"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
+import { signOutThunk } from "@/features/auth/authSlice"
 
 interface GlobalHeaderProps {
   variant?: "landing" | "dashboard" | "back"
@@ -19,14 +20,26 @@ export function GlobalHeader({
   backLabel = "Back to Dashboard" 
 }: GlobalHeaderProps) {
   const pathname = usePathname()
-  const { user, isLoading, signOut } = useAuth()
+  const router = useRouter()
+  const dispatch = useAppDispatch()
+  const { user, isLoading } = useAppSelector((s) => s.auth)
 
   const isLandingPage = pathname === "/"
   const isDashboardPage = pathname === "/dashboard"
   const isSettingsPage = pathname === "/settings"
 
   const handleLogout = async () => {
-    await signOut()
+    await dispatch(signOutThunk())
+    // Redirect based on current page
+    const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings"]
+    const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
+    
+    if (isProtectedPath) {
+      router.push("/login")
+    } else {
+      router.push("/")
+    }
+    router.refresh()
   }
 
   return (
