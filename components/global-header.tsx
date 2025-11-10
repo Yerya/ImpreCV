@@ -44,7 +44,7 @@ export function GlobalHeader({
 
   return (
     <header className="sticky top-0 left-0 right-0 z-50 w-full px-3 sm:px-4">
-      <div className="glass-header-drop w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-2xl backdrop-saturate-150">
+      <div className="glass-header-drop w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-xl backdrop-saturate-125">
         <div className="px-4 h-16 flex items-center justify-between relative">
         {/* Left side - Logo or Back button */}
         <div className="flex items-center">

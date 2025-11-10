@@ -292,51 +292,28 @@
 }
 
 .glass-header {
-  background: oklch(from var(--background) l c h / 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid oklch(from var(--border) l c h / 0.4);
+  background: oklch(from var(--background) l c h / 0.35);
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  border-bottom: 1px solid oklch(from var(--border) l c h / 0.25);
 }
 
 /* Drop-like header with rounded bottom edges - Liquid glass effect */
 .glass-header-drop {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--background) 95%, transparent) 0%,
-      color-mix(in oklch, var(--background) 75%, transparent) 50%,
-      color-mix(in oklch, var(--background) 55%, transparent) 100%
-    );
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid color-mix(in oklch, var(--border) 35%, transparent);
-  border-top: none;
-  border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+  border: none;
+
   border-radius: 0 0 40px 40px;
   box-shadow:
-    0 16px 40px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.2)),
-    inset 0 1px 0 color-mix(in oklch, var(--background) 85%, rgba(255, 255, 255, 0.35));
+    0 10px 30px color-mix(in srgb, black 10%, rgba(0, 0, 0, 0.26));
   transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
   will-change: backdrop-filter, background;
   isolation: isolate;
   overflow: hidden;
 }
 
-.dark .glass-header-drop {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--background) 92%, transparent) 0%,
-      color-mix(in oklch, var(--background) 70%, transparent) 45%,
-      color-mix(in oklch, var(--background) 55%, transparent) 100%
-    );
-  box-shadow:
-    0 16px 42px color-mix(in srgb, var(--background) 55%, rgba(0, 0, 0, 0.35)),
-    inset 0 1px 0 color-mix(in oklch, var(--background) 85%, rgba(255, 255, 255, 0.2));
-}
 
 @supports not (backdrop-filter: blur(1px)) {
   .glass-header-drop {
-    background: color-mix(in oklch, var(--background) 90%, transparent);
+    background: color-mix(in oklch, var(--background) 70%, transparent);
   }
 }
