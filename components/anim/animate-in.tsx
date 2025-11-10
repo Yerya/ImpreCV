@@ -45,40 +45,63 @@ export function AnimateIn<T extends ElementTag = "div">(props: AnimateInProps<T>
   const [inView, setInView] = React.useState(false)
   const mounted = React.useRef(false)
 
+  // Memoize computed style to avoid recalculation on each render
+  const computedStyle = React.useMemo(
+    () => buildStyle(variant, { delayMs, durationMs, ease }),
+    [variant, delayMs, durationMs, ease],
+  )
+
+  // Stabilize observer options identity
+  const observerOptions = React.useMemo<IntersectionObserverInit>(
+    () => ({ root: null, rootMargin: margin, threshold }),
+    [margin, threshold],
+  )
+
   React.useEffect(() => {
     mounted.current = true
     if (!ref.current) return
     if (typeof window === "undefined") return
+
+    // Respect reduced motion: render as visible without IO
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setInView(true)
+      return
+    }
+
     if ("IntersectionObserver" in window === false) {
       setInView(true)
       return
     }
 
     const el = ref.current
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const isIntersecting = entry.isIntersecting || entry.intersectionRatio > 0
-          if (isIntersecting) {
-            setInView(true)
-            onInViewChange?.(true)
-            if (once) observer.unobserve(entry.target)
-          } else if (!once) {
-            setInView(false)
-            onInViewChange?.(false)
-          }
-        })
-      },
-      { root: null, rootMargin: margin, threshold },
-    )
+    const observer = new IntersectionObserver((entries) => {
+      if (!mounted.current) return
+      for (const entry of entries) {
+        const isIntersecting = entry.isIntersecting || entry.intersectionRatio > 0
+        if (isIntersecting) {
+          setInView(true)
+          onInViewChange?.(true)
+          if (once) observer.unobserve(entry.target)
+        } else if (!once) {
+          setInView(false)
+          onInViewChange?.(false)
+        }
+      }
+    }, observerOptions)
 
     observer.observe(el)
-    return () => observer.disconnect()
-  }, [threshold, margin, once, onInViewChange])
+    return () => {
+      mounted.current = false
+      observer.disconnect()
+    }
+  }, [observerOptions, once, onInViewChange])
 
-  const style = {
-    ...buildStyle(variant, { delayMs, durationMs, ease }),
-  } as React.CSSProperties
+  // Merge external style if provided
+  const externalStyle = (rest as any)?.style as React.CSSProperties | undefined
+  if (externalStyle) {
+    delete (rest as any).style
+  }
+  const style = { ...computedStyle, ...externalStyle } as React.CSSProperties
 
   return (
     <Tag
@@ -102,4 +125,3 @@ export function AnimateIn<T extends ElementTag = "div">(props: AnimateInProps<T>
 }
 
 export default AnimateIn
-
