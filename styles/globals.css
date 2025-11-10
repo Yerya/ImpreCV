@@ -291,13 +291,6 @@
   }
 }
 
-.glass-header {
-  background: oklch(from var(--background) l c h / 0.35);
-  backdrop-filter: blur(12px) saturate(110%);
-  -webkit-backdrop-filter: blur(12px) saturate(110%);
-  border-bottom: 1px solid oklch(from var(--border) l c h / 0.25);
-}
-
 /* Drop-like header with rounded bottom edges - Liquid glass effect */
 .glass-header-drop {
   border: none;
