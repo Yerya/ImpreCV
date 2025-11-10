@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { usePageLoading } from "@/hooks/use-page-loading"
 
@@ -10,73 +10,80 @@ interface AnimatedBackgroundProps {
 }
 
 export function AnimatedBackground({ className = "", intensity = 0.15 }: AnimatedBackgroundProps) {
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-  const [shouldRender, setShouldRender] = useState(false)
+  const ref = useRef<HTMLDivElement | null>(null)
   const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const { isInitialLoading } = usePageLoading()
+  const [mounted, setMounted] = useState(false)
+  const [shouldRender, setShouldRender] = useState(false)
 
-  // Light theme: Blue gradient (#6366f1)
-  // Dark theme: Orange gradient (#fbbf24, #f97316, #ef4444)
+  // Theme colors
   const isLightTheme = theme === "light"
-  
-  // For light theme: use indigo (#6366f1 = rgb(99, 102, 241))
-  // For dark theme: use orange (#f97316 = rgb(249, 115, 22))
   const r = isLightTheme ? 99 : 249
   const g = isLightTheme ? 102 : 115
   const b = isLightTheme ? 241 : 22
 
   useEffect(() => {
     setMounted(true)
-    
+    let rafId = 0
+    let pending = false
+    let lastX = 50
+    let lastY = 50
     let mouseMoved = false
-    let initialPos = { x: 50, y: 50 }
-    
-    const handleMouseMove = (e: MouseEvent) => {
+
+    const apply = () => {
+      pending = false
+      const el = ref.current
+      if (!el) return
+      el.style.setProperty("--x", `${lastX}%`)
+      el.style.setProperty("--y", `${lastY}%`)
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
       const x = (e.clientX / window.innerWidth) * 100
       const y = (e.clientY / window.innerHeight) * 100
-      
-      if (!mouseMoved) {
-        mouseMoved = true
-        initialPos = { x, y }
-        setMousePosition({ x, y })
-      } else {
-        setMousePosition({ x, y })
+      lastX = x
+      lastY = y
+      mouseMoved = true
+      if (!pending) {
+        pending = true
+        rafId = window.requestAnimationFrame(apply)
       }
     }
 
+    window.addEventListener("pointermove", onPointerMove, { passive: true })
 
-    window.addEventListener("mousemove", handleMouseMove)
-    
-    // Задержка для того, чтобы дать мышке время двинуться
-
-    const delayTimer = setTimeout(() => {
+    const delayTimer = window.setTimeout(() => {
       if (!mouseMoved) {
-        setMousePosition(initialPos)
+        lastX = 50
+        lastY = 50
+        apply()
       }
       setShouldRender(true)
-    }, 500) 
-    
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove)
-      clearTimeout(delayTimer)
-    }
-  }, []) 
+    }, 300)
 
-  if (!mounted || isInitialLoading || !shouldRender) {
-    return null
-  }
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove)
+      window.cancelAnimationFrame(rafId)
+      window.clearTimeout(delayTimer)
+    }
+  }, [])
+
+  if (!mounted || isInitialLoading || !shouldRender) return null
+
+  const isFixed = className.includes("fixed")
 
   return (
     <div
+      ref={ref}
       className={`inset-0 pointer-events-none ${className}`}
       style={{
-        position: className.includes('fixed') ? 'fixed' : 'absolute',
+        position: isFixed ? "fixed" : "absolute",
         zIndex: 0,
-        background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(${r}, ${g}, ${b}, ${intensity}) 0%, transparent 60%)`,
+        background: `radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(${r}, ${g}, ${b}, ${intensity}) 0%, transparent 60%)`,
         transition: "background 0.1s ease-out",
+        willChange: "background",
+        contain: "paint",
       }}
     />
   )
 }
-

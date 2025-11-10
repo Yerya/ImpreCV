@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card"
 import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
-import { AnimatedBackground } from "@/components/ui/animated-background"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import ResumeUpload from "./resume-upload"
@@ -87,9 +86,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const canAnalyze = selectedResumeId && jobPosting.title && hasJobInfo
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
-      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
+    <div className="min-h-screen relative">
       
       <GlobalHeader variant="dashboard" />
 

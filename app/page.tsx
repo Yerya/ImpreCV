@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { AnimatedBackground } from "@/components/ui/animated-background"
 import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
@@ -14,9 +13,7 @@ export default function LandingPage() {
 
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
-      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
+    <div className="min-h-screen relative">
       
       <GlobalHeader variant="landing" />
 

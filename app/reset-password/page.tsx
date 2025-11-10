@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { AnimatedBackground } from "@/components/ui/animated-background"
 import { Sparkles, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
@@ -56,7 +55,6 @@ export default function ResetPasswordPage() {
       setSuccess(true)
       setTimeout(() => {
         router.push("/dashboard")
-        router.refresh()
       }, 2000)
     } catch (err: any) {
       setError(err.message || "Failed to reset password")
@@ -67,9 +65,7 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-        <AnimatedBackground intensity={0.5} className="fixed inset-0" />
-        <AnimatedBackground intensity={0.4} className="fixed inset-0" />
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
         <div className="absolute top-4 right-4 z-20">
           <ThemeToggle />
         </div>
@@ -86,9 +82,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-      <AnimatedBackground intensity={0.5} className="fixed inset-0" />
-      <AnimatedBackground intensity={0.4} className="fixed inset-0" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>

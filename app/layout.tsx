@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Providers } from "@/components/providers"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import "../styles/globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -20,7 +21,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} overflow-x-hidden`}>
         <Providers>
-          {children}
+          <div className="relative min-h-screen">
+            <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
+            <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
+
+            <div className="relative z-10">{children}</div>
+          </div>
         </Providers>
       </body>
     </html>

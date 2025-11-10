@@ -5,7 +5,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { AnimatedBackground } from "@/components/ui/animated-background"
 import { GlobalHeader } from "@/components/global-header"
 import { Download, Copy, CheckCircle2, Edit3, Eye, Mail } from "lucide-react"
 
@@ -58,9 +57,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
-      <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
+    <div className="min-h-screen relative">
       <GlobalHeader 
         variant="back" 
         backHref={`/analysis/${coverLetter.analyses?.id}`} 
