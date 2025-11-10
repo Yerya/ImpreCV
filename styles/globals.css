@@ -304,7 +304,7 @@
 
   border-radius: 0 0 40px 40px;
   box-shadow:
-    0 10px 30px color-mix(in srgb, black 5%, rgba(0, 0, 0, 0.1));
+    0 10px 30px color-mix(in srgb, var(--primary) 7%, rgba(0, 0, 0, 0.1));
   transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
   will-change: backdrop-filter, background;
   isolation: isolate;
