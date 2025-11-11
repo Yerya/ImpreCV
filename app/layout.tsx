@@ -22,8 +22,7 @@ export default function RootLayout({
       <body className={`${inter.className} overflow-x-hidden`}>
         <Providers>
           <div className="relative min-h-screen">
-            <AnimatedBackground intensity={0.5} className="fixed inset-0 z-0" />
-            <AnimatedBackground intensity={0.4} className="fixed inset-0 z-0" />
+            <AnimatedBackground intensity={0.7} className="fixed inset-0 z-0" />
 
             <div className="relative z-10">{children}</div>
           </div>
