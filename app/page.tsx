@@ -18,7 +18,12 @@ export default function LandingPage() {
       <GlobalHeader variant="landing" />
 
       {/* Hero Section */}
-      <AnimateIn as="section" entrance="bubble" variant="fadeUp" className="relative z-10 pt-32 pb-20">
+      <AnimateIn
+        as="section"
+        entrance="bubble"
+        variant="fadeUp"
+        className="relative z-10 min-h-[calc(100dvh-var(--header-h))] flex items-center py-16 md:py-20"
+      >
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border mb-8">
