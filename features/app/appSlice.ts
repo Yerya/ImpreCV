@@ -12,7 +12,7 @@ interface AppState {
 const initialState: AppState = {
   isInitialLoading: true,
   paletteLight: "blue",
-  paletteDark: "blue",
+  paletteDark: "emerald",
 }
 
 const appSlice = createSlice({

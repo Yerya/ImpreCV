@@ -10,7 +10,7 @@ import PaletteSync from "@/components/palette-sync"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="cvify-theme">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="cvify-theme">
       <Provider store={store}>
         <AuthSync />
         <PaletteSync />
