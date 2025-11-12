@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useTheme } from "next-themes"
 import { usePageLoading } from "@/hooks/use-page-loading"
 
 interface AnimatedBackgroundProps {
@@ -11,16 +10,9 @@ interface AnimatedBackgroundProps {
 
 export function AnimatedBackground({ className = "", intensity = 0.15 }: AnimatedBackgroundProps) {
   const ref = useRef<HTMLDivElement | null>(null)
-  const { theme } = useTheme()
   const { isInitialLoading } = usePageLoading()
   const [mounted, setMounted] = useState(false)
   const [shouldRender, setShouldRender] = useState(false)
-
-  // Theme colors
-  const isLightTheme = theme === "light"
-  const r = isLightTheme ? 99 : 249
-  const g = isLightTheme ? 102 : 115
-  const b = isLightTheme ? 241 : 22
 
   useEffect(() => {
     setMounted(true)
@@ -79,7 +71,7 @@ export function AnimatedBackground({ className = "", intensity = 0.15 }: Animate
       style={{
         position: isFixed ? "fixed" : "absolute",
         zIndex: 0,
-        background: `radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(${r}, ${g}, ${b}, ${intensity}) 0%, transparent 60%)`,
+        background: `radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(var(--accent-r), var(--accent-g), var(--accent-b), ${intensity}) 0%, transparent 60%)`,
         transition: "background 0.1s ease-out",
         willChange: "background",
         contain: "paint",

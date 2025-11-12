@@ -14,6 +14,9 @@ import { Loader2 } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
+import { setPaletteForTheme } from "@/features/app/appSlice"
+import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
 import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 
@@ -32,6 +35,9 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
   const [deleting, setDeleting] = useState(false)
   const [updateProfile] = useUpdateProfileMutation()
   const [deleteAccount] = useDeleteAccountMutation()
+  const dispatch = useAppDispatch()
+  const paletteLight = useAppSelector((s) => s.app.paletteLight)
+  const paletteDark = useAppSelector((s) => s.app.paletteDark)
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -119,6 +125,22 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
                   <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
                 </div>
                 <ThemeToggle />
+              </div>
+
+              {/* Palette selection */}
+              <div className="pt-4 space-y-4">
+                {(() => {
+                  const themeKey = theme === "dark" ? "dark" : "light" as const
+                  const current = themeKey === "dark" ? paletteDark : paletteLight
+                  return (
+                    <PaletteSection
+                      title="Palette"
+                      current={current}
+                      themeKey={themeKey}
+                      onSelect={(p) => dispatch(setPaletteForTheme({ theme: themeKey, palette: p }))}
+                    />
+                  )
+                })()}
               </div>
             </div>
           </Card>
@@ -210,6 +232,63 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
             </div>
           </Card>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function PaletteSection({
+  title,
+  current,
+  themeKey,
+  onSelect,
+}: {
+  title: string
+  current: PaletteName
+  themeKey: "light" | "dark"
+  onSelect: (p: PaletteName) => void
+}) {
+  const options: { value: PaletteName; label: string }[] = [
+    { value: "blue", label: "Blue" },
+    { value: "raspberry", label: "Raspberry" },
+    { value: "emerald", label: "Emerald" },
+    { value: "violet", label: "Violet" },
+    { value: "orange", label: "Orange" },
+  ]
+
+  const chip = (p: PaletteName) => {
+    const def = PALETTES[p]
+    const [c1, c2, c3] = themeKey === "dark" ? def.gradientDark : def.gradientLight
+    return (
+      <span
+        aria-hidden
+        className="inline-block h-4 w-8 rounded"
+        style={{ background: `linear-gradient(90deg, ${c1}, ${c2}, ${c3})` }}
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="text-sm font-medium">{title}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onSelect(opt.value)}
+            className={`glass-row flex items-center justify-between w-full rounded-md px-3 py-2 text-sm transition-colors ${
+              current === opt.value ? "glass-row--selected" : ""
+            }`}
+          >
+            <span className="font-medium">{opt.label}</span>
+            <span className="flex items-center gap-2">
+              {chip(opt.value)}
+              {current === opt.value ? (
+                <span className="text-xs text-muted-foreground">Selected</span>
+              ) : null}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   )

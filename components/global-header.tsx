@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Sparkles, ArrowLeft, LogOut, Settings } from "lucide-react"
+import { Sparkles, ArrowLeft, LogOut, Settings, LogIn, UserPlus } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { PaletteToggle } from "@/components/palette-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { signOutThunk } from "@/features/auth/authSlice"
 
@@ -49,10 +50,22 @@ export function GlobalHeader({
         {/* Left side - Logo or Back button */}
         <div className="flex items-center">
           {variant === "back" ? (
-            <Link href={backHref} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
-              <span>{backLabel}</span>
-            </Link>
+            <>
+              {/* Icon-only on mobile */}
+              <Link href={backHref} className="sm:hidden">
+                <Button variant="ghost" size="icon" aria-label={backLabel}>
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              {/* Icon + label on >= sm */}
+              <Link
+                href={backHref}
+                className="hidden sm:flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>{backLabel}</span>
+              </Link>
+            </>
           ) : (
             <Link href="/" className="flex items-center gap-2">
               <Sparkles className="h-6 w-6" />
@@ -77,9 +90,10 @@ export function GlobalHeader({
         )}
 
         {/* Right side - Theme toggle and auth buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <PaletteToggle />
           <ThemeToggle />
-          
+
           {!isLoading && (
             <>
               {user ? (
@@ -87,11 +101,15 @@ export function GlobalHeader({
                   {isLandingPage ? (
                     <>
                       <Link href="/dashboard">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="px-2 sm:px-3">
                           Dashboard
                         </Button>
                       </Link>
-                      <Button variant="ghost" size="sm" onClick={handleLogout}>
+                      {/* Logout icon on mobile, text on >=sm */}
+                      <Button variant="ghost" size="icon" className="sm:hidden" onClick={handleLogout} aria-label="Log out">
+                        <LogOut className="h-5 w-5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={handleLogout}>
                         <LogOut className="h-4 w-4 mr-2" />
                         Log Out
                       </Button>
@@ -100,20 +118,33 @@ export function GlobalHeader({
                     <>
                       {!isDashboardPage && (
                         <Link href="/dashboard">
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="px-2 sm:px-3">
                             Dashboard
                           </Button>
                         </Link>
                       )}
                       {!isSettingsPage && (
-                        <Link href="/settings">
-                          <Button variant="ghost" size="sm">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Settings
-                          </Button>
-                        </Link>
+                        <>
+                          {/* Settings icon on mobile */}
+                          <Link href="/settings" className="sm:hidden">
+                            <Button variant="ghost" size="icon" aria-label="Settings">
+                              <Settings className="h-5 w-5" />
+                            </Button>
+                          </Link>
+                          {/* Settings text on >=sm */}
+                          <Link href="/settings" className="hidden sm:inline-flex">
+                            <Button variant="ghost" size="sm">
+                              <Settings className="h-4 w-4 mr-2" />
+                              Settings
+                            </Button>
+                          </Link>
+                        </>
                       )}
-                      <Button variant="ghost" size="sm" onClick={handleLogout}>
+                      {/* Logout icon on mobile, text on >=sm */}
+                      <Button variant="ghost" size="icon" className="sm:hidden" onClick={handleLogout} aria-label="Log out">
+                        <LogOut className="h-5 w-5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={handleLogout}>
                         <LogOut className="h-4 w-4 mr-2" />
                         Log Out
                       </Button>
@@ -122,12 +153,24 @@ export function GlobalHeader({
                 </>
               ) : (
                 <>
-                  <Link href="/login">
+                  {/* Icons on mobile */}
+                  <Link href="/login" className="sm:hidden">
+                    <Button variant="ghost" size="icon" aria-label="Log in">
+                      <LogIn className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <Link href="/signup" className="sm:hidden">
+                    <Button variant="default" size="icon" aria-label="Sign up">
+                      <UserPlus className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                  {/* Text on >=sm */}
+                  <Link href="/login" className="hidden sm:inline-flex">
                     <Button variant="ghost" size="sm">
                       Log In
                     </Button>
                   </Link>
-                  <Link href="/signup">
+                  <Link href="/signup" className="hidden sm:inline-flex">
                     <Button size="sm">
                       Get Started
                     </Button>
