@@ -83,7 +83,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
+  --font-sans: var(--font-sans);
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -129,7 +129,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display), var(--font-sans), ui-sans-serif, system-ui;
   }
   html, body {
     /* Reserve gutter on the scrollbar side only to avoid left strip */
