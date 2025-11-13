@@ -46,6 +46,3 @@ export const PALETTES: Record<PaletteName, PaletteDefinition> = {
     gradientDark: ["#fbbf24", "#f97316", "#ef4444"],
   },
 }
-
-export const DEFAULT_LIGHT: PaletteName = "blue"
-export const DEFAULT_DARK: PaletteName = "blue"
