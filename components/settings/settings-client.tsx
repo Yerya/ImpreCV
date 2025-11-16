@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/appSlice"
 import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
@@ -72,7 +73,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative pb-20">
       <GlobalHeader variant="back" backHref="/dashboard" backLabel="Back to Dashboard" />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
@@ -248,6 +249,8 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
           </Card>
         </div>
       </div>
+
+      <MobileBottomNav />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { GlobalHeader } from "@/components/global-header"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Download, Copy, CheckCircle2, Edit3, Eye, Mail } from "lucide-react"
 
 interface CoverLetterClientProps {
@@ -57,7 +58,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative pb-20">
       <GlobalHeader 
         variant="back" 
         backHref={`/analysis/${coverLetter.analyses?.id}`} 
@@ -250,6 +251,7 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
           </div>
         </div>
       </div>
+      <MobileBottomNav />
     </div>
   )
 }

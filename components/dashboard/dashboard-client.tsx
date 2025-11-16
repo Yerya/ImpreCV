@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import Link from "next/link"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
@@ -86,7 +86,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const canAnalyze = selectedResumeId && jobPosting.title && hasJobInfo
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative pb-20">
       
       <GlobalHeader variant="dashboard" />
 
@@ -199,6 +199,8 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           </div>
         </div>
       </div>
+
+      <MobileBottomNav />
     </div>
   )
 }

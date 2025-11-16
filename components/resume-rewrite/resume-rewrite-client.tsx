@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { GlobalHeader } from "@/components/global-header"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
@@ -59,7 +60,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative pb-20">
       <GlobalHeader 
         variant="back" 
         backHref={`/analysis/${rewrittenResume.analyses?.id}`} 
@@ -230,6 +231,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
           </div>
         </div>
       </div>
+      <MobileBottomNav />
     </div>
   )
 }

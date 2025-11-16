@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { GlobalHeader } from "@/components/global-header"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import {
   CheckCircle2,
   AlertCircle,
@@ -82,7 +83,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative pb-20">
       <GlobalHeader variant="back" backHref="/dashboard" backLabel="Back to Dashboard" />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
@@ -276,6 +277,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
           </div>
         </div>
       </div>
+      <MobileBottomNav />
     </div>
   )
 }

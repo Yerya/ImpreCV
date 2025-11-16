@@ -388,11 +388,9 @@
   }
 }
 
-/* Drop-like header with rounded bottom edges - Liquid glass effect */
-.glass-header-drop {
+/* Shared chrome bar (header / bottom nav) */
+.glass-chrome {
   border: none;
-
-  border-radius: 0 0 40px 40px;
   box-shadow:
     0 10px 30px color-mix(in srgb, var(--primary) 7%, rgba(0, 0, 0, 0.1));
   transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
@@ -401,9 +399,16 @@
   overflow: hidden;
 }
 
+.glass-chrome-top {
+  border-radius: 0 0 40px 40px;
+}
+
+.glass-chrome-bottom {
+  border-radius: 40px 40px 0 0;
+}
 
 @supports not (backdrop-filter: blur(1px)) {
-  .glass-header-drop {
+  .glass-chrome {
     background: color-mix(in oklch, var(--background) 70%, transparent);
   }
 }
