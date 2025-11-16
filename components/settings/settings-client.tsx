@@ -15,7 +15,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { setPaletteForTheme } from "@/features/app/appSlice"
+import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/appSlice"
 import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
 import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
@@ -38,6 +38,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
   const dispatch = useAppDispatch()
   const paletteLight = useAppSelector((s) => s.app.paletteLight)
   const paletteDark = useAppSelector((s) => s.app.paletteDark)
+  const uiScale = useAppSelector((s) => s.app.uiScale)
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,6 +126,20 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
                   <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
                 </div>
                 <ThemeToggle />
+              </div>
+
+              {/* Interface scale */}
+              <div className="pt-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Interface scale</p>
+                    <p className="text-sm text-muted-foreground">Adjust the size of text and controls</p>
+                  </div>
+                </div>
+                <UiScaleSection
+                  current={uiScale}
+                  onSelect={(scale) => dispatch(setUiScale(scale))}
+                />
               </div>
 
               {/* Palette selection */}
@@ -233,6 +248,46 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
           </Card>
         </div>
       </div>
+    </div>
+  )
+}
+
+function UiScaleSection({
+  current,
+  onSelect,
+}: {
+  current: UiScale
+  onSelect: (scale: UiScale) => void
+}) {
+  const options: { value: UiScale; label: string; hint: string }[] = [
+    { value: "small", label: "Compact", hint: "More content, slightly smaller UI" },
+    { value: "medium", label: "Default", hint: "Balanced scale" },
+    { value: "large", label: "Comfortable", hint: "Larger text and controls" },
+  ]
+
+  return (
+    <div className="flex flex-col gap-1">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          aria-pressed={current === opt.value}
+          onClick={() => onSelect(opt.value)}
+          className={`glass-row flex items-center justify-between w-full rounded-md px-3 py-2 text-sm transition-colors ${
+            current === opt.value ? "glass-row--selected" : ""
+          }`}
+        >
+          <div className="flex flex-col items-start">
+            <span className="font-medium">{opt.label}</span>
+            <span className="text-xs text-muted-foreground">{opt.hint}</span>
+          </div>
+          {current === opt.value ? (
+            <span className="text-[11px] uppercase tracking-wide text-primary/80 dark:text-primary/90">
+              Active
+            </span>
+          ) : null}
+        </button>
+      ))}
     </div>
   )
 }

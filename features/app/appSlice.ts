@@ -3,16 +3,20 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import type { PaletteName } from "@/lib/theme/palettes"
 
+export type UiScale = "small" | "medium" | "large"
+
 interface AppState {
   isInitialLoading: boolean
   paletteLight: PaletteName
   paletteDark: PaletteName
+  uiScale: UiScale
 }
 
 const initialState: AppState = {
   isInitialLoading: true,
   paletteLight: "blue",
   paletteDark: "emerald",
+  uiScale: "medium",
 }
 
 const appSlice = createSlice({
@@ -37,11 +41,19 @@ const appSlice = createSlice({
       if (action.payload.paletteLight) state.paletteLight = action.payload.paletteLight
       if (action.payload.paletteDark) state.paletteDark = action.payload.paletteDark
     },
+    setUiScale(state, action: PayloadAction<UiScale>) {
+      state.uiScale = action.payload
+    },
+    hydrateUiScale(state, action: PayloadAction<UiScale | undefined>) {
+      if (action.payload) {
+        state.uiScale = action.payload
+      }
+    },
   },
 })
 
-export const { setInitialLoading, setPaletteForTheme, hydratePalettes } = appSlice.actions
+export const { setInitialLoading, setPaletteForTheme, hydratePalettes, setUiScale, hydrateUiScale } =
+  appSlice.actions
 export default appSlice.reducer
-
 
 
