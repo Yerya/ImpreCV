@@ -90,7 +90,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
       
       <GlobalHeader variant="dashboard" />
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
+      <div className="container mx-auto px-4 py-8 relative z-10 max-w-6xl">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
@@ -101,11 +101,11 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6 min-w-0">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             {/* Step 1: Upload Resume */}
-            <Card className="glass-card p-6 relative z-10">
+            <Card className="glass-card p-6 relative z-10 w-full">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
                   1
@@ -131,7 +131,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
             </Card>
 
             {/* Step 2: Add Job Posting */}
-            <Card className="glass-card p-6 relative z-10">
+            <Card className="glass-card p-6 relative z-10 w-full">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
                   2
@@ -144,7 +144,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
             </Card>
 
             {/* Analyze Button */}
-            <Card className="glass-card p-6 relative z-10">
+            <Card className="glass-card p-6 relative z-10 w-full">
               <Button onClick={handleAnalyze} disabled={!canAnalyze || analyzing} size="lg" className="w-full">
                 {analyzing ? (
                   <>
@@ -175,16 +175,16 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             {/* Recent Analyses */}
-            <Card className="glass-card p-6 relative z-10">
+            <Card className="glass-card p-6 relative z-10 w-full">
               <h3 className="text-lg font-semibold mb-4">Recent Analyses</h3>
               <AnalysisList analyses={recentAnalyses} />
             </Card>
 
             {/* Quick Stats */}
-            <Card className="glass-card p-6 relative z-10">
-              <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+            <Card className="glass-card p-6 relative z-10 w-full">
+          <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
               <div className="space-y-4">
                 <div>
                   <div className="text-3xl font-bold gradient-text">{resumes.length}</div>
