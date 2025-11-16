@@ -74,9 +74,9 @@ export function GlobalHeader({
           )}
         </div>
 
-        {/* Center - Navigation (only on landing page) */}
+        {/* Center - Navigation (only on landing page, large screens) */}
         {variant === "landing" && (
-          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
+          <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
             <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Features
             </Link>
