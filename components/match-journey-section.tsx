@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { Card } from "@/components/ui/card"
 import { Brain, FileText, Target, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
 
 type MatchEmphasis = "match" | "expand" | "skillmap" | "result"
 
@@ -71,7 +70,6 @@ const emphasisHint: Record<MatchEmphasis, string> = {
 }
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value))
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function MatchJourneyDesktop() {
@@ -82,6 +80,11 @@ function MatchJourneyDesktop() {
   const headingRef = useRef<HTMLDivElement | null>(null)
   const [progress, setProgress] = useState(0)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [displayScore, setDisplayScore] = useState(MATCH_STEPS[0]?.score ?? 0)
+  const scoreAnimFrameRef = useRef<number | null>(null)
+  const scoreFromRef = useRef(MATCH_STEPS[0]?.score ?? 0)
+  const scoreToRef = useRef(MATCH_STEPS[0]?.score ?? 0)
+  const scoreStartTimeRef = useRef<number | null>(null)
   const activeIndexRef = useRef(0)
   const [stickyTop, setStickyTop] = useState<number | null>(null)
   const [timelineFill, setTimelineFill] = useState(0)
@@ -227,20 +230,55 @@ function MatchJourneyDesktop() {
     return () => cancelAnimationFrame(rafId)
   }, [segments])
 
+  useEffect(() => {
+    const targetScore = MATCH_STEPS[activeIndex]?.score ?? MATCH_STEPS[0]?.score ?? 0
+
+    if (scoreAnimFrameRef.current !== null) {
+      cancelAnimationFrame(scoreAnimFrameRef.current)
+      scoreAnimFrameRef.current = null
+    }
+
+    setDisplayScore((current) => {
+      scoreFromRef.current = current
+      scoreToRef.current = targetScore
+      scoreStartTimeRef.current = typeof performance !== "undefined" ? performance.now() : null
+      return current
+    })
+
+    const duration = 450
+    const animate = (now: number) => {
+      const start = scoreStartTimeRef.current
+      if (start === null) return
+
+      const rawT = (now - start) / duration
+      if (rawT >= 1) {
+        setDisplayScore(scoreToRef.current)
+        scoreAnimFrameRef.current = null
+        return
+      }
+
+      const t = easeOutCubic(clamp(rawT, 0, 1))
+      const value = scoreFromRef.current + (scoreToRef.current - scoreFromRef.current) * t
+      setDisplayScore(value)
+      scoreAnimFrameRef.current = requestAnimationFrame(animate)
+    }
+
+    scoreAnimFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (scoreAnimFrameRef.current !== null) {
+        cancelAnimationFrame(scoreAnimFrameRef.current)
+        scoreAnimFrameRef.current = null
+      }
+    }
+  }, [activeIndex])
+
   const animProgress = progress
 
-  const scaled = progress * segments
-  const baseIndex = Math.floor(scaled)
-  const nextIndex = Math.min(baseIndex + 1, stepsCount - 1)
-  const localProgress = baseIndex === nextIndex ? 1 : scaled - baseIndex
   const activeStep = MATCH_STEPS[activeIndex] ?? MATCH_STEPS[0]
-  const nextStep = MATCH_STEPS[nextIndex] ?? activeStep
-  const displayScore = Math.round(
-    lerp(MATCH_STEPS[baseIndex]?.score ?? activeStep.score, nextStep.score, localProgress),
-  )
+  const nextStep = MATCH_STEPS[Math.min(activeIndex + 1, stepsCount - 1)] ?? activeStep
 
-  const indicatorProgress =
-    segments === 0 ? 1 : clamp((baseIndex + clamp(localProgress, 0, 1)) / segments, 0, 1)
+  const indicatorProgress = segments === 0 ? 1 : activeIndex / segments
   // Avoid tiny glow dot at the very start of the timeline
   const showFillGlow = indicatorProgress > 0.02
 
@@ -297,7 +335,7 @@ function MatchJourneyDesktop() {
               nextLabel={nextStep.label}
               score={displayScore}
               overallProgress={indicatorProgress}
-              className="lg:hidden mb-6"
+              className="hidden md:block lg:hidden mb-6"
             />
 
             <div
@@ -376,14 +414,14 @@ function MatchJourneyDesktop() {
                               <p className="text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground/70">
                                 {emphasisLabel[step.emphasis]}
                               </p>
-                              <h3 className="text-base md:text-lg font-semibold line-clamp-1">{step.title}</h3>
+                              <h3 className="text-base md:text-lg font-semibold md:line-clamp-1">{step.title}</h3>
                             </div>
                             <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                               <TrendingUp className="h-4 w-4 text-primary" />
                               <span className="font-medium tabular-nums">{step.score}% match</span>
                             </div>
                           </div>
-                          <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed line-clamp-2">
+                          <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed md:line-clamp-2">
                             {step.description}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -405,8 +443,6 @@ function MatchJourneyDesktop() {
 }
 
 export function MatchJourneySection() {
-  const isMobile = useIsMobile()
-  if (isMobile) return null
   return <MatchJourneyDesktop />
 }
 
@@ -448,7 +484,9 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
             <h3 className="text-2xl md:text-3xl font-semibold leading-snug">{step.title}</h3>
           </div>
           <div className="text-right">
-            <div className="text-4xl md:text-5xl font-semibold gradient-text leading-none tabular-nums">{score}%</div>
+            <div className="text-4xl md:text-5xl font-semibold gradient-text leading-none tabular-nums">
+              {Math.round(score)}%
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">Current match</p>
           </div>
         </div>
