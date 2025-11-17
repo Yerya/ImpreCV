@@ -228,17 +228,25 @@ function MatchJourneyDesktop() {
         </div>
 
         <div ref={journeyRef} className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.3fr)] items-start max-w-6xl mx-auto">
-          <div ref={stickyPanelRef} className="hidden lg:block lg:self-stretch">
-            <MatchPanel
-              step={activeStep}
-              nextLabel={nextStep.label}
-              score={displayScore}
-              overallProgress={indicatorProgress}
-              className="lg:sticky"
-              style={stickyTop != null ? { top: stickyTop } : undefined}
-            />
-          </div>
-
+                            <div
+                              ref={stickyPanelRef}
+                              className="hidden lg:flex lg:flex-col"
+                              style={{
+                                position: "sticky",
+                                top: "calc(0.5 * (100vh - 410px))",
+                                height: "fit-content",
+                                minHeight: 0,
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <MatchPanel
+                                  step={activeStep}
+                                  nextLabel={nextStep.label}
+                                  score={displayScore}
+                                  overallProgress={indicatorProgress}
+                                />
+                              </div>
+                            </div>
           <div className="space-y-6 lg:space-y-10">
             <MatchPanel
               step={activeStep}
