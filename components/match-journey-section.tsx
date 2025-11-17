@@ -404,24 +404,24 @@ function MatchJourneyDesktop() {
 
                       <Card
                         className={cn(
-                          "glass-card rounded-[28px] p-0 transition-all duration-500 h-auto md:h-[248px] lg:h-[260px]",
+                          "glass-card rounded-[28px] p-0 transition-all duration-500",
                           isActive ? "shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]" : "opacity-80",
                         )}
                       >
                         <div className="flex h-full flex-col gap-4 p-5 md:p-6">
-                          <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-baseline justify-between gap-3">
                             <div>
                               <p className="text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground/70">
                                 {emphasisLabel[step.emphasis]}
                               </p>
-                              <h3 className="text-base md:text-lg font-semibold md:line-clamp-1">{step.title}</h3>
+                              <h3 className="text-base md:text-lg font-semibold">{step.title}</h3>
                             </div>
                             <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                               <TrendingUp className="h-4 w-4 text-primary" />
                               <span className="font-medium tabular-nums">{step.score}% match</span>
                             </div>
                           </div>
-                          <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed md:line-clamp-2">
+                          <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed">
                             {step.description}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 pt-2">
