@@ -1,9 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, type CSSProperties } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject, type RefObject } from "react"
 import { Card } from "@/components/ui/card"
 import { Brain, FileText, Target, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { clamp, easeOutCubic } from "@/lib/math"
+import { useMatchJourney } from "@/hooks/use-match-journey"
+import { motion, useSpring } from "framer-motion"
 
 type MatchEmphasis = "match" | "expand" | "skillmap" | "result"
 
@@ -69,216 +72,62 @@ const emphasisHint: Record<MatchEmphasis, string> = {
   result: "Everything you send feels tailored.",
 }
 
-const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value))
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
+type StepStyle = {
+  translateY: number
+  scale: number
+  opacity: number
+  blur: number
+  isActive: boolean
+}
 
 function MatchJourneyDesktop() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const journeyRef = useRef<HTMLDivElement | null>(null)
-  const stepsWrapperRef = useRef<HTMLDivElement | null>(null)
-  const stickyPanelRef = useRef<HTMLDivElement | null>(null)
-  const headingRef = useRef<HTMLDivElement | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [displayScore, setDisplayScore] = useState(MATCH_STEPS[0]?.score ?? 0)
-  const scoreAnimFrameRef = useRef<number | null>(null)
-  const scoreFromRef = useRef(MATCH_STEPS[0]?.score ?? 0)
-  const scoreToRef = useRef(MATCH_STEPS[0]?.score ?? 0)
-  const scoreStartTimeRef = useRef<number | null>(null)
-  const activeIndexRef = useRef(0)
-  const [stickyTop, setStickyTop] = useState<number | null>(null)
-  const [timelineFill, setTimelineFill] = useState(0)
-  const [timelineBounds, setTimelineBounds] = useState<{ top: number; height: number } | null>(null)
-  const progressTargetRef = useRef(0)
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
-  const timelineRef = useRef<HTMLDivElement | null>(null)
-  const stepsCount = MATCH_STEPS.length
-  const segments = Math.max(stepsCount - 1, 1)
 
-  useEffect(() => {
-    const updateStickyTop = () => {
-      if (typeof window === "undefined") return
-      const headingEl = headingRef.current
-      let headingBlock = 0
-      if (headingEl) {
-        const styles = window.getComputedStyle(headingEl)
-        const mb = parseFloat(styles.marginBottom || "0") || 0
-        headingBlock = headingEl.offsetHeight + mb
-      }
-      const targetTop = Math.max(24, headingBlock + 8)
-      setStickyTop(targetTop)
-    }
-
-    updateStickyTop()
-    window.addEventListener("resize", updateStickyTop)
-    return () => window.removeEventListener("resize", updateStickyTop)
-  }, [])
-
-  useEffect(() => {
-    const updateTimelineBounds = () => {
-      const wrapper = stepsWrapperRef.current
-      const cards = cardRefs.current.filter(Boolean)
-      if (!wrapper || cards.length === 0) return
-
-      const wrapperRect = wrapper.getBoundingClientRect()
-      const firstRect = cards[0].getBoundingClientRect()
-      const lastRect = cards[cards.length - 1].getBoundingClientRect()
-
-      const startWithinWrapper = Math.max(0, firstRect.top - wrapperRect.top - 10)
-      const endWithinWrapper = Math.max(startWithinWrapper + 16, lastRect.bottom - wrapperRect.top)
-      setTimelineBounds({ top: startWithinWrapper, height: endWithinWrapper - startWithinWrapper })
-    }
-
-    const rafId = requestAnimationFrame(updateTimelineBounds)
-    window.addEventListener("resize", updateTimelineBounds)
-    return () => {
-      cancelAnimationFrame(rafId)
-      window.removeEventListener("resize", updateTimelineBounds)
-    }
-  }, [])
-
-  useEffect(() => {
-    let rafId = 0
-    const handleScroll = () => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        if (typeof window === "undefined") return
-        const hero = document.getElementById("hero-anchor")
-        const heroRect = hero?.getBoundingClientRect()
-        if (heroRect && heroRect.bottom > 0) {
-          progressTargetRef.current = 0
-          if (activeIndexRef.current !== 0) {
-            activeIndexRef.current = 0
-            setActiveIndex(0)
-          }
-          return
-        }
-
-        const cards = cardRefs.current.filter(Boolean)
-        if (cards.length === 0) return
-
-        const scrollY = window.scrollY || window.pageYOffset
-        const stickyRect = stickyPanelRef.current?.getBoundingClientRect()
-        const focalY =
-          stickyRect && stickyRect.height > 0
-            ? stickyRect.top + stickyRect.height * 0.5 + scrollY
-            : scrollY + (window.innerHeight || 0) * 0.45
-
-        const centers = cards.map((card) => {
-          const rect = card.getBoundingClientRect()
-          return rect.top + rect.height * 0.5 + scrollY
-        })
-
-        const firstCenter = centers[0]
-        const lastCenter = centers[centers.length - 1]
-        const span = Math.max(1, lastCenter - firstCenter)
-        progressTargetRef.current = clamp((focalY - firstCenter) / span, 0, 1)
-
-        let nearestIndex = 0
-        let nearestDelta = Math.abs(centers[0] - focalY)
-        for (let i = 1; i < centers.length; i += 1) {
-          const delta = Math.abs(centers[i] - focalY)
-          if (delta < nearestDelta) {
-            nearestDelta = delta
-            nearestIndex = i
-          }
-        }
-
-        if (nearestIndex !== activeIndexRef.current) {
-          activeIndexRef.current = nearestIndex
-          setActiveIndex(nearestIndex)
-        }
-
-        const timelineEl = timelineRef.current
-        const activeCard = cardRefs.current[activeIndexRef.current]
-        if (timelineEl && activeCard) {
-          const lineRect = timelineEl.getBoundingClientRect()
-          const cardRect = activeCard.getBoundingClientRect()
-          const fillRatio = clamp((cardRect.bottom + 12 - lineRect.top) / lineRect.height, 0, 1)
-          setTimelineFill(fillRatio)
-        }
-      })
-    }
-
-    handleScroll()
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    window.addEventListener("resize", handleScroll)
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-      window.removeEventListener("resize", handleScroll)
-      cancelAnimationFrame(rafId)
-    }
-  }, [])
-
-  useEffect(() => {
-    let rafId = 0
-    const tick = () => {
-      setProgress((prev) => {
-        const target = progressTargetRef.current
-        const delta = target - prev
-        if (Math.abs(delta) < 0.001) {
-          return target
-        }
-        const segmentUnit = 1 / segments
-        const maxStep = segmentUnit * 0.03
-        const step = Math.sign(delta) * Math.min(Math.abs(delta), maxStep)
-        return prev + step
-      })
-      rafId = requestAnimationFrame(tick)
-    }
-    rafId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafId)
-  }, [segments])
-
-  useEffect(() => {
-    const targetScore = MATCH_STEPS[activeIndex]?.score ?? MATCH_STEPS[0]?.score ?? 0
-
-    if (scoreAnimFrameRef.current !== null) {
-      cancelAnimationFrame(scoreAnimFrameRef.current)
-      scoreAnimFrameRef.current = null
-    }
-
-    setDisplayScore((current) => {
-      scoreFromRef.current = current
-      scoreToRef.current = targetScore
-      scoreStartTimeRef.current = typeof performance !== "undefined" ? performance.now() : null
-      return current
-    })
-
-    const duration = 450
-    const animate = (now: number) => {
-      const start = scoreStartTimeRef.current
-      if (start === null) return
-
-      const rawT = (now - start) / duration
-      if (rawT >= 1) {
-        setDisplayScore(scoreToRef.current)
-        scoreAnimFrameRef.current = null
-        return
-      }
-
-      const t = easeOutCubic(clamp(rawT, 0, 1))
-      const value = scoreFromRef.current + (scoreToRef.current - scoreFromRef.current) * t
-      setDisplayScore(value)
-      scoreAnimFrameRef.current = requestAnimationFrame(animate)
-    }
-
-    scoreAnimFrameRef.current = requestAnimationFrame(animate)
-
-    return () => {
-      if (scoreAnimFrameRef.current !== null) {
-        cancelAnimationFrame(scoreAnimFrameRef.current)
-        scoreAnimFrameRef.current = null
-      }
-    }
-  }, [activeIndex])
+  const {
+    progress,
+    activeIndex,
+    timelineFill,
+    timelineBounds,
+    stepsWrapperRef,
+    stickyPanelRef,
+    headingRef,
+    cardRefs,
+    timelineRef,
+    segments,
+  } = useMatchJourney({ stepsCount: MATCH_STEPS.length })
 
   const animProgress = progress
 
   const activeStep = MATCH_STEPS[activeIndex] ?? MATCH_STEPS[0]
-  const nextStep = MATCH_STEPS[Math.min(activeIndex + 1, stepsCount - 1)] ?? activeStep
+  const nextStep = MATCH_STEPS[Math.min(activeIndex + 1, MATCH_STEPS.length - 1)] ?? activeStep
 
   const indicatorProgress = segments === 0 ? 1 : activeIndex / segments
+
+  const stepStyles = useMemo(
+    () =>
+      MATCH_STEPS.map((_, index) => {
+        const stepPosition = segments === 0 ? 0 : index / segments
+        const zone = segments === 0 ? 1 : 1 / segments
+        const distance = Math.abs(animProgress - stepPosition)
+        const normalized = clamp(distance / (zone * 1.8))
+        const emphasis = easeOutCubic(1 - normalized)
+        const translateY = (1 - emphasis) * 24
+        const scale = 0.985 + 0.015 * emphasis
+        const opacity = 0.55 + 0.45 * emphasis
+        const isActive = index === activeIndex
+        const blur = isActive ? 0 : (1 - emphasis) * 6
+
+        return {
+          translateY,
+          scale,
+          opacity,
+          blur,
+          isActive,
+        }
+      }),
+    [activeIndex, animProgress, segments],
+  )
   // Avoid tiny glow dot at the very start of the timeline
   const showFillGlow = indicatorProgress > 0.02
 
@@ -324,7 +173,7 @@ function MatchJourneyDesktop() {
               <MatchPanel
                 step={activeStep}
                 nextLabel={nextStep.label}
-                score={displayScore}
+                score={activeStep.score}
                 overallProgress={indicatorProgress}
               />
             </div>
@@ -333,108 +182,22 @@ function MatchJourneyDesktop() {
             <MatchPanel
               step={activeStep}
               nextLabel={nextStep.label}
-              score={displayScore}
+              score={activeStep.score}
               overallProgress={indicatorProgress}
               className="hidden md:block lg:hidden mb-6"
             />
 
-            <div
-              ref={stepsWrapperRef}
-              className="relative space-y-10 lg:space-y-14 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center"
-            >
-              <div
-                className={cn(
-                  "pointer-events-none absolute left-[52px] md:left-[60px] lg:left-[66px] xl:left-[80px] hidden md:block overflow-visible",
-                  !timelineBounds && "top-6 bottom-6",
-                )}
-                style={timelineBounds ? { top: timelineBounds.top, height: timelineBounds.height } : undefined}
-              >
-                <div ref={timelineRef} className="relative h-full w-px">
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent opacity-70 blur-[0.5px]" />
-                  <div
-                    className={cn(
-                      "absolute inset-x-0 top-0 w-full bg-gradient-to-b from-[var(--gradient-1)] via-[var(--gradient-2)] to-transparent transition-[height] duration-500 ease-out",
-                      showFillGlow && "shadow-[0_0_25px_rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35)]",
-                    )}
-                    style={{ height: `${Math.max(0, timelineFill || indicatorProgress) * 100}%` }}
-                  />
-                  <div className="absolute -bottom-8 left-1/2 h-8 w-[2px] -translate-x-1/2 bg-gradient-to-t from-transparent via-white/30 to-white/60 opacity-80 blur-[14px] z-10" />
-                </div>
-              </div>
-
-              {MATCH_STEPS.map((step, index) => {
-                const stepPosition = segments === 0 ? 0 : index / segments
-                const zone = segments === 0 ? 1 : 1 / segments
-                const distance = Math.abs(animProgress - stepPosition)
-                const normalized = clamp(distance / (zone * 1.8))
-                const emphasis = easeOutCubic(1 - normalized)
-                const translateY = (1 - emphasis) * 24
-                const scale = 0.985 + 0.015 * emphasis
-                const opacity = 0.55 + 0.45 * emphasis
-                const isActive = index === activeIndex
-                const blur = isActive ? 0 : (1 - emphasis) * 6
-
-                return (
-                  <div
-                    key={step.id}
-                    className="relative transition-transform duration-400 ease-out will-change-transform"
-                    ref={(el) => {
-                      cardRefs.current[index] = el
-                    }}
-                    style={{
-                      opacity,
-                      transform: `translate3d(0, ${translateY}px, 0) scale(${scale})`,
-                      filter: `blur(${blur}px)`,
-                    }}
-                  >
-                    <div className="grid grid-cols-[92px_minmax(0,1fr)] md:grid-cols-[104px_minmax(0,1fr)] lg:grid-cols-[120px_minmax(0,1fr)] gap-4 md:gap-8 items-start">
-                      <div className="relative flex flex-col items-center md:items-end pt-1 gap-0 w-[92px] md:w-[104px] lg:w-[120px]">
-                        <div
-                          className={cn(
-                            "flex h-11 w-11 items-center justify-center rounded-full text-[0.8rem] font-semibold tracking-[0.18em] transition-all duration-300",
-                            isActive
-                              ? "bg-gradient-to-br from-[var(--gradient-1)] to-[var(--gradient-2)] text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] shadow-pulse scale-105"
-                              : "bg-white/10 text-white/60 backdrop-blur-sm",
-                          )}
-                        >
-                          {String(step.id).padStart(2, "0")}
-                        </div>
-                        {null}
-                      </div>
-
-                      <Card
-                        className={cn(
-                          "glass-card rounded-[28px] p-0 transition-all duration-500",
-                          isActive ? "shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]" : "opacity-80",
-                        )}
-                      >
-                        <div className="flex h-full flex-col gap-4 p-5 md:p-6">
-                          <div className="flex items-baseline justify-between gap-3">
-                            <div>
-                              <p className="text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground/70">
-                                {emphasisLabel[step.emphasis]}
-                              </p>
-                              <h3 className="text-base md:text-lg font-semibold">{step.title}</h3>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                              <TrendingUp className="h-4 w-4 text-primary" />
-                              <span className="font-medium tabular-nums">{step.score}% match</span>
-                            </div>
-                          </div>
-                          <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed">
-                            {step.description}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-2 pt-2">
-                            <TagChip emphasis={step.emphasis} />
-                            <span className="text-xs text-muted-foreground/80">{emphasisHint[step.emphasis]}</span>
-                          </div>
-                        </div>
-                      </Card>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <MatchJourneyStepsColumn
+              steps={MATCH_STEPS}
+              stepStyles={stepStyles}
+              timelineFill={timelineFill}
+              indicatorProgress={indicatorProgress}
+              timelineBounds={timelineBounds}
+              stepsWrapperRef={stepsWrapperRef}
+              timelineRef={timelineRef}
+              cardRefs={cardRefs}
+              showFillGlow={showFillGlow}
+            />
           </div>
         </div>
       </div>
@@ -444,6 +207,118 @@ function MatchJourneyDesktop() {
 
 export function MatchJourneySection() {
   return <MatchJourneyDesktop />
+}
+
+type MatchJourneyStepsColumnProps = {
+  steps: MatchStep[]
+  stepStyles: StepStyle[]
+  timelineFill: number
+  indicatorProgress: number
+  timelineBounds: { top: number; height: number } | null
+  stepsWrapperRef: RefObject<HTMLDivElement>
+  timelineRef: RefObject<HTMLDivElement>
+  cardRefs: MutableRefObject<(HTMLDivElement | null)[]>
+  showFillGlow: boolean
+}
+
+function MatchJourneyStepsColumn({
+  steps,
+  stepStyles,
+  timelineFill,
+  indicatorProgress,
+  timelineBounds,
+  stepsWrapperRef,
+  timelineRef,
+  cardRefs,
+  showFillGlow,
+}: MatchJourneyStepsColumnProps) {
+  return (
+    <div
+      ref={stepsWrapperRef}
+      className="relative space-y-10 lg:space-y-14 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center"
+    >
+      <div
+        className={cn(
+          "pointer-events-none absolute left-[52px] md:left-[60px] lg:left-[66px] xl:left-[80px] hidden md:block overflow-visible",
+          !timelineBounds && "top-6 bottom-6",
+        )}
+        style={timelineBounds ? { top: timelineBounds.top, height: timelineBounds.height } : undefined}
+      >
+        <div ref={timelineRef} className="relative h-full w-px">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent opacity-70 blur-[0.5px]" />
+          <div
+            className={cn(
+              "absolute inset-x-0 top-0 w-full bg-gradient-to-b from-[var(--gradient-1)] via-[var(--gradient-2)] to-transparent transition-[height] duration-500 ease-out",
+              showFillGlow && "shadow-[0_0_25px_rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35)]",
+            )}
+            style={{ height: `${Math.max(0, timelineFill || indicatorProgress) * 100}%` }}
+          />
+          <div className="absolute -bottom-8 left-1/2 h-8 w-[2px] -translate-x-1/2 bg-gradient-to-t from-transparent via-white/30 to-white/60 opacity-80 blur-[14px] z-10" />
+        </div>
+      </div>
+
+      {steps.map((step, index) => {
+        const { translateY, scale, opacity, blur, isActive } = stepStyles[index]
+
+        return (
+          <div
+            key={step.id}
+            className="relative will-change-transform"
+            ref={(el) => {
+              cardRefs.current[index] = el
+            }}
+            style={{
+              opacity,
+              transform: `translate3d(0, ${translateY}px, 0) scale(${scale})`,
+              filter: `blur(${blur}px)`,
+            }}
+          >
+            <div className="grid grid-cols-[92px_minmax(0,1fr)] md:grid-cols-[104px_minmax(0,1fr)] lg:grid-cols-[120px_minmax(0,1fr)] gap-4 md:gap-8 items-start">
+              <div className="relative flex flex-col items-center md:items-end pt-1 gap-0 w-[92px] md:w-[104px] lg:w-[120px]">
+                <div
+                  className={cn(
+                    "flex h-11 w-11 items-center justify-center rounded-full text-[0.8rem] font-semibold tracking-[0.18em] transition-all duration-300",
+                    isActive
+                      ? "bg-gradient-to-br from-[var(--gradient-1)] to-[var(--gradient-2)] text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] shadow-pulse scale-105"
+                      : "bg-white/10 text-white/60 backdrop-blur-sm",
+                  )}
+                >
+                  {String(step.id).padStart(2, "0")}
+                </div>
+              </div>
+
+              <Card
+                className={cn(
+                  "glass-card rounded-[28px] p-0 transition-all duration-500",
+                  isActive ? "shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]" : "opacity-80",
+                )}
+              >
+                <div className="flex h-full flex-col gap-4 p-5 md:p-6">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div>
+                      <p className="text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground/70">
+                        {emphasisLabel[step.emphasis]}
+                      </p>
+                      <h3 className="text-base md:text-lg font-semibold">{step.title}</h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <span className="font-medium tabular-nums">{step.score}% match</span>
+                    </div>
+                  </div>
+                  <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed">{step.description}</p>
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <TagChip emphasis={step.emphasis} />
+                    <span className="text-xs text-muted-foreground/80">{emphasisHint[step.emphasis]}</span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 type MatchPanelProps = {
@@ -484,9 +359,7 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
             <h3 className="text-2xl md:text-3xl font-semibold leading-snug">{step.title}</h3>
           </div>
           <div className="text-right">
-            <div className="text-4xl md:text-5xl font-semibold gradient-text leading-none tabular-nums">
-              {Math.round(score)}%
-            </div>
+            <MatchScore value={score} />
             <p className="mt-1 text-xs text-muted-foreground">Current match</p>
           </div>
         </div>
@@ -524,6 +397,39 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
 
       </div>
     </Card>
+  )
+}
+
+type MatchScoreProps = {
+  value: number
+}
+
+function MatchScore({ value }: MatchScoreProps) {
+  const [display, setDisplay] = useState(value)
+  const spring = useSpring(value, {
+    stiffness: 120,
+    damping: 20,
+    mass: 0.4,
+  })
+
+  useEffect(() => {
+    const unsubscribe = spring.on("change", (latest) => {
+      setDisplay(latest)
+    })
+    return unsubscribe
+  }, [spring])
+
+  useEffect(() => {
+    spring.set(value)
+  }, [spring, value])
+
+  return (
+    <motion.div
+      className="text-4xl md:text-5xl font-semibold gradient-text leading-none tabular-nums"
+      aria-label={`${Math.round(display)}% match`}
+    >
+      {Math.round(display)}%
+    </motion.div>
   )
 }
 
