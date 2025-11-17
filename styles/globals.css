@@ -213,7 +213,7 @@
 }
 
 .glass-row {
-  background: oklch(from var(--card) l c h / 0.55);
+  background: oklch(from var(--card) l c h / 0.25);
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid transparent;
@@ -225,15 +225,15 @@
 }
 
 .glass-row--selected {
-  background: oklch(from var(--accent) l c h / 0.22);
+  background: oklch(from var(--accent) l c h / 0.36);
   box-shadow:
-    0 8px 20px -8px rgba(0, 0, 0, 0.35);
+    0 10px 24px -10px rgba(0, 0, 0, 0.4);
 }
 
 .dark .glass-row--selected {
-  background: oklch(from var(--accent) l c h / 0.3);
+  background: oklch(from var(--accent) l c h / 0.5);
   box-shadow:
-    0 10px 25px -10px rgba(0, 0, 0, 0.9);
+    0 12px 30px -12px rgba(0, 0, 0, 0.95);
 }
 
 /* Glass card with gradient background */
