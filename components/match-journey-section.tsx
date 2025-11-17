@@ -22,54 +22,54 @@ type MatchStep = {
 const MATCH_STEPS: MatchStep[] = [
   {
     id: 1,
-    label: "Resume check",
-    title: "Fix the invisibility issues",
+    label: "Step 1 · Upload",
+    title: "Upload your resume",
     description:
-      "CVify compares your resume with the job link to catch missing keywords, unclear bullets, and formatting mistakes that block ATS.",
+      "Upload your current resume and paste the job description so CVify knows exactly which role to target.",
     score: 52,
     emphasis: "match",
   },
   {
     id: 2,
-    label: "Rewrite boost",
-    title: "Let AI refresh key wins",
+    label: "Step 2 · Match check",
+    title: "See where you stand",
     description:
-      "The assistant rewrites the bullets that matter with metrics and company language so recruiters instantly get what you do.",
+      "CVify runs an AI match check, scores your fit, and surfaces missing keywords, unclear bullets, and ATS issues.",
     score: 68,
     emphasis: "expand",
   },
   {
     id: 3,
-    label: "SkillMap focus",
-    title: "Know what to lean into",
+    label: "Step 3 · SkillMap",
+    title: "Highlight the right strengths",
     description:
-      "SkillMap splits strengths and gaps so you can highlight what already resonates and plan what to upskill next.",
+      "SkillMap separates strong matches, partial matches, and gaps so you know what to lean on and what to grow.",
     score: 82,
     emphasis: "skillmap",
   },
   {
     id: 4,
-    label: "Launch kit",
-    title: "Send a role-ready drop",
+    label: "Step 4 · Apply pack",
+    title: "Send a role-ready set",
     description:
-      "Export a matched resume, cover letter, and insight summary that feel written for the posting so you stay at the top of the pile.",
+      "Export a tailored resume, cover letter, and insight summary that all speak the language of this specific posting.",
     score: 95,
     emphasis: "result",
   },
 ]
 
 const emphasisLabel: Record<MatchEmphasis, string> = {
-  match: "Get seen",
-  expand: "Tell the story",
-  skillmap: "Plan the focus",
+  match: "Upload & connect",
+  expand: "Analyze & rewrite",
+  skillmap: "See SkillMap insights",
   result: "Apply with confidence",
 }
 
 const emphasisHint: Record<MatchEmphasis, string> = {
-  match: "Stops quick rejections by fixing obvious blockers.",
-  expand: "Keeps the best proof front and center.",
-  skillmap: "Shows what to highlight vs. what to build.",
-  result: "Everything you send feels tailored.",
+  match: "Connects your resume with the job so AI can score it.",
+  expand: "Turns raw bullets into clear, metric-driven wins.",
+  skillmap: "Shows what already fits the role and what to build.",
+  result: "Gives you a ready-made, tailored application set.",
 }
 
 type StepStyle = {
@@ -153,9 +153,11 @@ function MatchJourneyDesktop() {
           style={{ opacity: progress > 0 ? 1 : 0.85 }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">CVify Match Journey</span>
+            <span className="gradient-text">How CVify Works</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">From raw resume to SkillMap</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            From raw resume to a tailored application in four simple steps.
+          </p>
         </div>
 
         <div ref={journeyRef} className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.3fr)] items-start max-w-6xl mx-auto">
@@ -294,19 +296,19 @@ function MatchJourneyStepsColumn({
                 )}
               >
                 <div className="flex h-full flex-col gap-4 p-5 md:p-6">
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground/70">
+                      <p className="text-[0.55rem] md:text-xs uppercase tracking-[0.3em] text-muted-foreground/70">
                         {emphasisLabel[step.emphasis]}
                       </p>
-                      <h3 className="text-base md:text-lg font-semibold">{step.title}</h3>
+                      <h3 className="text-lg md:text-xl font-semibold">{step.title}</h3>
                     </div>
                     <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                       <TrendingUp className="h-4 w-4 text-primary" />
-                      <span className="font-medium tabular-nums">{step.score}% match</span>
+                      <span className="font-medium tabular-nums">{step.score}% fit</span>
                     </div>
                   </div>
-                  <p className="text-sm md:text-[0.94rem] text-muted-foreground leading-relaxed">{step.description}</p>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{step.description}</p>
                   <div className="flex flex-wrap items-center gap-2 pt-2">
                     <TagChip emphasis={step.emphasis} />
                     <span className="text-xs text-muted-foreground/80">{emphasisHint[step.emphasis]}</span>
@@ -334,7 +336,7 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
   return (
     <Card
       className={cn(
-        "glass-card relative overflow-hidden rounded-[32px] p-0 shadow-[0_35px_120px_-65px_rgba(0,0,0,0.9)] min-h-[420px] md:min-h-[480px]",
+        "glass-card relative overflow-hidden rounded-[32px] p-0 shadow-[0_35px_120px_-65px_rgba(0,0,0,0.9)]",
         className,
       )}
       style={style}
@@ -360,7 +362,7 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
           </div>
           <div className="text-right">
             <MatchScore value={score} />
-            <p className="mt-1 text-xs text-muted-foreground">Current match</p>
+            <p className="mt-1 text-xs text-muted-foreground">Resume – job fit</p>
           </div>
         </div>
 
@@ -374,25 +376,11 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3 text-[0.7rem] font-medium text-muted-foreground uppercase tracking-[0.18em]">
-            <span className="max-w-[48%] truncate">{emphasisLabel[step.emphasis]}</span>
-            <span className="max-w-[48%] truncate text-right">{nextLabel ? `Next: ${nextLabel}` : "Final step"}</span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[var(--gradient-1)] via-[var(--gradient-2)] to-[var(--gradient-3)] transition-all duration-500"
-              style={{ width: `${Math.min(Math.max(overallProgress, 0), 1) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-[0.7rem] text-muted-foreground">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-medium backdrop-blur">
-            <Target className="h-3.5 w-3.5 text-primary" />
-            <span>{emphasisLabel[step.emphasis]}</span>
-          </div>
-          <span className="text-muted-foreground/80">Scroll to watch your visibility climb.</span>
+        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[var(--gradient-1)] via-[var(--gradient-2)] to-[var(--gradient-3)] transition-all duration-500"
+            style={{ width: `${Math.min(Math.max(overallProgress, 0), 1) * 100}%` }}
+          />
         </div>
 
       </div>
@@ -442,10 +430,10 @@ type TagChipProps = {
 
 function TagChip({ emphasis }: TagChipProps) {
   const labels: Record<MatchEmphasis, string> = {
-    match: "Stay visible",
-    expand: "Sell impact",
-    skillmap: "Know the gap",
-    result: "Ship the kit",
+    match: "Upload & match",
+    expand: "Rewrite boost",
+    skillmap: "SkillMap view",
+    result: "Apply pack",
   }
 
   const colorClasses: Record<MatchEmphasis, string> = {

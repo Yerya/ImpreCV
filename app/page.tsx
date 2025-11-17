@@ -153,53 +153,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <AnimateIn as="section" id="how-it-works" variant="fadeUp" className="py-20 relative z-10">
-        <div className="container mx-auto px-4">
-          <AnimateIn variant="fadeUp" className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text">How It Works</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get your optimized resume in three simple steps
-            </p>
-          </AnimateIn>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <AnimateIn variant="fadeUp" delayMs={0} className="text-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
-                <Upload className="h-8 w-8 text-foreground" />
-              </div>
-              <div className="text-4xl font-bold text-foreground mb-4">01</div>
-              <h3 className="text-xl font-semibold mb-3">Upload & Input</h3>
-              <p className="text-muted-foreground">
-                Upload your current resume and paste the job posting you're applying for.
-              </p>
-            </AnimateIn>
-            <AnimateIn variant="fadeUp" delayMs={100} className="text-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
-                <Brain className="h-8 w-8 text-foreground" />
-              </div>
-              <div className="text-4xl font-bold text-foreground mb-4">02</div>
-              <h3 className="text-xl font-semibold mb-3">AI Analysis</h3>
-              <p className="text-muted-foreground">
-                Our AI analyzes the match, identifies gaps, and provides detailed recommendations.
-              </p>
-            </AnimateIn>
-            <AnimateIn variant="fadeUp" delayMs={200} className="text-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
-                <Download className="h-8 w-8 text-foreground" />
-              </div>
-              <div className="text-4xl font-bold text-foreground mb-4">03</div>
-              <h3 className="text-xl font-semibold mb-3">Get Results</h3>
-              <p className="text-muted-foreground">
-                Download your optimized resume and personalized cover letter ready to submit.
-              </p>
-            </AnimateIn>
-          </div>
-        </div>
-      </AnimateIn>
-
-      <MatchJourneySection />
+      {/* How It Works / Match Journey */}
+      <div id="how-it-works" className="relative z-10">
+        <MatchJourneySection />
+      </div>
 
       {/* CTA Section */}
       <AnimateIn
