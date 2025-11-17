@@ -77,14 +77,18 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 function MatchJourneyDesktop() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const journeyRef = useRef<HTMLDivElement | null>(null)
+  const stepsWrapperRef = useRef<HTMLDivElement | null>(null)
   const stickyPanelRef = useRef<HTMLDivElement | null>(null)
   const headingRef = useRef<HTMLDivElement | null>(null)
   const [progress, setProgress] = useState(0)
   const [activeIndex, setActiveIndex] = useState(0)
   const activeIndexRef = useRef(0)
   const [stickyTop, setStickyTop] = useState<number | null>(null)
+  const [timelineFill, setTimelineFill] = useState(0)
+  const [timelineBounds, setTimelineBounds] = useState<{ top: number; height: number } | null>(null)
   const progressTargetRef = useRef(0)
   const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  const timelineRef = useRef<HTMLDivElement | null>(null)
   const stepsCount = MATCH_STEPS.length
   const segments = Math.max(stepsCount - 1, 1)
 
@@ -105,6 +109,29 @@ function MatchJourneyDesktop() {
     updateStickyTop()
     window.addEventListener("resize", updateStickyTop)
     return () => window.removeEventListener("resize", updateStickyTop)
+  }, [])
+
+  useEffect(() => {
+    const updateTimelineBounds = () => {
+      const wrapper = stepsWrapperRef.current
+      const cards = cardRefs.current.filter(Boolean)
+      if (!wrapper || cards.length === 0) return
+
+      const wrapperRect = wrapper.getBoundingClientRect()
+      const firstRect = cards[0].getBoundingClientRect()
+      const lastRect = cards[cards.length - 1].getBoundingClientRect()
+
+      const startWithinWrapper = Math.max(0, firstRect.top - wrapperRect.top - 10)
+      const endWithinWrapper = Math.max(startWithinWrapper + 16, lastRect.bottom - wrapperRect.top)
+      setTimelineBounds({ top: startWithinWrapper, height: endWithinWrapper - startWithinWrapper })
+    }
+
+    const rafId = requestAnimationFrame(updateTimelineBounds)
+    window.addEventListener("resize", updateTimelineBounds)
+    return () => {
+      cancelAnimationFrame(rafId)
+      window.removeEventListener("resize", updateTimelineBounds)
+    }
   }, [])
 
   useEffect(() => {
@@ -157,6 +184,15 @@ function MatchJourneyDesktop() {
         if (nearestIndex !== activeIndexRef.current) {
           activeIndexRef.current = nearestIndex
           setActiveIndex(nearestIndex)
+        }
+
+        const timelineEl = timelineRef.current
+        const activeCard = cardRefs.current[activeIndexRef.current]
+        if (timelineEl && activeCard) {
+          const lineRect = timelineEl.getBoundingClientRect()
+          const cardRect = activeCard.getBoundingClientRect()
+          const fillRatio = clamp((cardRect.bottom + 12 - lineRect.top) / lineRect.height, 0, 1)
+          setTimelineFill(fillRatio)
         }
       })
     }
@@ -235,13 +271,13 @@ function MatchJourneyDesktop() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">From raw resume to SkillMap</p>
         </div>
 
-        <div ref={journeyRef} className="grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.18fr)] items-start max-w-6xl xl:max-w-7xl mx-auto">
+        <div ref={journeyRef} className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.3fr)] items-start max-w-6xl mx-auto">
           <div
             ref={stickyPanelRef}
             className="hidden lg:flex lg:flex-col"
             style={{
               position: "sticky",
-              top: stickyTop ?? 32,
+              top: "calc(0.5 * (100vh - 410px))",
               height: "fit-content",
               minHeight: 0,
             }}
@@ -264,19 +300,27 @@ function MatchJourneyDesktop() {
               className="lg:hidden mb-6"
             />
 
-            <div className="relative space-y-10 lg:space-y-14 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center">
-              <div className="pointer-events-none absolute left-[52px] md:left-[60px] lg:left-[66px] xl:left-[80px] top-6 bottom-6 hidden md:block">
-                <div className="relative h-full w-px">
-                  <div className="absolute -top-10 left-1/2 h-10 w-[2px] -translate-x-1/2 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-70 blur-lg" />
+            <div
+              ref={stepsWrapperRef}
+              className="relative space-y-10 lg:space-y-14 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center"
+            >
+              <div
+                className={cn(
+                  "pointer-events-none absolute left-[52px] md:left-[60px] lg:left-[66px] xl:left-[80px] hidden md:block overflow-visible",
+                  !timelineBounds && "top-6 bottom-6",
+                )}
+                style={timelineBounds ? { top: timelineBounds.top, height: timelineBounds.height } : undefined}
+              >
+                <div ref={timelineRef} className="relative h-full w-px">
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent opacity-70 blur-[0.5px]" />
                   <div
                     className={cn(
                       "absolute inset-x-0 top-0 w-full bg-gradient-to-b from-[var(--gradient-1)] via-[var(--gradient-2)] to-transparent transition-[height] duration-500 ease-out",
                       showFillGlow && "shadow-[0_0_25px_rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35)]",
                     )}
-                    style={{ height: `${Math.max(0, indicatorProgress) * 100}%` }}
+                    style={{ height: `${Math.max(0, timelineFill || indicatorProgress) * 100}%` }}
                   />
-                  <div className="absolute -bottom-10 left-1/2 h-10 w-[2px] -translate-x-1/2 bg-gradient-to-t from-transparent via-white/30 to-white/60 opacity-70 blur-lg" />
+                  <div className="absolute -bottom-8 left-1/2 h-8 w-[2px] -translate-x-1/2 bg-gradient-to-t from-transparent via-white/30 to-white/60 opacity-80 blur-[14px] z-10" />
                 </div>
               </div>
 
@@ -322,7 +366,7 @@ function MatchJourneyDesktop() {
 
                       <Card
                         className={cn(
-                          "glass-card rounded-[28px] border-0 p-0 transition-all duration-500 h-auto md:h-[248px] lg:h-[260px]",
+                          "glass-card rounded-[28px] p-0 transition-all duration-500 h-auto md:h-[248px] lg:h-[260px]",
                           isActive ? "shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]" : "opacity-80",
                         )}
                       >
@@ -379,7 +423,7 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
   return (
     <Card
       className={cn(
-        "glass-card relative overflow-hidden rounded-[32px] border-0 p-0 shadow-[0_35px_120px_-65px_rgba(0,0,0,0.9)] min-h-[420px] md:min-h-[480px]",
+        "glass-card relative overflow-hidden rounded-[32px] p-0 shadow-[0_35px_120px_-65px_rgba(0,0,0,0.9)] min-h-[420px] md:min-h-[480px]",
         className,
       )}
       style={style}
@@ -444,6 +488,8 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
     </Card>
   )
 }
+
+
 
 
 type TagChipProps = {
