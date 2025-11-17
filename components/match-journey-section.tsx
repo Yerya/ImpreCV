@@ -80,10 +80,11 @@ function MatchJourneyDesktop() {
   const stickyPanelRef = useRef<HTMLDivElement | null>(null)
   const headingRef = useRef<HTMLDivElement | null>(null)
   const [progress, setProgress] = useState(0)
-  const [lockedIndex, setLockedIndex] = useState(0)
-  const lockedIndexRef = useRef(0)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeIndexRef = useRef(0)
   const [stickyTop, setStickyTop] = useState<number | null>(null)
   const progressTargetRef = useRef(0)
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
   const stepsCount = MATCH_STEPS.length
   const segments = Math.max(stepsCount - 1, 1)
 
@@ -111,44 +112,52 @@ function MatchJourneyDesktop() {
     const handleScroll = () => {
       cancelAnimationFrame(rafId)
       rafId = requestAnimationFrame(() => {
-        const el = sectionRef.current
-        if (!el || typeof window === "undefined") return
+        if (typeof window === "undefined") return
         const hero = document.getElementById("hero-anchor")
         const heroRect = hero?.getBoundingClientRect()
         if (heroRect && heroRect.bottom > 0) {
-          setProgress(0)
+          progressTargetRef.current = 0
+          if (activeIndexRef.current !== 0) {
+            activeIndexRef.current = 0
+            setActiveIndex(0)
+          }
           return
         }
-        const target = journeyRef.current ?? el
-        const rect = target.getBoundingClientRect()
+
+        const cards = cardRefs.current.filter(Boolean)
+        if (cards.length === 0) return
+
         const scrollY = window.scrollY || window.pageYOffset
-        const viewport = window.innerHeight || 1
-        const targetTop = rect.top + scrollY
-        const targetHeight = rect.height
-        const targetBottom = targetTop + targetHeight
-        const fitsViewport = targetHeight <= viewport
+        const stickyRect = stickyPanelRef.current?.getBoundingClientRect()
+        const focalY =
+          stickyRect && stickyRect.height > 0
+            ? stickyRect.top + stickyRect.height * 0.5 + scrollY
+            : scrollY + (window.innerHeight || 0) * 0.45
 
-        // Extend the scrolling window so the last step stays visible
-        const start = fitsViewport ? targetTop - viewport * 0.5 : targetTop - viewport * 0.5
-        const end = fitsViewport ? targetBottom - viewport * 0.6 : targetBottom - viewport * 0.6
+        const centers = cards.map((card) => {
+          const rect = card.getBoundingClientRect()
+          return rect.top + rect.height * 0.5 + scrollY
+        })
 
-        const range = Math.max(1, end - start)
-        const raw = clamp((scrollY - start) / range, 0, 1)
-        const scaledRaw = raw * segments
-        let lock = lockedIndexRef.current
-        const diff = scaledRaw - lock
-        // Activate the last (4th) step earlier to avoid hiding left panel too soon
-        const forwardThreshold = lock === segments - 1 ? 0.2 : 0.85
-        const backThreshold = -0.85
-        if (diff > forwardThreshold && lock < segments) lock = lock + 1
-        else if (diff < backThreshold && lock > 0) lock = lock - 1
-        if (lock !== lockedIndexRef.current) {
-          lockedIndexRef.current = lock
-          setLockedIndex(lock)
+        const firstCenter = centers[0]
+        const lastCenter = centers[centers.length - 1]
+        const span = Math.max(1, lastCenter - firstCenter)
+        progressTargetRef.current = clamp((focalY - firstCenter) / span, 0, 1)
+
+        let nearestIndex = 0
+        let nearestDelta = Math.abs(centers[0] - focalY)
+        for (let i = 1; i < centers.length; i += 1) {
+          const delta = Math.abs(centers[i] - focalY)
+          if (delta < nearestDelta) {
+            nearestDelta = delta
+            nearestIndex = i
+          }
         }
-        const localWindow = lock === segments - 1 ? 0 : 0
-        const local = Math.max(-localWindow, Math.min(localWindow, diff))
-        progressTargetRef.current = clamp((lock + local) / segments, 0, 1)
+
+        if (nearestIndex !== activeIndexRef.current) {
+          activeIndexRef.current = nearestIndex
+          setActiveIndex(nearestIndex)
+        }
       })
     }
 
@@ -160,7 +169,7 @@ function MatchJourneyDesktop() {
       window.removeEventListener("resize", handleScroll)
       cancelAnimationFrame(rafId)
     }
-  }, [segments])
+  }, [])
 
   useEffect(() => {
     let rafId = 0
@@ -188,7 +197,6 @@ function MatchJourneyDesktop() {
   const baseIndex = Math.floor(scaled)
   const nextIndex = Math.min(baseIndex + 1, stepsCount - 1)
   const localProgress = baseIndex === nextIndex ? 1 : scaled - baseIndex
-  const activeIndex = clamp(Math.round(scaled), 0, stepsCount - 1)
   const activeStep = MATCH_STEPS[activeIndex] ?? MATCH_STEPS[0]
   const nextStep = MATCH_STEPS[nextIndex] ?? activeStep
   const displayScore = Math.round(
@@ -227,26 +235,26 @@ function MatchJourneyDesktop() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">From raw resume to SkillMap</p>
         </div>
 
-        <div ref={journeyRef} className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.3fr)] items-start max-w-6xl mx-auto">
-                            <div
-                              ref={stickyPanelRef}
-                              className="hidden lg:flex lg:flex-col"
-                              style={{
-                                position: "sticky",
-                                top: "calc(0.5 * (100vh - 410px))",
-                                height: "fit-content",
-                                minHeight: 0,
-                              }}
-                            >
-                              <div className="flex flex-col">
-                                <MatchPanel
-                                  step={activeStep}
-                                  nextLabel={nextStep.label}
-                                  score={displayScore}
-                                  overallProgress={indicatorProgress}
-                                />
-                              </div>
-                            </div>
+        <div ref={journeyRef} className="grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.18fr)] items-start max-w-6xl xl:max-w-7xl mx-auto">
+          <div
+            ref={stickyPanelRef}
+            className="hidden lg:flex lg:flex-col"
+            style={{
+              position: "sticky",
+              top: stickyTop ?? 32,
+              height: "fit-content",
+              minHeight: 0,
+            }}
+          >
+            <div className="flex flex-col">
+              <MatchPanel
+                step={activeStep}
+                nextLabel={nextStep.label}
+                score={displayScore}
+                overallProgress={indicatorProgress}
+              />
+            </div>
+          </div>
           <div className="space-y-6 lg:space-y-10">
             <MatchPanel
               step={activeStep}
@@ -257,7 +265,7 @@ function MatchJourneyDesktop() {
             />
 
             <div className="relative space-y-10 lg:space-y-14 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center">
-              <div className="pointer-events-none absolute left-[60px] top-6 bottom-6 hidden md:block">
+              <div className="pointer-events-none absolute left-[52px] md:left-[60px] lg:left-[66px] xl:left-[80px] top-6 bottom-6 hidden md:block">
                 <div className="relative h-full w-px">
                   <div className="absolute -top-10 left-1/2 h-10 w-[2px] -translate-x-1/2 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-70 blur-lg" />
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent opacity-70 blur-[0.5px]" />
@@ -281,13 +289,16 @@ function MatchJourneyDesktop() {
                 const translateY = (1 - emphasis) * 24
                 const scale = 0.985 + 0.015 * emphasis
                 const opacity = 0.55 + 0.45 * emphasis
-                const blur = (1 - emphasis) * 1.2
                 const isActive = index === activeIndex
+                const blur = isActive ? 0 : (1 - emphasis) * 6
 
                 return (
                   <div
                     key={step.id}
                     className="relative transition-transform duration-400 ease-out will-change-transform"
+                    ref={(el) => {
+                      cardRefs.current[index] = el
+                    }}
                     style={{
                       opacity,
                       transform: `translate3d(0, ${translateY}px, 0) scale(${scale})`,
