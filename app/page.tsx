@@ -7,19 +7,19 @@ import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } 
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { AnimateIn } from "@/components/anim/animate-in"
+import { MatchJourneySection } from "@/components/match-journey-section"
 
 export default function LandingPage() {
   const { user, isLoading } = useAppSelector((s) => s.auth)
 
-
   return (
     <div className="min-h-screen relative">
-      
       <GlobalHeader variant="landing" />
 
       {/* Hero Section */}
       <AnimateIn
         as="section"
+        id="hero-anchor"
         entrance="bubble"
         variant="fadeUp"
         className="relative z-10 min-h-[calc(100dvh-var(--header-h))] flex items-center py-16 md:py-20"
@@ -84,70 +84,70 @@ export default function LandingPage() {
           </AnimateIn>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             <AnimateIn variant="fadeUp" delayMs={0} className="h-full">
-            <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Brain className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">AI Analysis</h3>
-              <p className="text-muted-foreground">
-                Advanced AI analyzes your resume against job requirements to identify strengths and gaps.
-              </p>
-            </Card>
+              <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Brain className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">AI Analysis</h3>
+                <p className="text-muted-foreground">
+                  Advanced AI analyzes your resume against job requirements to identify strengths and gaps.
+                </p>
+              </Card>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={100} className="h-full">
-            <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Target className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Match Score</h3>
-              <p className="text-muted-foreground">
-                Get a detailed compatibility score showing how well your resume matches the job posting.
-              </p>
-            </Card>
+              <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Target className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Match Score</h3>
+                <p className="text-muted-foreground">
+                  Get a detailed compatibility score showing how well your resume matches the job posting.
+                </p>
+              </Card>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={200} className="h-full">
-            <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <FileText className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Resume Rewrite</h3>
-              <p className="text-muted-foreground">
-                AI rewrites your resume to highlight relevant experience and match job requirements.
-              </p>
-            </Card>
+              <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <FileText className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Resume Rewrite</h3>
+                <p className="text-muted-foreground">
+                  AI rewrites your resume to highlight relevant experience and match job requirements.
+                </p>
+              </Card>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={300} className="h-full">
-            <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Cover Letter Generator</h3>
-              <p className="text-muted-foreground">
-                Generate personalized cover letters that showcase your fit for the specific role.
-              </p>
-            </Card>
+              <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Cover Letter Generator</h3>
+                <p className="text-muted-foreground">
+                  Generate personalized cover letters that showcase your fit for the specific role.
+                </p>
+              </Card>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={400} className="h-full">
-            <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Keyword Optimization</h3>
-              <p className="text-muted-foreground">
-                Optimize your resume with relevant keywords to pass ATS systems and get noticed.
-              </p>
-            </Card>
+              <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Keyword Optimization</h3>
+                <p className="text-muted-foreground">
+                  Optimize your resume with relevant keywords to pass ATS systems and get noticed.
+                </p>
+              </Card>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={500} className="h-full">
-            <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Download className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Export Ready</h3>
-              <p className="text-muted-foreground">
-                Download your optimized resume and cover letter in professional formats.
-              </p>
-            </Card>
+              <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Download className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Export Ready</h3>
+                <p className="text-muted-foreground">
+                  Download your optimized resume and cover letter in professional formats.
+                </p>
+              </Card>
             </AnimateIn>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function LandingPage() {
           </AnimateIn>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <AnimateIn variant="fadeUp" delayMs={0} className="text-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-border/50">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
                 <Upload className="h-8 w-8 text-foreground" />
               </div>
               <div className="text-4xl font-bold text-foreground mb-4">01</div>
@@ -176,7 +176,7 @@ export default function LandingPage() {
               </p>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={100} className="text-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-border/50">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
                 <Brain className="h-8 w-8 text-foreground" />
               </div>
               <div className="text-4xl font-bold text-foreground mb-4">02</div>
@@ -186,7 +186,7 @@ export default function LandingPage() {
               </p>
             </AnimateIn>
             <AnimateIn variant="fadeUp" delayMs={200} className="text-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-border/50">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
                 <Download className="h-8 w-8 text-foreground" />
               </div>
               <div className="text-4xl font-bold text-foreground mb-4">03</div>
@@ -199,6 +199,8 @@ export default function LandingPage() {
         </div>
       </AnimateIn>
 
+      <MatchJourneySection />
+
       {/* CTA Section */}
       <AnimateIn
         as="section"
@@ -206,7 +208,7 @@ export default function LandingPage() {
         threshold={0.35}
         durationMs={800}
         className="py-20 relative z-10"
-        style={{ ['--y' as any]: '24px' } as any}
+        style={{ ["--y" as any]: "24px" } as any}
       >
         <div className="container mx-auto px-4 relative z-10">
           <Card className="glass-card max-w-4xl mx-auto p-12 text-center relative z-10">
@@ -246,7 +248,7 @@ export default function LandingPage() {
         threshold={0.4}
         durationMs={900}
         className="py-12 relative z-10"
-        style={{ ['--y' as any]: '28px' } as any}
+        style={{ ["--y" as any]: "28px" } as any}
       >
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-4">

@@ -186,6 +186,13 @@
   animation: glass-pulse-dark 3s ease-in-out infinite;
 }
 
+.shadow-pulse {
+  animation: glass-pulse 3s ease-in-out infinite;
+}
+.dark .shadow-pulse {
+  animation: glass-pulse-dark 3s ease-in-out infinite;
+}
+
 @keyframes glass-pulse {
   0%, 100% {
     box-shadow: 
