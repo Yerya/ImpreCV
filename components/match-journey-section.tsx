@@ -90,8 +90,6 @@ function MatchJourneyDesktop() {
   useEffect(() => {
     const updateStickyTop = () => {
       if (typeof window === "undefined") return
-      const viewport = window.innerHeight || 0
-      const panelHeight = stickyPanelRef.current?.getBoundingClientRect().height || 0
       const headingEl = headingRef.current
       let headingBlock = 0
       if (headingEl) {
@@ -99,10 +97,7 @@ function MatchJourneyDesktop() {
         const mb = parseFloat(styles.marginBottom || "0") || 0
         headingBlock = headingEl.offsetHeight + mb
       }
-      const minTop = headingBlock + 16
-      const centerTop = (viewport - panelHeight) / 2
-      const maxTop = Math.max(minTop, viewport - panelHeight - 32)
-      const targetTop = clamp(centerTop, minTop, maxTop)
+      const targetTop = Math.max(24, headingBlock + 8)
       setStickyTop(targetTop)
     }
 
@@ -244,7 +239,7 @@ function MatchJourneyDesktop() {
             />
           </div>
 
-          <div className="space-y-6 lg:space-y-10 lg:pb-24">
+          <div className="space-y-6 lg:space-y-10">
             <MatchPanel
               step={activeStep}
               nextLabel={nextStep.label}
@@ -253,7 +248,7 @@ function MatchJourneyDesktop() {
               className="lg:hidden mb-6"
             />
 
-            <div className="relative space-y-10 lg:space-y-14 pb-10 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center">
+            <div className="relative space-y-10 lg:space-y-14 md:pl-6 lg:min-h-[60vh] lg:flex lg:flex-col lg:justify-center">
               <div className="pointer-events-none absolute left-[60px] top-6 bottom-6 hidden md:block">
                 <div className="relative h-full w-px">
                   <div className="absolute -top-10 left-1/2 h-10 w-[2px] -translate-x-1/2 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-70 blur-lg" />
