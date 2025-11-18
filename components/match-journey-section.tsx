@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject, type RefObject } from "react"
 import { Card } from "@/components/ui/card"
-import { Brain, FileText, Target, TrendingUp } from "lucide-react"
+import { FileText, TrendingUp, Upload as UploadIcon, Wand2, Map as MapIcon, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { clamp, easeOutCubic } from "@/lib/math"
 import { useMatchJourney } from "@/hooks/use-match-journey"
@@ -22,55 +22,37 @@ type MatchStep = {
 const MATCH_STEPS: MatchStep[] = [
   {
     id: 1,
-    label: "Step 1 · Upload",
+    label: "Upload",
     title: "Upload your resume",
-    description:
-      "Upload your current resume and paste the job description so CVify knows exactly which role to target.",
+    description: "Drop your resume and paste the job description you care about.",
     score: 52,
     emphasis: "match",
   },
   {
     id: 2,
-    label: "Step 2 · Match check",
-    title: "See where you stand",
-    description:
-      "CVify runs an AI match check, scores your fit, and surfaces missing keywords, unclear bullets, and ATS issues.",
+    label: "Check fit",
+    title: "See your fit score",
+    description: "CVify compares your resume with the job and scores how well it fits.",
     score: 68,
     emphasis: "expand",
   },
   {
     id: 3,
-    label: "Step 3 · SkillMap",
-    title: "Highlight the right strengths",
-    description:
-      "SkillMap separates strong matches, partial matches, and gaps so you know what to lean on and what to grow.",
+    label: "Improve",
+    title: "Let AI rewrite key points",
+    description: "AI rewrites important bullets and suggests missing but relevant skills.",
     score: 82,
     emphasis: "skillmap",
   },
   {
     id: 4,
-    label: "Step 4 · Apply pack",
-    title: "Send a role-ready set",
-    description:
-      "Export a tailored resume, cover letter, and insight summary that all speak the language of this specific posting.",
+    label: "Apply",
+    title: "Get ready to apply",
+    description: "Export a tuned resume, cover letter, and SkillMap summary.",
     score: 95,
     emphasis: "result",
   },
 ]
-
-const emphasisLabel: Record<MatchEmphasis, string> = {
-  match: "Upload & connect",
-  expand: "Analyze & rewrite",
-  skillmap: "See SkillMap insights",
-  result: "Apply with confidence",
-}
-
-const emphasisHint: Record<MatchEmphasis, string> = {
-  match: "Connects your resume with the job so AI can score it.",
-  expand: "Turns raw bullets into clear, metric-driven wins.",
-  skillmap: "Shows what already fits the role and what to build.",
-  result: "Gives you a ready-made, tailored application set.",
-}
 
 type StepStyle = {
   translateY: number
@@ -298,9 +280,6 @@ function MatchJourneyStepsColumn({
                 <div className="flex h-full flex-col gap-4 p-5 md:p-6">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[0.55rem] md:text-xs uppercase tracking-[0.3em] text-muted-foreground/70">
-                        {emphasisLabel[step.emphasis]}
-                      </p>
                       <h3 className="text-lg md:text-xl font-semibold">{step.title}</h3>
                     </div>
                     <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
@@ -311,7 +290,6 @@ function MatchJourneyStepsColumn({
                   <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{step.description}</p>
                   <div className="flex flex-wrap items-center gap-2 pt-2">
                     <TagChip emphasis={step.emphasis} />
-                    <span className="text-xs text-muted-foreground/80">{emphasisHint[step.emphasis]}</span>
                   </div>
                 </div>
               </Card>
@@ -349,15 +327,9 @@ function MatchPanel({ step, nextLabel, score, overallProgress, className, style 
         }}
       />
       <div className="relative z-10 flex flex-col gap-5 p-6 md:p-8">
-        
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          <Brain className="h-4 w-4" />
-          <span>AI visibility journey</span>
-        </div>
 
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
             <h3 className="text-2xl md:text-3xl font-semibold leading-snug">{step.title}</h3>
           </div>
           <div className="text-right">
@@ -429,13 +401,6 @@ type TagChipProps = {
 }
 
 function TagChip({ emphasis }: TagChipProps) {
-  const labels: Record<MatchEmphasis, string> = {
-    match: "Upload & match",
-    expand: "Rewrite boost",
-    skillmap: "SkillMap view",
-    result: "Apply pack",
-  }
-
   const colorClasses: Record<MatchEmphasis, string> = {
     match: "bg-emerald-400/10 text-emerald-400",
     expand: "bg-sky-400/10 text-sky-400",
@@ -443,14 +408,21 @@ function TagChip({ emphasis }: TagChipProps) {
     result: "bg-violet-400/10 text-violet-400",
   }
 
+  const Icon = {
+    match: UploadIcon,
+    expand: Wand2,
+    skillmap: MapIcon,
+    result: Send,
+  }[emphasis]
+
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em]",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.68rem]",
         colorClasses[emphasis],
       )}
     >
-      {labels[emphasis]}
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
     </span>
   )
 }
