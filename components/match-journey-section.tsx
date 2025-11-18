@@ -148,7 +148,7 @@ function MatchJourneyDesktop() {
             className="hidden lg:flex lg:flex-col"
             style={{
               position: "sticky",
-              top: "calc(0.5 * (100vh - 410px))",
+              top: "calc(0.5 * (100vh - 40%))",
               height: "fit-content",
               minHeight: 0,
             }}
