@@ -184,11 +184,11 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
                   <p className="font-medium">Account Status</p>
                   <p className="text-sm text-muted-foreground">Free Plan</p>
                 </div>
-                <Button variant="outline" className="bg-transparent">
+                <Button variant="outline">
                   Upgrade
                 </Button>
               </div>
-              <div className="flex items-center justify-between py-3">
+              <div className="flex items-start justify-between py-3 gap-4">
                 <div>
                   <p className="font-medium text-destructive">Delete Account</p>
                   <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
