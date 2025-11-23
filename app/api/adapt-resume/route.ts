@@ -1,22 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
+import { fetchJobPostingFromUrl } from "@/lib/job-posting";
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { resumeText, jobDescription } = body;
+        const { resumeText, jobDescription, jobLink } = body;
 
         // 1. Validation
         if (!resumeText || typeof resumeText !== "string" || resumeText.trim().length === 0) {
             return NextResponse.json({ error: "Resume text is required" }, { status: 400 });
         }
-        if (!jobDescription || typeof jobDescription !== "string" || jobDescription.trim().length === 0) {
-            return NextResponse.json({ error: "Job description is required" }, { status: 400 });
+        if ((!jobDescription || typeof jobDescription !== "string" || jobDescription.trim().length === 0) && !jobLink) {
+            return NextResponse.json({ error: "Job description or link is required" }, { status: 400 });
         }
 
         const cleanedResume = sanitizePlainText(resumeText);
-        const cleanedJobDescription = sanitizePlainText(jobDescription);
+
+        let cleanedJobDescription = sanitizePlainText(jobDescription || "");
+        if (!cleanedJobDescription && jobLink) {
+            try {
+                const fetched = await fetchJobPostingFromUrl(jobLink);
+                cleanedJobDescription = sanitizePlainText(fetched);
+            } catch (error) {
+                console.error("Failed to fetch job posting for adapt-resume:", error);
+                return NextResponse.json(
+                    { error: "Failed to fetch job posting from the provided link. Please try pasting the description." },
+                    { status: 400 }
+                );
+            }
+        }
 
         const inputLooksValid = isMeaningfulText(cleanedResume) && isMeaningfulText(cleanedJobDescription);
         if (!inputLooksValid) {
@@ -32,7 +46,7 @@ export async function POST(req: NextRequest) {
         if (resumeText.length > 50000) {
             return NextResponse.json({ error: "Resume text is too long" }, { status: 400 });
         }
-        if (jobDescription.length > 50000) {
+        if (cleanedJobDescription.length > 50000) {
             return NextResponse.json({ error: "Job description is too long" }, { status: 400 });
         }
 

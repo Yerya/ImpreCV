@@ -8,8 +8,6 @@ import { FileText, Link2 } from "lucide-react"
 
 interface JobPostingFormProps {
   jobPosting: {
-    title: string
-    company: string
     description: string
     jobLink: string
     inputType: "paste" | "link"
@@ -20,30 +18,9 @@ interface JobPostingFormProps {
 export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormProps) {
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Job Title *</Label>
-        <Input
-          id="title"
-          placeholder="e.g. Senior Software Engineer"
-          value={jobPosting.title}
-          onChange={(e) => onChange({ ...jobPosting, title: e.target.value })}
-          className="bg-background/50"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="company">Company</Label>
-        <Input
-          id="company"
-          placeholder="e.g. Tech Corp"
-          value={jobPosting.company}
-          onChange={(e) => onChange({ ...jobPosting, company: e.target.value })}
-          className="bg-background/50"
-        />
-      </div>
-
       <div className="space-y-3">
         <Label>Job Details *</Label>
+        <p className="text-xs text-muted-foreground">We will detect the role and company from your paste or link.</p>
         <div className="flex flex-col sm:flex-row gap-2 p-1 bg-secondary/30 rounded-lg">
           <Button
             type="button"

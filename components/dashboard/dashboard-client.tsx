@@ -16,6 +16,7 @@ import { analyzeResume } from "@/lib/api-client"
 import { toast } from "sonner"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
+import { deriveJobMetadata, normalizeJobLink } from "@/lib/job-posting"
 
 interface DashboardClientProps {
   user: any
@@ -30,8 +31,6 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
   const [resumeText, setResumeText] = useState("")
   const [jobPosting, setJobPosting] = useState({
-    title: "",
-    company: "",
     description: "",
     jobLink: "",
     inputType: "paste" as "paste" | "link",
@@ -87,11 +86,17 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const handleAnalyze = async () => {
     const hasJobInfo =
       jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
+    const normalizedLink = normalizeJobLink(jobPosting.jobLink)
+    if (jobPosting.inputType === "link" && jobPosting.jobLink.trim() && !normalizedLink) {
+      setInputError("Please enter a valid job link (http/https).")
+      toast.error("Invalid job link. Please use a full URL.")
+      return
+    }
 
     // Allow analysis if we have resume text OR a selected resume ID
     const hasResume = selectedResumeId || resumeText.trim().length > 0
 
-    if (!hasResume || !jobPosting.title || !hasJobInfo) {
+    if (!hasResume || !hasJobInfo) {
       return
     }
 
@@ -99,14 +104,31 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
     setInputError(null)
     // If we have resume text, use the "text-only" flow
     if (resumeText.trim().length > 0) {
-      const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || jobPosting.jobLink
+      const cleanedResume = sanitizePlainText(resumeText)
 
-      if (jobPosting.inputType === "link" && !jobPosting.description.trim()) {
-        setInputError("Paste the job description text to adapt your resume.")
-        toast.error("Paste the job description text to adapt your resume.")
+      if (!isMeaningfulText(cleanedResume)) {
+        setInputError("This doesn't look like a resume. Please upload your resume.")
+        toast.error("Invalid resume text. Please upload your resume.")
         return
       }
 
+      // If user provided only a link, let the server fetch and parse the job posting
+      if (jobPosting.inputType === "link" && normalizedLink && !jobPosting.description.trim()) {
+        setAnalyzing(true)
+        try {
+          const result = await analyzeResume(cleanedResume, "", normalizedLink)
+          setAdaptedResume(result)
+          toast.success("Resume adapted successfully!")
+        } catch (error: any) {
+          console.error("Analysis error:", error)
+          toast.error(error.message || "Failed to analyze. Please try again.")
+        } finally {
+          setAnalyzing(false)
+        }
+        return
+      }
+
+      const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink
       const validated = validateTextInputs(resumeText, jobText)
       if (!validated) {
         return
@@ -115,7 +137,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
       setAnalyzing(true)
 
       try {
-        const result = await analyzeResume(validated.cleanedResume, validated.cleanedJobText)
+        const result = await analyzeResume(validated.cleanedResume, validated.cleanedJobText, normalizedLink)
         setAdaptedResume(result)
         toast.success("Resume adapted successfully!")
       } catch (error: any) {
@@ -137,11 +159,13 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
         body: JSON.stringify({
           resumeId: selectedResumeId,
           jobPosting: {
-            title: jobPosting.title,
-            company: jobPosting.company,
             description: jobPosting.description,
-            jobLink: jobPosting.jobLink,
+            jobLink: normalizedLink,
             inputType: jobPosting.inputType,
+            metadata: deriveJobMetadata(
+              jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink,
+              normalizedLink,
+            ),
           },
         }),
       })
@@ -160,10 +184,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
 
   const hasJobInfo =
     jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
-  const requiresPastedDescription =
-    resumeText.trim().length > 0 && jobPosting.inputType === "link" && !jobPosting.description.trim()
-  const canAnalyze =
-    (selectedResumeId || resumeText.trim().length > 0) && jobPosting.title && hasJobInfo && !requiresPastedDescription
+  const canAnalyze = (selectedResumeId || resumeText.trim().length > 0) && hasJobInfo
 
   const copyToClipboard = () => {
     if (adaptedResume) {
@@ -226,7 +247,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
                   2
                 </div>
                 <h2 className="text-2xl font-bold">Add Job Posting</h2>
-                {hasJobInfo && jobPosting.title && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
+                {hasJobInfo && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
               </div>
 
               <JobPostingForm jobPosting={jobPosting} onChange={handleJobPostingChange} />
@@ -251,10 +272,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
               {!canAnalyze && (
                 <p className="text-sm text-muted-foreground text-center mt-3">
                   {!selectedResumeId && !resumeText && "Please upload or paste a resume"}
-                  {(selectedResumeId || resumeText) && !jobPosting.title && "Please enter a job title"}
-                  {requiresPastedDescription && "Please paste the job description text"}
                   {(selectedResumeId || resumeText) &&
-                    jobPosting.title &&
                     !hasJobInfo &&
                     (jobPosting.inputType === "paste"
                       ? "Please paste the job description"

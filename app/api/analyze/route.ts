@@ -1,46 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
-
-async function fetchJobPostingFromUrl(url: string): Promise<string> {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status}`)
-    }
-
-    const html = await response.text()
-
-    // Basic HTML parsing - extract text content
-    // Remove script and style tags
-    let text = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
-
-    // Remove HTML tags
-    text = text.replace(/<[^>]+>/g, " ")
-
-    // Decode HTML entities
-    text = text.replace(/&nbsp;/g, " ")
-    text = text.replace(/&amp;/g, "&")
-    text = text.replace(/&lt;/g, "<")
-    text = text.replace(/&gt;/g, ">")
-    text = text.replace(/&quot;/g, '"')
-
-    // Clean up whitespace
-    text = text.replace(/\s+/g, " ").trim()
-
-    // Limit to reasonable length (first 10000 chars)
-    return text.substring(0, 10000)
-  } catch (error) {
-    console.error("Error fetching job posting:", error)
-    throw new Error("Failed to fetch job posting from URL")
-  }
-}
+import { deriveJobMetadata, fetchJobPostingFromUrl, normalizeJobLink } from "@/lib/job-posting"
+import { sanitizePlainText } from "@/lib/text-utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,12 +23,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Resume not found" }, { status: 404 })
     }
 
-    let jobDescription = jobPosting.description
+    let jobDescription = jobPosting.description || ""
 
-    if (jobPosting.inputType === "link" && jobPosting.jobLink) {
-      console.log("Fetching job posting from URL:", jobPosting.jobLink)
+    const normalizedLink = normalizeJobLink(jobPosting.jobLink)
+
+    if (jobPosting.inputType === "link" && normalizedLink) {
+      console.log("Fetching job posting from URL:", normalizedLink)
       try {
-        jobDescription = await fetchJobPostingFromUrl(jobPosting.jobLink)
+        jobDescription = await fetchJobPostingFromUrl(normalizedLink)
         console.log("Successfully fetched job posting, length:", jobDescription.length)
       } catch (error) {
         console.error("Failed to fetch job posting:", error)
@@ -80,14 +43,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const cleanedDescription = sanitizePlainText(jobDescription)
+    const metadataSource = cleanedDescription || jobDescription || normalizedLink || ""
+    const { title, company } = jobPosting.metadata?.title
+      ? { title: jobPosting.metadata.title, company: jobPosting.metadata.company }
+      : deriveJobMetadata(metadataSource, normalizedLink)
+    const storedDescription = cleanedDescription || jobDescription
+    const storedTitle = title || "Job Opportunity"
+
+    if (!storedDescription.trim()) {
+      return NextResponse.json({ error: "Job description is required" }, { status: 400 })
+    }
+
     // Create job posting
     const { data: jobPostingData, error: jobPostingError } = await supabase
       .from("job_postings")
       .insert({
         user_id: user.id,
-        title: jobPosting.title,
-        company: jobPosting.company,
-        description: jobDescription,
+        title: storedTitle,
+        company: company || null,
+        description: storedDescription,
       })
       .select()
       .single()

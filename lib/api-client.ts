@@ -1,4 +1,4 @@
-export async function analyzeResume(resumeText: string, jobDescription: string): Promise<string> {
+export async function analyzeResume(resumeText: string, jobDescription: string, jobLink?: string): Promise<string> {
     try {
         const response = await fetch("/api/adapt-resume", {
             method: "POST",
@@ -8,6 +8,7 @@ export async function analyzeResume(resumeText: string, jobDescription: string):
             body: JSON.stringify({
                 resumeText,
                 jobDescription,
+                jobLink,
             }),
         });
 
