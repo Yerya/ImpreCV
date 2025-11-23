@@ -58,7 +58,7 @@ export default function LandingPage() {
                         </Button>
                       </Link>
                       <Link href="#how-it-works">
-                        <Button size="lg" variant="outline" className="text-base px-8 bg-transparent">
+                        <Button size="lg" variant="outline" className="text-base px-8">
                           See How It Works
                         </Button>
                       </Link>
