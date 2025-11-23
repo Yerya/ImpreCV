@@ -3,16 +3,21 @@
 import type React from "react"
 
 import { useState, useRef } from "react"
-import { Upload, Loader2, CheckCircle2 } from "lucide-react"
+import { Upload, Loader2, CheckCircle2, FileText, FileType } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 
 interface ResumeUploadProps {
   onResumeUploaded: (resume: any) => void
+  onTextChange?: (text: string) => void
 }
 
-export default function ResumeUpload({ onResumeUploaded }: ResumeUploadProps) {
+export default function ResumeUpload({ onResumeUploaded, onTextChange }: ResumeUploadProps) {
+  const [mode, setMode] = useState<"upload" | "paste">("upload")
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [text, setText] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,38 +104,89 @@ export default function ResumeUpload({ onResumeUploaded }: ResumeUploadProps) {
     return `Extracted text from ${file.name}`
   }
 
-  return (
-    <div>
-      <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileSelect} className="hidden" />
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value
+    setText(newText)
+    if (onTextChange) {
+      onTextChange(newText)
+    }
+  }
 
-      <div
-        onClick={() => fileInputRef.current?.click()}
-        className="border-2 border-dashed border-border/50 rounded-2xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-background/50"
-      >
-        {uploadSuccess ? (
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-primary" />
-            </div>
-            <p className="text-sm font-medium">Resume uploaded successfully!</p>
-          </div>
-        ) : uploading ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Uploading your resume...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Upload className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium mb-1">Click to upload your resume</p>
-              <p className="text-xs text-muted-foreground">PDF or Word document (max 5MB)</p>
-            </div>
-          </div>
-        )}
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 p-1 bg-secondary/30 rounded-lg">
+        <Button
+          variant={mode === "upload" ? "default" : "ghost"}
+          size="sm"
+          className="flex-1"
+          onClick={() => setMode("upload")}
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Upload File
+        </Button>
+        <Button
+          variant={mode === "paste" ? "default" : "ghost"}
+          size="sm"
+          className="flex-1"
+          onClick={() => setMode("paste")}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Paste Text
+        </Button>
       </div>
+
+      {mode === "upload" ? (
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-border/50 rounded-2xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-background/50"
+          >
+            {uploadSuccess ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                </div>
+                <p className="text-sm font-medium">Resume uploaded successfully!</p>
+              </div>
+            ) : uploading ? (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Uploading your resume...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FileType className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Click to upload your resume</p>
+                  <p className="text-xs text-muted-foreground">PDF or Word document (max 5MB)</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Textarea
+            placeholder="Paste your resume content here..."
+            className="min-h-[200px] bg-background/50 resize-none"
+            value={text}
+            onChange={handleTextChange}
+          />
+          <p className="text-xs text-muted-foreground">
+            Paste the full text of your resume. We'll analyze it directly.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
