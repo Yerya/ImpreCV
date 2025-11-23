@@ -27,11 +27,8 @@ export default function ResumeList({ resumes, selectedResumeId, onSelectResume }
           <Card
             key={resume.id}
             onClick={() => onSelectResume(resume.id)}
-            className={`p-4 cursor-pointer transition-all ${
-              selectedResumeId === resume.id
-                ? "bg-primary/10 border-primary/50"
-                : "bg-background/50 hover:bg-background/80 border-border/50"
-            }`}
+            className={`glass-row p-4 cursor-pointer ${selectedResumeId === resume.id ? "glass-row--selected" : ""
+              }`}
           >
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
