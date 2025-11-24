@@ -57,18 +57,6 @@ export function GlobalHeader({
     setIsMobileMenuOpen(false)
   }, [pathname])
 
-  // Lock body scroll when menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
-    }
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [isMobileMenuOpen])
-
   const handleLogout = async () => {
     await dispatch(signOutThunk())
     // Redirect based on current page
@@ -85,8 +73,8 @@ export function GlobalHeader({
 
   return (
     <header className="sticky top-0 left-0 right-0 z-50 w-full">
-      <div className="glass-chrome glass-chrome-top w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-xl backdrop-saturate-125">
-        <div className="px-4 h-[var(--header-h)] flex items-center justify-between relative">
+        <div className="glass-chrome glass-chrome-top w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-xl backdrop-saturate-125">
+          <div className="px-4 h-[var(--header-h)] flex items-center justify-between relative">
           {/* Left side - Logo or Back button */}
           <div className="flex items-center">
             {variant === "back" ? (
@@ -197,92 +185,91 @@ export function GlobalHeader({
               )}
             </div>
           </div>
+          </div>
         </div>
-      </div>
 
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && variant === "landing" && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-[var(--header-h)] left-0 right-0 p-4 lg:hidden"
-          >
-            <div
-              ref={menuRef}
-              className="glass-chrome rounded-xl p-4 flex flex-col gap-4 shadow-2xl backdrop-blur-xl backdrop-saturate-125 border border-border/10 relative overflow-hidden"
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {isMobileMenuOpen && variant === "landing" && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="absolute top-[var(--header-h)] left-0 right-0 p-4 lg:hidden"
             >
               <div
-                className="pointer-events-none absolute inset-0 opacity-70"
-                style={{
-                  background:
-                    "radial-gradient(circle at 30% 20%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.25), transparent 50%), radial-gradient(circle at 80% 10%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.18), transparent 60%)",
-                }}
-              />
-              <nav className="flex flex-col gap-2 relative z-10">
-                <Link
-                  href="#features"
-                  className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#how-it-works"
-                  className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  How It Works
-                </Link>
-              </nav>
-              {/* Separator removed as requested */}
-              <div className="flex flex-col gap-2 relative z-10">
-                {!isLoading && (
-                  <>
-                    {user ? (
-                      <>
-                        <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                          <Button className="w-full justify-start" variant="ghost">
-                            <LayoutDashboard className="h-4 w-4 mr-2" />
-                            Dashboard
+                ref={menuRef}
+                className="glass-chrome rounded-xl p-4 flex flex-col gap-4 shadow-2xl backdrop-blur-xl backdrop-saturate-125 border border-border/10 relative overflow-hidden"
+              >
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-70"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 30% 20%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.25), transparent 50%), radial-gradient(circle at 80% 10%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.18), transparent 60%)",
+                  }}
+                />
+                <nav className="flex flex-col gap-2 relative z-10">
+                  <Link
+                    href="#features"
+                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="#how-it-works"
+                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    How It Works
+                  </Link>
+                </nav>
+                <div className="flex flex-col gap-2 relative z-10">
+                  {!isLoading && (
+                    <>
+                      {user ? (
+                        <>
+                          <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                            <Button className="w-full justify-start" variant="ghost">
+                              <LayoutDashboard className="h-4 w-4 mr-2" />
+                              Dashboard
+                            </Button>
+                          </Link>
+                          <Button
+                            className="w-full justify-start text-destructive hover:text-destructive"
+                            variant="ghost"
+                            onClick={() => {
+                              handleLogout()
+                              setIsMobileMenuOpen(false)
+                            }}
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Log Out
                           </Button>
-                        </Link>
-                        <Button
-                          className="w-full justify-start text-destructive hover:text-destructive"
-                          variant="ghost"
-                          onClick={() => {
-                            handleLogout()
-                            setIsMobileMenuOpen(false)
-                          }}
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Log Out
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                          <Button className="w-full" variant="outline">
-                            Log In
-                          </Button>
-                        </Link>
-                        <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                          <Button className="w-full">
-                            Get Started
-                          </Button>
-                        </Link>
-                      </>
-                    )}
-                  </>
-                )}
+                        </>
+                      ) : (
+                        <>
+                          <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                            <Button className="w-full" variant="outline">
+                              Log In
+                            </Button>
+                          </Link>
+                          <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                            <Button className="w-full">
+                              Get Started
+                            </Button>
+                          </Link>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
   )
 }
 
