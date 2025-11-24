@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { deriveJobMetadata, fetchJobPostingFromUrl, normalizeJobLink } from "@/lib/job-posting"
+import { deriveJobMetadata, normalizeJobLink } from "@/lib/job-posting"
+import { fetchJobPostingFromUrl } from "@/lib/job-posting-server"
 import { sanitizePlainText } from "@/lib/text-utils"
 
 export async function POST(request: NextRequest) {

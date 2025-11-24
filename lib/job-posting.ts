@@ -9,12 +9,6 @@ const TITLE_PATTERNS = [/^job\s*title[:\-]\s*(.+)$/i, /^title[:\-]\s*(.+)$/i, /^
 const COMPANY_PATTERNS = [/^company[:\-]\s*(.+)$/i, /^employer[:\-]\s*(.+)$/i, /^organization[:\-]\s*(.+)$/i]
 const SECTION_STOPS = ["responsibilities", "requirements", "qualifications", "about the role", "job description", "what you'll do"]
 
-const CLEANUP_REGEX = {
-  scripts: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-  styles: /<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,
-  tags: /<[^>]+>/g,
-}
-
 export function normalizeJobLink(jobLink?: string) {
   if (!jobLink) return ""
   try {
@@ -31,7 +25,7 @@ function cleanValue(value?: string | null) {
 }
 
 function normalizeLabel(value: string | undefined, fallback?: string) {
-  const cleaned = cleanValue(value)
+  const cleaned = cleanValue(value).replace(/[^\w\s.,\-()/'"]/g, "")
   if (cleaned) {
     return cleaned.slice(0, 160)
   }
@@ -60,7 +54,8 @@ function deriveCompanyFromUrl(jobLink?: string) {
       (part) => !["www", "jobs", "careers", "boards", "apply", "app"].includes(part.toLowerCase()),
     )
 
-    const candidate = filtered.length > 1 ? filtered[filtered.length - 1] : filtered[0]
+    const idx = filtered.length >= 2 ? filtered.length - 2 : 0
+    const candidate = filtered[idx] || ""
     if (!candidate) return ""
 
     return candidate.charAt(0).toUpperCase() + candidate.slice(1)
@@ -143,35 +138,4 @@ export function deriveJobMetadata(jobText: string, jobLink?: string): JobMetadat
     title: normalizeLabel(title, "Job Opportunity"),
     company: normalizeLabel(company) || undefined,
   }
-}
-
-export async function fetchJobPostingFromUrl(url: string): Promise<string> {
-  const normalizedLink = normalizeJobLink(url)
-  if (!normalizedLink) {
-    throw new Error("Invalid job link")
-  }
-
-  const response = await fetch(normalizedLink, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch: ${response.status}`)
-  }
-
-  const html = await response.text()
-  let text = html.replace(CLEANUP_REGEX.scripts, "")
-  text = text.replace(CLEANUP_REGEX.styles, "")
-  text = text.replace(CLEANUP_REGEX.tags, " ")
-  text = text.replace(/&nbsp;/g, " ")
-  text = text.replace(/&amp;/g, "&")
-  text = text.replace(/&lt;/g, "<")
-  text = text.replace(/&gt;/g, ">")
-  text = text.replace(/&quot;/g, '"')
-  text = text.replace(/\s+/g, " ").trim()
-
-  return sanitizePlainText(text.substring(0, 10000))
 }

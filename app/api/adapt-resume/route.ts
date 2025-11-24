@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
-import { fetchJobPostingFromUrl } from "@/lib/job-posting";
+import { fetchJobPostingFromUrl } from "@/lib/job-posting-server";
 
 export async function POST(req: NextRequest) {
     try {
