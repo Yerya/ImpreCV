@@ -118,16 +118,6 @@ function MatchJourneyDesktop() {
       ref={sectionRef}
       className="relative z-10 min-h-[calc(100vh-var(--header-h))] py-12 md:py-16 lg:py-20 flex items-center"
     >
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute -left-32 top-10 h-72 w-72 rounded-full blur-[140px]"
-          style={{ background: "radial-gradient(circle, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35), transparent 70%)" }}
-        />
-        <div
-          className="absolute right-0 top-1/2 h-[28rem] w-[28rem] -translate-y-1/2 rounded-full blur-[160px]"
-          style={{ background: "radial-gradient(circle, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.18), transparent 75%)" }}
-        />
-      </div>
       <div className="container mx-auto px-4 relative flex min-h-full flex-col justify-center">
         <div
           ref={headingRef}
