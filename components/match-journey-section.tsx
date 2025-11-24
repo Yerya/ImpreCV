@@ -32,7 +32,7 @@ const MATCH_STEPS: MatchStep[] = [
     id: 2,
     label: "Check fit",
     title: "See your fit score",
-    description: "CVify compares your resume with the job and scores how well it fits.",
+    description: "ImpreCV compares your resume with the job and scores how well it fits.",
     score: 68,
     emphasis: "expand",
   },
@@ -125,7 +125,7 @@ function MatchJourneyDesktop() {
           style={{ opacity: progress > 0 ? 1 : 0.85 }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">How CVify Works</span>
+            <span className="gradient-text">How ImpreCV Works</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             From raw resume to a tailored application in four simple steps.

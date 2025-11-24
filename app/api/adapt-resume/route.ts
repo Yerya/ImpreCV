@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
         // 3. Construct Prompt
         const prompt = `
-You are CVify — an expert AI resume writer and ATS optimizer.
+You are ImpreCV — an expert AI resume writer and ATS optimizer.
 
 TASK:
 Adapt the candidate's resume to the provided job description. Your goal is to MAXIMIZE the match between the resume and the job requirements while remaining TRUTHFUL.

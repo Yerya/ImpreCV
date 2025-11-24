@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { hydrateUiScale, setUiScale, type UiScale } from "@/features/app/appSlice"
 
-const LS_UI_SCALE = "cvify-ui-scale"
+const LS_UI_SCALE = "imprecv-ui-scale"
 
 function isUiScale(value: unknown): value is UiScale {
   return value === "small" || value === "medium" || value === "large"

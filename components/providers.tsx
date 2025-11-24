@@ -11,7 +11,7 @@ import UiScaleSync from "@/components/ui-scale-sync"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="cvify-theme">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="imprecv-theme">
       <Provider store={store}>
         <AuthSync />
         <PaletteSync />

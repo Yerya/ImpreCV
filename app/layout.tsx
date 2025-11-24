@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 const display = Sora({ subsets: ["latin"], variable: "--font-display" })
 
 export const metadata: Metadata = {
-  title: "CVify - AI-Powered Resume & Cover Letter Adaptation",
+  title: "ImpreCV - AI-Powered Resume & Cover Letter Adaptation",
   description: "Transform your resume and cover letter for any job posting with AI-powered analysis and optimization.",
 }
 

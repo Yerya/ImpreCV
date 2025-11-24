@@ -86,7 +86,7 @@ export function GlobalHeader({
             ) : (
               <Link href="/" className="flex items-center gap-2">
                 <Sparkles className="h-6 w-6" />
-                <span className="text-xl font-bold">CVify</span>
+                <span className="text-xl font-bold">ImpreCV</span>
               </Link>
             )}
           </div>

@@ -6,8 +6,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { hydratePalettes } from "@/features/app/appSlice"
 import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
 
-const LS_LIGHT = "cvify-palette-light"
-const LS_DARK = "cvify-palette-dark"
+const LS_LIGHT = "imprecv-palette-light"
+const LS_DARK = "imprecv-palette-dark"
 
 function isPaletteName(v: unknown): v is PaletteName {
   return typeof v === "string" && (v in PALETTES)
@@ -60,4 +60,3 @@ export default function PaletteSync() {
 
   return null
 }
-

@@ -31,11 +31,11 @@ export default function LandingPage() {
               <span className="text-sm">AI-Powered Career Tools</span>
             </div>
             <h1 className="text-4xl md:text-7xl font-bold mb-4 md:mb-6 leading-tight">
-              <span className="gradient-text">Transform Your Resume</span>
+              <span className="text-balance">Transform your CV</span>
               <br />
-              <span className="text-balance">For Every Job Application</span>
+              <span className="gradient-text text-balance">Make it ImpreCV</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto text-balance">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance mb-8 md:mb-10">
               Upload your resume, paste a job posting, and let AI analyze, optimize, and rewrite your application
               materials to match perfectly.
             </p>
@@ -173,7 +173,7 @@ export default function LandingPage() {
               <span className="gradient-text">Ready to Land Your Dream Job?</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of job seekers who have transformed their applications with CVify.
+              Join thousands of job seekers who have transformed their applications with ImpreCV.
             </p>
             {!isLoading && (
               <>
@@ -211,12 +211,12 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center space-y-4">
             <div className="flex items-center justify-center gap-2">
               <Sparkles className="h-5 w-5" />
-              <span className="font-bold">CVify</span>
+              <span className="font-bold">ImpreCV</span>
             </div>
             <p className="text-sm text-muted-foreground">
               AI-powered resume and cover letter optimization for job seekers
             </p>
-            <p className="pt-2 text-xs text-muted-foreground">&copy; 2025 CVify. All rights reserved.</p>
+            <p className="pt-2 text-xs text-muted-foreground">&copy; 2025 ImpreCV. All rights reserved.</p>
           </div>
         </div>
       </AnimateIn>

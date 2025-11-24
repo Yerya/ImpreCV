@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
         <Card className="glass-card p-8 relative z-10">
           <div className="flex items-center gap-2 mb-8">
             <Sparkles className="h-6 w-6" />
-            <span className="text-2xl font-bold">CVify</span>
+            <span className="text-2xl font-bold">ImpreCV</span>
           </div>
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Reset your password</h1>
