@@ -8,6 +8,7 @@ import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { AnimateIn } from "@/components/anim/animate-in"
 import { MatchJourneySection } from "@/components/match-journey-section"
+import { BrandMark } from "@/components/brand-mark"
 
 export default function LandingPage() {
   const { user, isLoading } = useAppSelector((s) => s.auth)
@@ -209,10 +210,11 @@ export default function LandingPage() {
       >
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-4">
-            <div className="flex items-center justify-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              <span className="font-bold">ImpreCV</span>
-            </div>
+            <BrandMark
+              className="flex items-center justify-center gap-1"
+              iconClassName="h-6 w-6"
+              textClassName="text-xl font-bold"
+            />
             <p className="text-sm text-muted-foreground">
               AI-powered resume and cover letter optimization for job seekers
             </p>
