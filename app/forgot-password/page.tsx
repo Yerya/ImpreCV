@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { Sparkles, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { BrandMark } from "@/components/brand-mark"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -105,9 +106,8 @@ export default function ForgotPasswordPage() {
         )}
 
         <Card className="glass-card p-8 relative z-10">
-          <div className="flex items-center gap-2 mb-8">
-            <Sparkles className="h-6 w-6" />
-            <span className="text-2xl font-bold">ImpreCV</span>
+          <div className="flex items-center gap-1 mb-8">
+            <BrandMark className="flex items-center gap-1" textClassName="text-2xl font-bold" />
           </div>
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Reset your password</h1>

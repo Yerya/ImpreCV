@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Sparkles, ArrowLeft, LogOut, Settings, LogIn, UserPlus, Menu, X } from "lucide-react"
+import { ArrowLeft, LogOut, Settings, LogIn, UserPlus, Menu, X } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PaletteToggle } from "@/components/palette-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { signOutThunk } from "@/features/auth/authSlice"
 import { AnimatePresence, motion } from "framer-motion"
+import { BrandMark } from "@/components/brand-mark"
 
 interface GlobalHeaderProps {
   variant?: "landing" | "dashboard" | "back"
@@ -84,9 +85,8 @@ export function GlobalHeader({
                 </Button>
               </Link>
             ) : (
-              <Link href="/" className="flex items-center gap-2">
-                <Sparkles className="h-6 w-6" />
-                <span className="text-xl font-bold">ImpreCV</span>
+              <Link href="/" className="flex items-center gap-1">
+                <BrandMark className="flex items-center gap-1" />
               </Link>
             )}
           </div>

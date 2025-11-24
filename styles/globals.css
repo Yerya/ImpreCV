@@ -164,6 +164,15 @@
         scrollbar-gutter: stable;
     }
 
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+        display: none;
+    }
+
+    input[type="password"]::-webkit-credentials-auto-fill-button {
+        display: none !important;
+    }
+
     /* Keep layout steady when dialogs lock scroll */
     html body[data-scroll-locked] {
         margin-right: 0 !important;

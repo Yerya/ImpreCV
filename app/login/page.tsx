@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { Sparkles, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { PasswordEyeIcon, PasswordEyeOffIcon } from "@/components/icons/password-eye"
 import { isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSignInMutation } from "@/features/api/authApi"
+import { BrandMark } from "@/components/brand-mark"
 
 function LoginForm() {
   const router = useRouter()
@@ -89,9 +91,8 @@ function LoginForm() {
         )}
 
         <Card className="glass-card p-8 relative z-10">
-          <div className="flex items-center gap-2 mb-8">
-            <Sparkles className="h-6 w-6" />
-            <span className="text-2xl font-bold">ImpreCV</span>
+          <div className="flex items-center gap-1 mb-8">
+            <BrandMark className="flex items-center gap-1" textClassName="text-2xl font-bold" />
           </div>
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
@@ -138,7 +139,7 @@ function LoginForm() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <PasswordEyeOffIcon className="h-4 w-4" /> : <PasswordEyeIcon className="h-4 w-4" />}
                 </button>
               </div>
             </div>
