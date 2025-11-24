@@ -37,8 +37,8 @@ export default function LandingPage() {
               <span className="gradient-text text-balance">Make it ImpreCV</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance mb-8 md:mb-10">
-              Upload your resume, paste a job posting, and let AI analyze, optimize, and rewrite your application
-              materials to match perfectly.
+              Upload your resume, paste a job post, and AI turns it into an impressive CV, a tailored cover letter,
+              and a skills plan for interview preparation.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               {!isLoading && (
