@@ -108,8 +108,8 @@
     --muted-foreground: oklch(0.78 0 0);
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
+    --destructive: oklch(0.7 0.2 25.7);
+    --destructive-foreground: oklch(0.98 0.02 25.7);
     --border: oklch(0.269 0 0);
     --input: oklch(0.269 0 0);
     --ring: oklch(0.439 0 0);
@@ -137,7 +137,8 @@
         @apply border-border outline-ring/50;
     }
 
-    html, body {
+    html,
+    body {
         overflow-x: hidden;
     }
 
