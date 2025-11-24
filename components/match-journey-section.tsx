@@ -118,7 +118,7 @@ function MatchJourneyDesktop() {
       ref={sectionRef}
       className="relative z-10 min-h-[calc(100vh-var(--header-h))] py-12 md:py-16 lg:py-20 flex items-center"
     >
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -left-32 top-10 h-72 w-72 rounded-full blur-[140px]"
           style={{ background: "radial-gradient(circle, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35), transparent 70%)" }}
@@ -137,7 +137,7 @@ function MatchJourneyDesktop() {
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="gradient-text">How CVify Works</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             From raw resume to a tailored application in four simple steps.
           </p>
         </div>
@@ -199,8 +199,8 @@ type MatchJourneyStepsColumnProps = {
   timelineFill: number
   indicatorProgress: number
   timelineBounds: { top: number; height: number } | null
-  stepsWrapperRef: RefObject<HTMLDivElement>
-  timelineRef: RefObject<HTMLDivElement>
+  stepsWrapperRef: RefObject<HTMLDivElement | null>
+  timelineRef: RefObject<HTMLDivElement | null>
   cardRefs: MutableRefObject<(HTMLDivElement | null)[]>
   showFillGlow: boolean
 }

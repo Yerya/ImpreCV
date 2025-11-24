@@ -25,8 +25,7 @@ export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormP
           <Button
             type="button"
             variant={jobPosting.inputType === "paste" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 whitespace-normal text-sm sm:text-xs md:text-sm"
+            className="flex-1 h-11 sm:h-10 whitespace-normal text-sm"
             onClick={() => onChange({ ...jobPosting, inputType: "paste", jobLink: "" })}
           >
             <FileText className="h-4 w-4 mr-2" />
@@ -35,8 +34,7 @@ export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormP
           <Button
             type="button"
             variant={jobPosting.inputType === "link" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 whitespace-normal text-sm sm:text-xs md:text-sm"
+            className="flex-1 h-11 sm:h-10 whitespace-normal text-sm"
             onClick={() => onChange({ ...jobPosting, inputType: "link", description: "" })}
           >
             <Link2 className="h-4 w-4 mr-2" />

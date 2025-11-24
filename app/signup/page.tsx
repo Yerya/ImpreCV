@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { Sparkles, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import { Sparkles, ArrowLeft, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react"
 import { isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -22,6 +22,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [signUp] = useSignUpMutation()
 
   const supabaseConfigured = isSupabaseConfigured()
@@ -57,10 +58,10 @@ export default function SignupPage() {
       const res = await signUp({ fullName, email, password, redirectTo })
       if ('data' in res) {
         if (res.data?.ok) {
-      setSuccess(true)
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 2000)
+          setSuccess(true)
+          setTimeout(() => {
+            router.push("/dashboard")
+          }, 2000)
         } else {
           setError(res.data?.message || "Failed to sign up")
         }
@@ -83,7 +84,7 @@ export default function SignupPage() {
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Account Created!</h2>
+          <h2 className="text-3xl font-bold mb-2">Account Created!</h2>
           <p className="text-muted-foreground mb-6">Redirecting you to your dashboard...</p>
           <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
         </Card>
@@ -107,13 +108,13 @@ export default function SignupPage() {
           </Link>
         </div>
 
-          {!supabaseConfigured && (
-            <div className="mb-6">
-              <SupabaseBanner />
-            </div>
-          )}
+        {!supabaseConfigured && (
+          <div className="mb-6">
+            <SupabaseBanner />
+          </div>
+        )}
 
-          <Card className="glass-card p-8 relative z-10">
+        <Card className="glass-card p-8 relative z-10">
           <div className="flex items-center gap-2 mb-8">
             <Sparkles className="h-6 w-6" />
             <span className="text-2xl font-bold">CVify</span>
@@ -151,17 +152,27 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                disabled={!supabaseConfigured}
-                className="bg-background/50"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  disabled={!supabaseConfigured}
+                  className="bg-background/50 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
             </div>
             {error && (

@@ -328,13 +328,13 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           <div className="space-y-6 min-w-0">
             {/* Recent Analyses */}
             <Card className="glass-card p-6 relative z-10 w-full">
-              <h3 className="text-lg font-semibold mb-4">Recent Analyses</h3>
+              <h3 className="text-xl font-semibold mb-4">Recent Analyses</h3>
               <AnalysisList analyses={recentAnalyses} />
             </Card>
 
             {/* Quick Stats */}
             <Card className="glass-card p-6 relative z-10 w-full">
-              <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+              <h3 className="text-xl font-semibold mb-4">Quick Stats</h3>
               <div className="space-y-4">
                 <div>
                   <div className="text-3xl font-bold gradient-text">{resumes.length}</div>
