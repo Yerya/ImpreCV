@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
@@ -37,10 +38,15 @@ export default function LandingPage() {
               <span className="gradient-text text-balance">Make it ImpreCV</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance mb-8 md:mb-10">
-            Upload your resume, paste a job post, and AI delivers an impressive, tailored CV with a matching cover letter and a skills plan for interview preparation.
+              Upload your resume, paste a job post, and AI delivers an impressive, tailored CV with a matching cover letter and a skills plan for interview preparation.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {!isLoading && (
+              {isLoading ? (
+                <div className="flex gap-4">
+                  <Skeleton className="h-11 w-40 rounded-md" />
+                  <Skeleton className="h-11 w-40 rounded-md" />
+                </div>
+              ) : (
                 <>
                   {user ? (
                     <Link href="/dashboard">
@@ -175,7 +181,11 @@ export default function LandingPage() {
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join thousands of job seekers who have transformed their applications with ImpreCV.
             </p>
-            {!isLoading && (
+            {isLoading ? (
+              <div className="flex justify-center">
+                <Skeleton className="h-11 w-40 rounded-md" />
+              </div>
+            ) : (
               <>
                 {user ? (
                   <Link href="/dashboard">

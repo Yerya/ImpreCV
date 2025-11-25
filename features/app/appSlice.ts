@@ -6,14 +6,12 @@ import type { PaletteName } from "@/lib/theme/palettes"
 export type UiScale = "small" | "medium" | "large"
 
 interface AppState {
-  isInitialLoading: boolean
   paletteLight: PaletteName
   paletteDark: PaletteName
   uiScale: UiScale
 }
 
 const initialState: AppState = {
-  isInitialLoading: true,
   paletteLight: "blue",
   paletteDark: "emerald",
   uiScale: "medium",
@@ -23,9 +21,6 @@ const appSlice = createSlice({
   name: "app",
   initialState,
   reducers: {
-    setInitialLoading(state, action: PayloadAction<boolean>) {
-      state.isInitialLoading = action.payload
-    },
     setPaletteForTheme(
       state,
       action: PayloadAction<{ theme: "light" | "dark"; palette: PaletteName }>
@@ -52,7 +47,7 @@ const appSlice = createSlice({
   },
 })
 
-export const { setInitialLoading, setPaletteForTheme, hydratePalettes, setUiScale, hydrateUiScale } =
+export const { setPaletteForTheme, hydratePalettes, setUiScale, hydrateUiScale } =
   appSlice.actions
 export default appSlice.reducer
 
