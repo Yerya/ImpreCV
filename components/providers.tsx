@@ -14,6 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <Provider store={store}>
         <AuthSync />
         <PaletteSync />
+        <UiScaleSync />
         {children}
       </Provider>
     </ThemeProvider>
