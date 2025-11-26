@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, LogOut, Settings, LogIn, UserPlus, Menu, X } from "lucide-react"
+import { ArrowLeft, LogOut, Settings, LogIn, UserPlus, Menu, X, ListChecks, Route } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PaletteToggle } from "@/components/palette-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
@@ -129,33 +129,35 @@ export function GlobalHeader({
             <div className="hidden lg:flex items-center gap-2">
               {!isLoading && (
                 <>
-                  {user ? (
-                    <>
-                      {isLandingPage ? (
+                      {user ? (
                         <>
-                          <Link href="/dashboard">
-                            <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                              Dashboard
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="sm" onClick={handleLogout}>
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Log Out
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          {!isDashboardPage && (
-                            <Link href="/dashboard">
-                              <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                                Dashboard
+                          {isLandingPage ? (
+                            <>
+                              <Link href="/dashboard">
+                                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                                  Dashboard
+                                </Button>
+                              </Link>
+                              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                                <LogOut className="h-4 w-4 mr-2" />
+                                Log Out
                               </Button>
-                            </Link>
-                          )}
-                          {!isSettingsPage && (
-                            <Link href="/settings">
-                              <Button variant="ghost" size="sm">
-                                <Settings className="h-4 w-4 mr-2" />
+                            </>
+                          ) : (
+                            <>
+                              {!isDashboardPage && (
+                                <Link href="/dashboard">
+                                  <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                                    Dashboard
+                                  </Button>
+                                </Link>
+                              )}
+                              {!isSettingsPage && (
+                                <Link href="/settings">
+                                  <Button variant="ghost" size="sm">
+                                    <Settings className="h-4 w-4 mr-2" />
                                 Settings
                               </Button>
                             </Link>
@@ -212,17 +214,19 @@ export function GlobalHeader({
                 <nav className="flex flex-col gap-2 relative z-10">
                   <Link
                     href="#features"
-                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium flex items-center gap-3"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    Features
+                    <ListChecks className="h-4 w-4 text-primary shrink-0" />
+                    <span>Features</span>
                   </Link>
                   <Link
                     href="#how-it-works"
-                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium flex items-center gap-3"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    How It Works
+                    <Route className="h-4 w-4 text-primary shrink-0" />
+                    <span>How It Works</span>
                   </Link>
                 </nav>
                 <div className="flex flex-col gap-2 relative z-10">
@@ -231,20 +235,20 @@ export function GlobalHeader({
                       {user ? (
                         <>
                           <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Button className="w-full justify-start" variant="ghost">
-                              <LayoutDashboard className="h-4 w-4 mr-2" />
+                            <Button className="w-full justify-start px-4 py-3 gap-3" variant="ghost">
+                              <LayoutDashboard className="h-4 w-4 shrink-0" />
                               Dashboard
                             </Button>
                           </Link>
                           <Button
-                            className="w-full justify-start text-destructive hover:text-destructive"
+                            className="w-full justify-start px-4 py-3 gap-3 text-destructive hover:text-destructive"
                             variant="ghost"
                             onClick={() => {
                               handleLogout()
                               setIsMobileMenuOpen(false)
                             }}
                           >
-                            <LogOut className="h-4 w-4 mr-2" />
+                            <LogOut className="h-4 w-4 shrink-0" />
                             Log Out
                           </Button>
                         </>

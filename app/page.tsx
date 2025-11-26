@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download } from "lucide-react"
+import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download, TextSelect } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { AnimateIn } from "@/components/anim/animate-in"
@@ -125,7 +125,7 @@ export default function LandingPage() {
             <AnimateIn variant="fadeUp" delayMs={300} className="h-full">
               <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Sparkles className="h-6 w-6 text-primary" />
+                  <TextSelect className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Cover Letter Generator</h3>
                 <p className="text-muted-foreground">
