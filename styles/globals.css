@@ -85,12 +85,12 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
-    --accent-r: 99;
-    --accent-g: 102;
-    --accent-b: 241;
-    --gradient-1: #6366f1;
-    --gradient-2: #8b5cf6;
-    --gradient-3: #ec4899;
+    --accent-r: 160;
+    --accent-g: 160;
+    --accent-b: 160;
+    --gradient-1: #d4d4d4;
+    --gradient-2: #a3a3a3;
+    --gradient-3: #737373;
 }
 
 .dark {

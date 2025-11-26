@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { hydratePalettes } from "@/features/app/appSlice"
@@ -18,6 +18,7 @@ export default function PaletteSync() {
   const { resolvedTheme } = useTheme()
   const paletteLight = useAppSelector((s) => s.app.paletteLight)
   const paletteDark = useAppSelector((s) => s.app.paletteDark)
+  const [isHydrated, setIsHydrated] = useState(false)
 
   // Hydrate from localStorage once
   useEffect(() => {
@@ -30,7 +31,9 @@ export default function PaletteSync() {
           paletteDark: isPaletteName(dark) ? dark : undefined,
         })
       )
-    } catch {}
+    } catch {} finally {
+      setIsHydrated(true)
+    }
   }, [dispatch])
 
   // Persist to localStorage when values change
@@ -43,6 +46,7 @@ export default function PaletteSync() {
 
   // Apply CSS variables based on currently resolved theme
   useEffect(() => {
+    if (!isHydrated) return
     const theme = resolvedTheme === "dark" ? "dark" : "light"
     const activeName = theme === "dark" ? paletteDark : paletteLight
     const active = PALETTES[activeName]
@@ -56,7 +60,7 @@ export default function PaletteSync() {
     root.style.setProperty("--gradient-1", g1)
     root.style.setProperty("--gradient-2", g2)
     root.style.setProperty("--gradient-3", g3)
-  }, [resolvedTheme, paletteLight, paletteDark])
+  }, [resolvedTheme, paletteLight, paletteDark, isHydrated])
 
   return null
 }
