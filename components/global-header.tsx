@@ -214,19 +214,23 @@ export function GlobalHeader({
                 <nav className="flex flex-col gap-2 relative z-10">
                   <Link
                     href="#features"
-                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium flex items-center gap-3"
+                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <ListChecks className="h-4 w-4 text-primary shrink-0" />
-                    <span>Features</span>
+                    <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                      <ListChecks className="h-4 w-4 text-primary shrink-0" />
+                      <span>Features</span>
+                    </span>
                   </Link>
                   <Link
                     href="#how-it-works"
-                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium flex items-center gap-3"
+                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <Route className="h-4 w-4 text-primary shrink-0" />
-                    <span>How It Works</span>
+                    <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                      <Route className="h-4 w-4 text-primary shrink-0" />
+                      <span>How It Works</span>
+                    </span>
                   </Link>
                 </nav>
                 <div className="flex flex-col gap-2 relative z-10">
@@ -235,21 +239,25 @@ export function GlobalHeader({
                       {user ? (
                         <>
                           <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Button className="w-full justify-start px-4 py-3 gap-3" variant="ghost">
-                              <LayoutDashboard className="h-4 w-4 shrink-0" />
-                              Dashboard
+                            <Button className="w-full justify-start px-4 py-3" variant="ghost">
+                              <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                                <span>Dashboard</span>
+                              </span>
                             </Button>
                           </Link>
                           <Button
-                            className="w-full justify-start px-4 py-3 gap-3 text-destructive hover:text-destructive"
+                            className="w-full justify-start px-4 py-3 text-destructive hover:text-destructive"
                             variant="ghost"
                             onClick={() => {
                               handleLogout()
                               setIsMobileMenuOpen(false)
                             }}
                           >
-                            <LogOut className="h-4 w-4 shrink-0" />
-                            Log Out
+                            <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                              <LogOut className="h-4 w-4 shrink-0" />
+                              <span>Log Out</span>
+                            </span>
                           </Button>
                         </>
                       ) : (
