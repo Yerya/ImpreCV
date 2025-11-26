@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -34,12 +34,17 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState("")
   const [deleting, setDeleting] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [updateProfile] = useUpdateProfileMutation()
   const [deleteAccount] = useDeleteAccountMutation()
   const dispatch = useAppDispatch()
   const paletteLight = useAppSelector((s) => s.app.paletteLight)
   const paletteDark = useAppSelector((s) => s.app.paletteDark)
   const uiScale = useAppSelector((s) => s.app.uiScale)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,7 +150,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
 
               {/* Palette selection */}
               <div className="pt-4 space-y-4">
-                {(() => {
+                {mounted && (() => {
                   const themeKey = theme === "dark" ? "dark" : "light" as const
                   const current = themeKey === "dark" ? paletteDark : paletteLight
                   return (
@@ -276,9 +281,8 @@ function UiScaleSection({
           type="button"
           aria-pressed={current === opt.value}
           onClick={() => onSelect(opt.value)}
-          className={`glass-row flex items-center justify-between w-full rounded-md px-3 py-2 text-sm transition-colors ${
-            current === opt.value ? "glass-row--selected" : ""
-          }`}
+          className={`glass-row flex items-center justify-between w-full rounded-md px-3 py-2 text-sm transition-colors ${current === opt.value ? "glass-row--selected" : ""
+            }`}
         >
           <div className="flex flex-col items-start">
             <span className="font-medium">{opt.label}</span>
@@ -334,9 +338,8 @@ function PaletteSection({
           <button
             key={opt.value}
             onClick={() => onSelect(opt.value)}
-            className={`glass-row flex items-center justify-between w-full rounded-md px-3 py-2 text-sm transition-colors ${
-              current === opt.value ? "glass-row--selected" : ""
-            }`}
+            className={`glass-row flex items-center justify-between w-full rounded-md px-3 py-2 text-sm transition-colors ${current === opt.value ? "glass-row--selected" : ""
+              }`}
           >
             <span className="font-medium">{opt.label}</span>
             <span className="flex items-center gap-2">
