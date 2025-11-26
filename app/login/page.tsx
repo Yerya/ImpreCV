@@ -15,6 +15,7 @@ import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSignInMutation } from "@/features/api/authApi"
 import { BrandMark } from "@/components/brand-mark"
+import LoginSkeleton from "./login-skeleton"
 
 function LoginForm() {
   const router = useRouter()
@@ -172,5 +173,9 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return <LoginForm />
+  return (
+    <Suspense fallback={<LoginSkeleton />}>
+      <LoginForm />
+    </Suspense>
+  )
 }
