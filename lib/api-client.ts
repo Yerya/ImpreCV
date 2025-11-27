@@ -1,4 +1,11 @@
-export async function analyzeResume(resumeText: string, jobDescription: string, jobLink?: string): Promise<string> {
+interface AnalyzeResumePayload {
+    resumeText?: string;
+    resumeId?: string;
+    jobDescription?: string;
+    jobLink?: string;
+}
+
+export async function analyzeResume(payload: AnalyzeResumePayload): Promise<string> {
     try {
         const response = await fetch("/api/adapt-resume", {
             method: "POST",
@@ -6,9 +13,10 @@ export async function analyzeResume(resumeText: string, jobDescription: string, 
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                resumeText,
-                jobDescription,
-                jobLink,
+                resumeText: payload.resumeText,
+                resumeId: payload.resumeId,
+                jobDescription: payload.jobDescription || "",
+                jobLink: payload.jobLink,
             }),
         });
 

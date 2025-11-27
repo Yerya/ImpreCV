@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Loader2, ArrowRight, CheckCircle2, Sparkles, Copy, RefreshCw, Check } from "lucide-react"
@@ -16,7 +15,7 @@ import { analyzeResume } from "@/lib/api-client"
 import { toast } from "sonner"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
-import { deriveJobMetadata, normalizeJobLink } from "@/lib/job-posting"
+import { normalizeJobLink } from "@/lib/job-posting"
 
 interface DashboardClientProps {
   user: any
@@ -25,7 +24,6 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ user, resumes: initialResumes, recentAnalyses }: DashboardClientProps) {
-  const router = useRouter()
   const authUser = useAppSelector((s) => s.auth.user)
   const [resumes, setResumes] = useState(initialResumes)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
@@ -39,6 +37,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const [adaptedResume, setAdaptedResume] = useState<string | null>(null)
   const [inputError, setInputError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Use Redux user name if available, fallback to props
   const displayName = authUser?.user_metadata?.full_name || user?.user_metadata?.full_name || "there"
@@ -46,11 +45,31 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
 
   const handleResumeUploaded = (newResume: any) => {
     setInputError(null)
-    setResumes([newResume, ...resumes])
+    setResumes((prev) => [newResume, ...prev])
     setSelectedResumeId(newResume.id)
-    // If the uploaded resume has text, we could potentially use it, but for now let's stick to the ID flow for files
-    // or if we want to support "hybrid", we'd need the text back. 
-    // For this task, we prioritize the "paste text" flow for the new feature.
+    setResumeText("")
+  }
+
+  const handleDeleteResume = async (id: string) => {
+    setInputError(null)
+    setDeletingId(id)
+    try {
+      const response = await fetch(`/api/resumes/${id}`, { method: "DELETE" })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : "Failed to delete resume."
+        throw new Error(message)
+      }
+      setResumes((prev) => prev.filter((r) => r.id !== id))
+      if (selectedResumeId === id) {
+        setSelectedResumeId(null)
+      }
+      toast.success("Resume deleted")
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete resume.")
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const handleResumeTextChange = (text: string) => {
@@ -102,6 +121,9 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
 
     setAdaptedResume(null)
     setInputError(null)
+    const usingLinkOnly = jobPosting.inputType === "link" && normalizedLink && !jobPosting.description.trim()
+    const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink
+
     // If we have resume text, use the "text-only" flow
     if (resumeText.trim().length > 0) {
       const cleanedResume = sanitizePlainText(resumeText)
@@ -112,32 +134,21 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
         return
       }
 
-      // If user provided only a link, let the server fetch and parse the job posting
-      if (jobPosting.inputType === "link" && normalizedLink && !jobPosting.description.trim()) {
-        setAnalyzing(true)
-        try {
-          const result = await analyzeResume(cleanedResume, "", normalizedLink)
-          setAdaptedResume(result)
-          toast.success("Resume adapted successfully!")
-        } catch (error: any) {
-          console.error("Analysis error:", error)
-          toast.error(error.message || "Failed to analyze. Please try again.")
-        } finally {
-          setAnalyzing(false)
+      if (!usingLinkOnly) {
+        const validated = validateTextInputs(resumeText, jobText)
+        if (!validated) {
+          return
         }
-        return
-      }
-
-      const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink
-      const validated = validateTextInputs(resumeText, jobText)
-      if (!validated) {
-        return
       }
 
       setAnalyzing(true)
 
       try {
-        const result = await analyzeResume(validated.cleanedResume, validated.cleanedJobText, normalizedLink)
+        const result = await analyzeResume({
+          resumeText: cleanedResume,
+          jobDescription: usingLinkOnly ? "" : sanitizePlainText(jobText),
+          jobLink: normalizedLink,
+        })
         setAdaptedResume(result)
         toast.success("Resume adapted successfully!")
       } catch (error: any) {
@@ -150,35 +161,31 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
       return
     }
 
-    setAnalyzing(true)
+    if (selectedResumeId) {
+      if (jobPosting.inputType === "paste") {
+        const cleanedJob = sanitizePlainText(jobPosting.description)
+        if (!isMeaningfulText(cleanedJob)) {
+          setInputError("This doesn't look like a job description. Please paste the vacancy text.")
+          toast.error("Invalid job description text.")
+          return
+        }
+      }
 
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      setAnalyzing(true)
+      try {
+        const result = await analyzeResume({
           resumeId: selectedResumeId,
-          jobPosting: {
-            description: jobPosting.description,
-            jobLink: normalizedLink,
-            inputType: jobPosting.inputType,
-            metadata: deriveJobMetadata(
-              jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink,
-              normalizedLink,
-            ),
-          },
-        }),
-      })
-
-      if (!response.ok) throw new Error("Analysis failed")
-
-      const { analysisId } = await response.json()
-      router.push(`/analysis/${analysisId}`)
-    } catch (error: any) {
-      console.error("Analysis error:", error)
-      toast.error(error.message || "Failed to analyze. Please try again.")
-    } finally {
-      setAnalyzing(false)
+          jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : "",
+          jobLink: normalizedLink,
+        })
+        setAdaptedResume(result)
+        toast.success("Resume adapted successfully!")
+      } catch (error: any) {
+        console.error("Analysis error:", error)
+        toast.error(error.message || "Failed to analyze. Please try again.")
+      } finally {
+        setAnalyzing(false)
+      }
     }
   }
 
@@ -224,7 +231,12 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
                 {(selectedResumeId || resumeText.length > 0) && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
               </div>
 
-              <ResumeUpload onResumeUploaded={handleResumeUploaded} onTextChange={handleResumeTextChange} />
+              <ResumeUpload
+                onResumeUploaded={handleResumeUploaded}
+                onTextChange={handleResumeTextChange}
+                currentCount={resumes.length}
+                maxResumes={3}
+              />
 
               {resumes.length > 0 && !resumeText && (
                 <div className="mt-6">
@@ -235,6 +247,8 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
                     resumes={resumes}
                     selectedResumeId={selectedResumeId}
                     onSelectResume={setSelectedResumeId}
+                    onDeleteResume={handleDeleteResume}
+                    deletingId={deletingId}
                   />
                 </div>
               )}

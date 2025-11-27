@@ -4,40 +4,58 @@ import type React from "react"
 
 import { useState, useRef } from "react"
 import { Upload, Loader2, CheckCircle2, FileText, FileType } from "lucide-react"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 interface ResumeUploadProps {
   onResumeUploaded: (resume: any) => void
   onTextChange?: (text: string) => void
+  currentCount?: number
+  maxResumes?: number
 }
 
-export default function ResumeUpload({ onResumeUploaded, onTextChange }: ResumeUploadProps) {
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+
+export default function ResumeUpload({ onResumeUploaded, onTextChange, currentCount = 0, maxResumes = 3 }: ResumeUploadProps) {
   const [mode, setMode] = useState<"upload" | "paste">("upload")
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [text, setText] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const isValidFileType = (file: File) => {
+    const allowedExtensions = [".pdf", ".doc", ".docx", ".txt"]
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+      "text/markdown",
+    ]
+    const lowerName = file.name.toLowerCase()
+    return allowedTypes.includes(file.type) || allowedExtensions.some((ext) => lowerName.endsWith(ext))
+  }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
-    const validTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ]
-    if (!validTypes.includes(file.type)) {
-      alert("Please upload a PDF or Word document")
+    setUploadError(null)
+
+    if (!isValidFileType(file)) {
+      setUploadError("Please upload a PDF, DOCX, or TXT file.")
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB")
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setUploadError("File size must be less than 5MB.")
+      return
+    }
+
+    if (currentCount >= maxResumes) {
+      setUploadError(`You can upload up to ${maxResumes} resumes.`)
       return
     }
 
@@ -45,63 +63,61 @@ export default function ResumeUpload({ onResumeUploaded, onTextChange }: ResumeU
     setUploadSuccess(false)
 
     try {
-      const supabase = getSupabaseBrowserClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("fileName", file.name)
 
-      if (!user) throw new Error("Not authenticated")
+      const response = await fetch("/api/resumes/upload", {
+        method: "POST",
+        body: formData,
+      })
 
-      // Upload to Supabase Storage
-      const fileName = `${user.id}/${Date.now()}-${file.name}`
-      const { data: uploadData, error: uploadError } = await supabase.storage.from("resumes").upload(fileName, file)
+      const contentType = response.headers.get("content-type") || ""
+      const rawText = await response.clone().text().catch(() => "")
 
-      if (uploadError) throw uploadError
+      const parseResponse = async () => {
+        if (contentType.includes("application/json")) {
+          return response.json()
+        }
+        if (rawText) {
+          try {
+            return JSON.parse(rawText)
+          } catch {
+            return { error: rawText }
+          }
+        }
+        return { error: "Unexpected server response" }
+      }
 
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("resumes").getPublicUrl(fileName)
+      const data = await parseResponse()
 
-      // Extract text from file (in production, this would be done server-side)
-      const extractedText = await extractTextFromFile(file)
-
-      // Save to database
-      const { data: resumeData, error: dbError } = await supabase
-        .from("resumes")
-        .insert({
-          user_id: user.id,
-          file_name: file.name,
-          file_url: publicUrl,
-          file_size: file.size,
-          extracted_text: extractedText,
-        })
-        .select()
-        .single()
-
-      if (dbError) throw dbError
+      if (!response.ok) {
+        const message =
+          (data && typeof data.error === "string" && data.error.trim()) ||
+          `Upload failed (status ${response.status})`
+        setUploadError(message)
+        toast.error(message)
+        return
+      }
 
       setUploadSuccess(true)
-      onResumeUploaded(resumeData)
+      onResumeUploaded(data.resume)
+      toast.success("Resume uploaded")
 
-      // Reset after 2 seconds
       setTimeout(() => {
         setUploadSuccess(false)
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
         }
       }, 2000)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error)
-      alert("Failed to upload resume. Please try again.")
+      const message = error?.message || "Failed to upload resume. Please try again."
+      setUploadError(message)
+      toast.error(message)
     } finally {
       setUploading(false)
     }
-  }
-
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    // Placeholder - in production, use a proper PDF/DOCX parser
-    return `Extracted text from ${file.name}`
   }
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -140,7 +156,7 @@ export default function ResumeUpload({ onResumeUploaded, onTextChange }: ResumeU
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.doc,.docx,.txt"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -168,11 +184,14 @@ export default function ResumeUpload({ onResumeUploaded, onTextChange }: ResumeU
                 </div>
                 <div>
                   <p className="text-sm font-medium mb-1">Click to upload your resume</p>
-                  <p className="text-xs text-muted-foreground">PDF or Word document (max 5MB)</p>
+                  <p className="text-xs text-muted-foreground">
+                    PDF, DOCX, or TXT (max 5MB, up to {maxResumes} files)
+                  </p>
                 </div>
               </div>
             )}
           </div>
+          {uploadError && <p className="text-xs text-destructive mt-2 text-center">{uploadError}</p>}
         </div>
       ) : (
         <div className="space-y-2">

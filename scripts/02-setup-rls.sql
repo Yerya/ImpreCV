@@ -49,6 +49,10 @@ CREATE POLICY "Users can delete their own job postings"
   ON public.job_postings FOR DELETE
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can update their own job postings"
+  ON public.job_postings FOR UPDATE
+  USING (auth.uid() = user_id);
+
 -- Analyses policies
 CREATE POLICY "Users can view their own analyses"
   ON public.analyses FOR SELECT
@@ -57,6 +61,14 @@ CREATE POLICY "Users can view their own analyses"
 CREATE POLICY "Users can insert their own analyses"
   ON public.analyses FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own analyses"
+  ON public.analyses FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own analyses"
+  ON public.analyses FOR DELETE
+  USING (auth.uid() = user_id);
 
 -- Rewritten resumes policies
 CREATE POLICY "Users can view their own rewritten resumes"

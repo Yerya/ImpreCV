@@ -2,21 +2,58 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server";
+import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { resumeText, jobDescription, jobLink } = body;
+        const { resumeText, resumeId, jobDescription, jobLink } = body;
 
         // 1. Validation
-        if (!resumeText || typeof resumeText !== "string" || resumeText.trim().length === 0) {
-            return NextResponse.json({ error: "Resume text is required" }, { status: 400 });
+        if ((!resumeText || typeof resumeText !== "string" || resumeText.trim().length === 0) && !resumeId) {
+            return NextResponse.json({ error: "Resume text or resumeId is required" }, { status: 400 });
         }
         if ((!jobDescription || typeof jobDescription !== "string" || jobDescription.trim().length === 0) && !jobLink) {
             return NextResponse.json({ error: "Job description or link is required" }, { status: 400 });
         }
 
-        const cleanedResume = sanitizePlainText(resumeText);
+        let cleanedResume = "";
+        if (resumeId) {
+            if (!isSupabaseConfigured()) {
+                return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
+            }
+            try {
+                const supabase = await getSupabaseServerClient();
+                const {
+                    data: { user },
+                } = await supabase.auth.getUser();
+
+                if (!user) {
+                    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+                }
+
+                const { data: resumeRecord, error: resumeError } = await supabase
+                    .from("resumes")
+                    .select("extracted_text, user_id")
+                    .eq("id", resumeId)
+                    .single();
+
+                if (resumeError || !resumeRecord) {
+                    return NextResponse.json({ error: "Resume not found" }, { status: 404 });
+                }
+
+                if (resumeRecord.user_id !== user.id) {
+                    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+                }
+
+                cleanedResume = sanitizePlainText(resumeRecord.extracted_text || "");
+            } catch (error) {
+                console.error("Failed to load resume by id:", error);
+                return NextResponse.json({ error: "Failed to load resume" }, { status: 500 });
+            }
+        } else {
+            cleanedResume = sanitizePlainText(resumeText);
+        }
 
         let cleanedJobDescription = sanitizePlainText(jobDescription || "");
         if (!cleanedJobDescription && jobLink) {
@@ -43,7 +80,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Simple length checks to prevent abuse/token limits
-        if (resumeText.length > 50000) {
+        if (cleanedResume.length > 50000) {
             return NextResponse.json({ error: "Resume text is too long" }, { status: 400 });
         }
         if (cleanedJobDescription.length > 50000) {

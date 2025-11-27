@@ -69,8 +69,12 @@ CREATE TABLE IF NOT EXISTS public.cover_letters (
 
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_resumes_user_id ON public.resumes(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_resumes_user_id_file_name_unique ON public.resumes(user_id, file_name);
+CREATE INDEX IF NOT EXISTS idx_resumes_created_at ON public.resumes(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_job_postings_user_id ON public.job_postings(user_id);
+CREATE INDEX IF NOT EXISTS idx_job_postings_created_at ON public.job_postings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON public.analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_resume_id ON public.analyses(resume_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON public.analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_analysis_id ON public.rewritten_resumes(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_cover_letters_analysis_id ON public.cover_letters(analysis_id);
