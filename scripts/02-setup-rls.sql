@@ -79,6 +79,10 @@ CREATE POLICY "Users can insert their own rewritten resumes"
   ON public.rewritten_resumes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "Users can delete their own rewritten resumes"
+  ON public.rewritten_resumes FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- Cover letters policies
 CREATE POLICY "Users can view their own cover letters"
   ON public.cover_letters FOR SELECT

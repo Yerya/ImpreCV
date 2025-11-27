@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Loader2, ArrowRight, CheckCircle2, Sparkles, Copy, RefreshCw, Check } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles, Copy, RefreshCw, Check, Save } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -11,6 +11,7 @@ import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
 import AnalysisList from "./analysis-list"
+import { AdaptedResumeItem, AdaptedResumeList } from "./adapted-resume-list"
 import { analyzeResume } from "@/lib/api-client"
 import { toast } from "sonner"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
@@ -21,9 +22,15 @@ interface DashboardClientProps {
   user: any
   resumes: any[]
   recentAnalyses: any[]
+  savedAdaptedResumes: AdaptedResumeItem[]
 }
 
-export default function DashboardClient({ user, resumes: initialResumes, recentAnalyses }: DashboardClientProps) {
+export default function DashboardClient({
+  user,
+  resumes: initialResumes,
+  recentAnalyses,
+  savedAdaptedResumes,
+}: DashboardClientProps) {
   const authUser = useAppSelector((s) => s.auth.user)
   const [resumes, setResumes] = useState(initialResumes)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
@@ -38,9 +45,36 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const [inputError, setInputError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [savedAdapted, setSavedAdapted] = useState<AdaptedResumeItem[]>(savedAdaptedResumes || [])
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null)
+  const [savingAdapted, setSavingAdapted] = useState(false)
+  const [deletingSavedId, setDeletingSavedId] = useState<string | null>(null)
+  const [lastRequestKey, setLastRequestKey] = useState<string | null>(null)
 
   // Use Redux user name if available, fallback to props
   const displayName = authUser?.user_metadata?.full_name || user?.user_metadata?.full_name || "there"
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const stored = window.localStorage.getItem("cvify:lastAdaptRequest")
+    if (stored) {
+      setLastRequestKey(stored)
+    }
+  }, [])
+
+  const setRequestKey = (key: string) => {
+    setLastRequestKey(key)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cvify:lastAdaptRequest", key)
+    }
+  }
+
+  const clearRequestKey = () => {
+    setLastRequestKey(null)
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("cvify:lastAdaptRequest")
+    }
+  }
 
 
   const handleResumeUploaded = (newResume: any) => {
@@ -48,6 +82,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
     setResumes((prev) => [newResume, ...prev])
     setSelectedResumeId(newResume.id)
     setResumeText("")
+    clearRequestKey()
   }
 
   const handleDeleteResume = async (id: string) => {
@@ -75,6 +110,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const handleResumeTextChange = (text: string) => {
     setInputError(null)
     setResumeText(text)
+    clearRequestKey()
     if (text) {
       setSelectedResumeId(null) // Clear selected file if typing text
     }
@@ -83,6 +119,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const handleJobPostingChange = (updatedPosting: typeof jobPosting) => {
     setInputError(null)
     setJobPosting(updatedPosting)
+    clearRequestKey()
   }
 
   const validateTextInputs = (resume: string, jobText: string) => {
@@ -100,6 +137,14 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
       cleanedResume,
       cleanedJobText,
     }
+  }
+
+  const buildRequestKey = (opts: { resumeId?: string | null; resumeText?: string; jobText?: string; jobLink?: string }) => {
+    const resumeKey = opts.resumeId ? `res:${opts.resumeId}` : `text:${sanitizePlainText(opts.resumeText || "").slice(0, 500)}`
+    const jobKey = opts.jobLink
+      ? `link:${opts.jobLink.trim()}`
+      : `desc:${sanitizePlainText(opts.jobText || "").slice(0, 500)}`
+    return `${resumeKey}|${jobKey}`
   }
 
   const handleAnalyze = async () => {
@@ -120,6 +165,7 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
     }
 
     setAdaptedResume(null)
+    setSelectedSavedId(null)
     setInputError(null)
     const usingLinkOnly = jobPosting.inputType === "link" && normalizedLink && !jobPosting.description.trim()
     const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink
@@ -141,6 +187,18 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
         }
       }
 
+      const requestKey = buildRequestKey({
+        resumeText: cleanedResume,
+        jobText: usingLinkOnly ? "" : sanitizePlainText(jobText),
+        jobLink: usingLinkOnly ? normalizedLink || "" : undefined,
+      })
+      if (lastRequestKey === requestKey) {
+        const message = "Already adapted this resume for this job. Check your saved adapted resumes."
+        setInputError(message)
+        toast.info(message)
+        return
+      }
+
       setAnalyzing(true)
 
       try {
@@ -150,7 +208,10 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           jobLink: normalizedLink,
         })
         setAdaptedResume(result)
+        setSelectedSavedId(null)
+        setRequestKey(requestKey)
         toast.success("Resume adapted successfully!")
+        void saveAdapted(result)
       } catch (error: any) {
         console.error("Analysis error:", error)
         toast.error(error.message || "Failed to analyze. Please try again.")
@@ -171,6 +232,18 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
         }
       }
 
+      const requestKey = buildRequestKey({
+        resumeId: selectedResumeId,
+        jobText: jobPosting.inputType === "paste" ? sanitizePlainText(jobPosting.description) : "",
+        jobLink: jobPosting.inputType === "link" ? normalizedLink || jobPosting.jobLink.trim() : "",
+      })
+      if (lastRequestKey === requestKey) {
+        const message = "Already adapted this resume for this job. Check your saved adapted resumes."
+        setInputError(message)
+        toast.info(message)
+        return
+      }
+
       setAnalyzing(true)
       try {
         const result = await analyzeResume({
@@ -179,7 +252,10 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
           jobLink: normalizedLink,
         })
         setAdaptedResume(result)
+        setSelectedSavedId(null)
+        setRequestKey(requestKey)
         toast.success("Resume adapted successfully!")
+        void saveAdapted(result)
       } catch (error: any) {
         console.error("Analysis error:", error)
         toast.error(error.message || "Failed to analyze. Please try again.")
@@ -192,6 +268,74 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
   const hasJobInfo =
     jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
   const canAnalyze = (selectedResumeId || resumeText.trim().length > 0) && hasJobInfo
+
+  const saveAdapted = async (content: string) => {
+    if (!content || savingAdapted) return
+
+    const existing = savedAdapted.find((item) => item.content === content)
+    if (existing) {
+      setSelectedSavedId(existing.id)
+      toast.success("Already saved")
+      return
+    }
+
+    setSavingAdapted(true)
+    try {
+      const response = await fetch("/api/rewritten-resumes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, resumeId: selectedResumeId || null }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : "Failed to save adapted resume."
+        throw new Error(message)
+      }
+
+      const saved = data.item as AdaptedResumeItem
+      setSavedAdapted((prev) => {
+        const next = [saved, ...prev]
+        return next.slice(0, 3)
+      })
+      setSelectedSavedId(saved.id)
+      toast.success("Adapted resume saved")
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save adapted resume.")
+    } finally {
+      setSavingAdapted(false)
+    }
+  }
+
+  const handleDeleteSaved = async (id: string) => {
+    setDeletingSavedId(id)
+    try {
+      const response = await fetch(`/api/rewritten-resumes/${id}`, { method: "DELETE" })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : "Failed to delete adapted resume."
+        throw new Error(message)
+      }
+      setSavedAdapted((prev) => prev.filter((item) => item.id !== id))
+      if (selectedSavedId === id) {
+        setSelectedSavedId(null)
+        setAdaptedResume(null)
+      }
+      clearRequestKey()
+      toast.success("Adapted resume deleted")
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete adapted resume.")
+    } finally {
+      setDeletingSavedId(null)
+    }
+  }
+
+  const handleUseSaved = (item: AdaptedResumeItem) => {
+    setAdaptedResume(item.content)
+    setSelectedSavedId(item.id)
+    setCopied(false)
+  }
 
   const copyToClipboard = () => {
     if (adaptedResume) {
@@ -309,6 +453,15 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
                     Adapted Resume
                   </h2>
                   <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => adaptedResume && void saveAdapted(adaptedResume)}
+                      disabled={savingAdapted}
+                    >
+                      {savingAdapted ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                      {savingAdapted ? "Saving..." : "Save"}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setAdaptedResume(null)}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Reset
@@ -344,6 +497,21 @@ export default function DashboardClient({ user, resumes: initialResumes, recentA
             <Card className="glass-card p-6 relative z-10 w-full">
               <h3 className="text-xl font-semibold mb-4">Recent Analyses</h3>
               <AnalysisList analyses={recentAnalyses} />
+            </Card>
+
+            {/* Saved Adapted Resumes */}
+            <Card className="glass-card p-6 relative z-10 w-full">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl font-semibold">Saved Adapted Resumes</h3>
+                <span className="text-xs text-muted-foreground">{savedAdapted.length}/3</span>
+              </div>
+              <AdaptedResumeList
+                items={savedAdapted}
+                selectedId={selectedSavedId}
+                onUse={handleUseSaved}
+                onDelete={handleDeleteSaved}
+                deletingId={deletingSavedId}
+              />
             </Card>
 
             {/* Quick Stats */}

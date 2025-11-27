@@ -41,5 +41,19 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(5)
 
-  return <DashboardClient user={user} resumes={resumes || []} recentAnalyses={analyses || []} />
+  const { data: savedAdapted } = await supabase
+    .from("rewritten_resumes")
+    .select("id, content, resume_id, analysis_id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(3)
+
+  return (
+    <DashboardClient
+      user={user}
+      resumes={resumes || []}
+      recentAnalyses={analyses || []}
+      savedAdaptedResumes={savedAdapted || []}
+    />
+  )
 }

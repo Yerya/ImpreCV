@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS public.analyses (
 -- Rewritten resumes table
 CREATE TABLE IF NOT EXISTS public.rewritten_resumes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  analysis_id UUID NOT NULL REFERENCES public.analyses(id) ON DELETE CASCADE,
+  analysis_id UUID REFERENCES public.analyses(id) ON DELETE CASCADE,
+  resume_id UUID REFERENCES public.resumes(id) ON DELETE SET NULL,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   format TEXT DEFAULT 'markdown',
@@ -77,4 +78,5 @@ CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON public.analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_resume_id ON public.analyses(resume_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON public.analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_analysis_id ON public.rewritten_resumes(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_user_created_at ON public.rewritten_resumes(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_cover_letters_analysis_id ON public.cover_letters(analysis_id);

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, LogOut, Settings, LogIn, UserPlus, Menu, X, ListChecks, Route } from "lucide-react"
+import { ArrowLeft, LogOut, Settings, LogIn, UserPlus, Menu, X, ListChecks, Route, LayoutDashboard } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PaletteToggle } from "@/components/palette-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
@@ -26,6 +26,7 @@ export function GlobalHeader({
   const dispatch = useAppDispatch()
   const { user, isLoading } = useAppSelector((s) => s.auth)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const isLandingPage = pathname === "/"
   const isDashboardPage = pathname === "/dashboard"
@@ -33,6 +34,11 @@ export function GlobalHeader({
 
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Track when component is mounted to prevent hydration mismatches
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -74,8 +80,8 @@ export function GlobalHeader({
 
   return (
     <header className="sticky top-0 left-0 right-0 z-50 w-full">
-        <div className="glass-chrome glass-chrome-top w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-xl backdrop-saturate-125">
-          <div className="px-4 h-[var(--header-h)] flex items-center justify-between relative">
+      <div className="glass-chrome glass-chrome-top w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-xl backdrop-saturate-125">
+        <div className="px-4 h-[var(--header-h)] flex items-center justify-between relative">
           {/* Left side - Logo or Back button */}
           <div className="flex items-center">
             {variant === "back" ? (
@@ -129,43 +135,47 @@ export function GlobalHeader({
             <div className="hidden lg:flex items-center gap-2">
               {!isLoading && (
                 <>
-                      {user ? (
+                  {user ? (
+                    <>
+                      {isLandingPage ? (
                         <>
-                          {isLandingPage ? (
-                            <>
-                              <Link href="/dashboard">
-                                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                                  Dashboard
-                                </Button>
-                              </Link>
-                              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                                <LogOut className="h-4 w-4 mr-2" />
-                                Log Out
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              {!isDashboardPage && (
-                                <Link href="/dashboard">
-                                  <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                                    Dashboard
-                                  </Button>
-                                </Link>
-                              )}
-                              {!isSettingsPage && (
-                                <Link href="/settings">
-                                  <Button variant="ghost" size="sm">
-                                    <Settings className="h-4 w-4 mr-2" />
-                                Settings
-                              </Button>
-                            </Link>
+                          <Link href="/dashboard">
+                            <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                              <LayoutDashboard className="h-4 w-4 mr-2" />
+                              Dashboard
+                            </Button>
+                          </Link>
+                          {mounted && (
+                            <Button variant="ghost" size="sm" onClick={handleLogout}>
+                              <LogOut className="h-4 w-4 mr-2" />
+                              Log Out
+                            </Button>
                           )}
-                          <Button variant="ghost" size="sm" onClick={handleLogout}>
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Log Out
-                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          {mounted && !isDashboardPage && (
+                            <Button asChild variant="ghost" size="sm" className="px-2 sm:px-3">
+                              <Link href="/dashboard">
+                                <LayoutDashboard className="h-4 w-4 mr-2" />
+                                Dashboard
+                              </Link>
+                            </Button>
+                          )}
+                          {mounted && !isSettingsPage && (
+                            <Button asChild variant="ghost" size="sm">
+                              <Link href="/settings">
+                                <Settings className="h-4 w-4 mr-2" />
+                                Settings
+                              </Link>
+                            </Button>
+                          )}
+                          {mounted && (
+                            <Button variant="ghost" size="sm" onClick={handleLogout}>
+                              <LogOut className="h-4 w-4 mr-2" />
+                              Log Out
+                            </Button>
+                          )}
                         </>
                       )}
                     </>
@@ -187,123 +197,100 @@ export function GlobalHeader({
               )}
             </div>
           </div>
-          </div>
         </div>
+      </div>
 
-        {/* Mobile Menu Overlay */}
-        <AnimatePresence>
-          {isMobileMenuOpen && variant === "landing" && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className="absolute top-[var(--header-h)] left-0 right-0 p-4 lg:hidden"
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && variant === "landing" && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-[var(--header-h)] left-0 right-0 p-4 lg:hidden"
+          >
+            <div
+              ref={menuRef}
+              className="glass-chrome rounded-xl p-4 flex flex-col gap-4 shadow-2xl backdrop-blur-xl backdrop-saturate-125 border border-border/10 relative overflow-hidden"
             >
               <div
-                ref={menuRef}
-                className="glass-chrome rounded-xl p-4 flex flex-col gap-4 shadow-2xl backdrop-blur-xl backdrop-saturate-125 border border-border/10 relative overflow-hidden"
-              >
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-70"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 30% 20%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.25), transparent 50%), radial-gradient(circle at 80% 10%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.18), transparent 60%)",
-                  }}
-                />
-                <nav className="flex flex-col gap-2 relative z-10">
-                  <Link
-                    href="#features"
-                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                      <ListChecks className="h-4 w-4 text-primary shrink-0" />
-                      <span>Features</span>
-                    </span>
-                  </Link>
-                  <Link
-                    href="#how-it-works"
-                    className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                      <Route className="h-4 w-4 text-primary shrink-0" />
-                      <span>How It Works</span>
-                    </span>
-                  </Link>
-                </nav>
-                <div className="flex flex-col gap-2 relative z-10">
-                  {!isLoading && (
-                    <>
-                      {user ? (
-                        <>
+                className="pointer-events-none absolute inset-0 opacity-70"
+                style={{
+                  background:
+                    "radial-gradient(circle at 30% 20%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.25), transparent 50%), radial-gradient(circle at 80% 10%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.18), transparent 60%)",
+                }}
+              />
+              <nav className="flex flex-col gap-2 relative z-10">
+                <Link
+                  href="#features"
+                  className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                    <ListChecks className="h-4 w-4 text-primary shrink-0" />
+                    <span>Features</span>
+                  </span>
+                </Link>
+                <Link
+                  href="#how-it-works"
+                  className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                    <Route className="h-4 w-4 text-primary shrink-0" />
+                    <span>How It Works</span>
+                  </span>
+                </Link>
+              </nav>
+              <div className="flex flex-col gap-2 relative z-10">
+                {!isLoading && (
+                  <>
+                    {user ? (
+                      <>
+                        <Button asChild className="w-full justify-start px-4 py-3" variant="ghost">
                           <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Button className="w-full justify-start px-4 py-3" variant="ghost">
-                              <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                                <LayoutDashboard className="h-4 w-4 shrink-0" />
-                                <span>Dashboard</span>
-                              </span>
-                            </Button>
-                          </Link>
-                          <Button
-                            className="w-full justify-start px-4 py-3 text-destructive hover:text-destructive"
-                            variant="ghost"
-                            onClick={() => {
-                              handleLogout()
-                              setIsMobileMenuOpen(false)
-                            }}
-                          >
                             <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                              <LogOut className="h-4 w-4 shrink-0" />
-                              <span>Log Out</span>
+                              <LayoutDashboard className="h-4 w-4 shrink-0" />
+                              <span>Dashboard</span>
                             </span>
-                          </Button>
-                        </>
-                      ) : (
-                        <>
+                          </Link>
+                        </Button>
+                        <Button
+                          className="w-full justify-start px-4 py-3 text-destructive hover:text-destructive"
+                          variant="ghost"
+                          onClick={() => {
+                            handleLogout()
+                            setIsMobileMenuOpen(false)
+                          }}
+                        >
+                          <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                            <LogOut className="h-4 w-4 shrink-0" />
+                            <span>Log Out</span>
+                          </span>
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button asChild className="w-full" variant="outline">
                           <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Button className="w-full" variant="outline">
-                              Log In
-                            </Button>
+                            Log In
                           </Link>
+                        </Button>
+                        <Button asChild className="w-full">
                           <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Button className="w-full">
-                              Get Started
-                            </Button>
+                            Get Started
                           </Link>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
+                        </Button>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-  )
-}
-
-// Helper component for the mobile menu icon if needed, but imported directly above
-function LayoutDashboard({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
-    </svg>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
   )
 }
