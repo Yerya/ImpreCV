@@ -11,13 +11,20 @@ import { toast } from "sonner"
 interface ResumeUploadProps {
   onResumeUploaded: (resume: any) => void
   onTextChange?: (text: string) => void
+  textValue?: string
   currentCount?: number
   maxResumes?: number
 }
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
-export default function ResumeUpload({ onResumeUploaded, onTextChange, currentCount = 0, maxResumes = 3 }: ResumeUploadProps) {
+export default function ResumeUpload({
+  onResumeUploaded,
+  onTextChange,
+  textValue,
+  currentCount = 0,
+  maxResumes = 3,
+}: ResumeUploadProps) {
   const [mode, setMode] = useState<"upload" | "paste">("upload")
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
@@ -122,11 +129,15 @@ export default function ResumeUpload({ onResumeUploaded, onTextChange, currentCo
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value
-    setText(newText)
+    if (textValue === undefined) {
+      setText(newText)
+    }
     if (onTextChange) {
       onTextChange(newText)
     }
   }
+
+  const displayText = textValue ?? text
 
   return (
     <div className="space-y-4">
@@ -198,7 +209,7 @@ export default function ResumeUpload({ onResumeUploaded, onTextChange, currentCo
           <Textarea
             placeholder="Paste your resume content here..."
             className="min-h-[200px] bg-background/50 resize-none"
-            value={text}
+            value={displayText}
             onChange={handleTextChange}
           />
           <p className="text-xs text-muted-foreground">

@@ -116,6 +116,12 @@ export default function DashboardClient({
     }
   }
 
+  const handleSelectResume = (id: string) => {
+    setSelectedResumeId(id)
+    setResumeText("")
+    setInputError(null)
+  }
+
   const handleJobPostingChange = (updatedPosting: typeof jobPosting) => {
     setInputError(null)
     setJobPosting(updatedPosting)
@@ -378,11 +384,12 @@ export default function DashboardClient({
               <ResumeUpload
                 onResumeUploaded={handleResumeUploaded}
                 onTextChange={handleResumeTextChange}
+                textValue={resumeText}
                 currentCount={resumes.length}
                 maxResumes={3}
               />
 
-              {resumes.length > 0 && !resumeText && (
+              {resumes.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-sm font-medium mb-3 text-muted-foreground">
                     Or select from your uploaded resumes:
@@ -390,7 +397,7 @@ export default function DashboardClient({
                   <ResumeList
                     resumes={resumes}
                     selectedResumeId={selectedResumeId}
-                    onSelectResume={setSelectedResumeId}
+                    onSelectResume={handleSelectResume}
                     onDeleteResume={handleDeleteResume}
                     deletingId={deletingId}
                   />
