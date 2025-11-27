@@ -113,20 +113,70 @@ CRITICAL INSTRUCTIONS:
 1. **Preserve & Supplement**:
    - **Retain Core Content**: Do NOT remove the candidate's existing skills, tools, or experience. Keep the foundation intact.
    - **Add Missing Skills**: If the Job Description requires skills/tools not present in the resume, **ADD THEM** to the Skills section or weave them into the Summary/Experience.
+   - **Handle Extra Sections**: If the candidate has sections like "Projects", "Volunteering", or "Languages", PRESERVE them. Use the "custom" type for these.
 2. **Refine & Embellish**:
    - **Improve Formulations**: Rewrite existing bullet points to use the *exact terminology* and keywords from the Job Description.
-   - **Bridge Gaps**: If a specific experience is required but missing, "smooth" the formulation to include it naturally (e.g., "Exposed to...", "Collaborated on...", or directly claiming it if it fits the context).
-   - **Goal**: Enhance the original resume to look like a perfect fit, without losing the candidate's actual history.
-3. **Professional Summary**: Rewrite it to immediately highlight the match between the candidate's background (plus added skills) and the job.
-4. **Formatting**: Keep it clean, professional, and standard.
+   - **Bridge Gaps**: If a specific experience is required but missing, "smooth" the formulation to include it naturally.
+3. **Professional Summary**: Rewrite it to immediately highlight the match between the candidate's background and the job.
+4. **Missing Information**: If specific personal info (like phone or LinkedIn) is missing from the input, return an empty string "" or null. Do NOT make up fake contact info.
 
-CONSTRAINTS:
-- **Maximize Match**: Your top priority is to make the resume look like a perfect fit.
-- **Add, Don't Subtract**: Focus on adding missing keywords and improving descriptions. Do not delete valid content.
-- **Tone**: Confident, persuasive, and tailored.
+OUTPUT FORMAT:
+You must return a valid JSON object matching the following schema. Do NOT include any markdown formatting (like \`\`\`json). Return ONLY the raw JSON string.
 
-OUTPUT:
-Return ONLY the full text of the adapted resume. Do not include any "Here is the adapted resume" or markdown fences. Start immediately with the name/header.
+{
+  "personalInfo": {
+    "name": "Candidate Name",
+    "title": "Target Job Title",
+    "email": "email@example.com",
+    "phone": "Phone Number",
+    "location": "City, Country",
+    "linkedin": "LinkedIn URL (optional)",
+    "website": "Portfolio URL (optional)"
+  },
+  "sections": [
+    {
+      "type": "summary",
+      "title": "Professional Summary",
+      "content": "The professional summary text..."
+    },
+    {
+      "type": "experience",
+      "title": "Work Experience",
+      "content": [
+        {
+          "title": "Job Title",
+          "subtitle": "Company Name",
+          "date": "Date Range",
+          "description": "Brief description (optional)",
+          "bullets": ["Bullet point 1", "Bullet point 2"]
+        }
+      ]
+    },
+    {
+      "type": "education",
+      "title": "Education",
+      "content": [
+        {
+          "title": "Degree",
+          "subtitle": "University",
+          "date": "Date Range"
+        }
+      ]
+    },
+    {
+      "type": "skills",
+      "title": "Skills",
+      "content": "List of skills separated by commas"
+    },
+    {
+      "type": "custom",
+      "title": "Projects / Languages / Volunteering",
+      "content": "Content string OR array of items like experience"
+    }
+  ]
+}
+
+Ensure the JSON is valid and strictly follows this structure.
 `;
 
         // 4. Call Gemini API
@@ -135,35 +185,33 @@ Return ONLY the full text of the adapted resume. Do not include any "Here is the
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             config: {
                 maxOutputTokens: 8192,
-                temperature: 0.5,
+                temperature: 0.4,
+                responseMimeType: "application/json"
             },
         });
 
         // 5. Extract Text
-        // The SDK's response object usually has a text() method or property.
-        // We handle both cases safely.
         let rawResponseText = "";
 
         try {
-            // Try standard SDK method
-            // Cast to any to avoid TS error if types say it's not callable but runtime might be
             if (typeof (response as any).text === 'function') {
                 rawResponseText = (response as any).text();
             } else if (typeof (response as any).text === 'string') {
                 rawResponseText = (response as any).text;
             } else if (response.candidates && response.candidates.length > 0) {
-                // Fallback to manual candidate extraction
                 rawResponseText = response.candidates[0].content?.parts?.[0]?.text || "";
             }
         } catch (e) {
             console.error("Error extracting text from Gemini response:", e);
         }
 
-        // If extraction failed or returned empty, fallback to original
-        const fallback = rawResponseText?.trim() ? rawResponseText : cleanedResume;
-
-        // Sanitize the output to remove any markdown artifacts if the model ignored instructions
-        const adaptedResume = sanitizePlainText(fallback) || cleanedResume;
+        // 6. Return JSON directly (frontend will handle parsing)
+        let adaptedResume = rawResponseText;
+        try {
+            JSON.parse(rawResponseText);
+        } catch (e) {
+            console.error("AI did not return valid JSON:", rawResponseText);
+        }
 
         return NextResponse.json({ adaptedResume });
     } catch (error: any) {

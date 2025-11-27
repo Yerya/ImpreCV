@@ -9,19 +9,23 @@ interface VariantTheme {
     muted: string
     background: string
     border: string
+    surface: string
     badge: string
     layout: 'single' | 'split'
+    headerAccent: string
 }
 
 const variantThemes: Record<ResumeVariantId, VariantTheme> = {
     tailored: {
-        accent: '#0f172a',
-        text: '#111827',
-        muted: '#475569',
-        background: '#f8fafc',
-        border: '#e2e8f0',
-        badge: '#10b981',
-        layout: 'single'
+        accent: '#cbd5f5',
+        text: '#e2e8f0',
+        muted: '#cbd5e1',
+        background: '#0b1220',
+        border: '#1f2937',
+        surface: '#111827',
+        badge: '#a855f7',
+        layout: 'single',
+        headerAccent: '#e2e8f0'
     },
     minimal: {
         accent: '#fafafa',
@@ -29,8 +33,10 @@ const variantThemes: Record<ResumeVariantId, VariantTheme> = {
         muted: '#d4d4d8',
         background: '#0b0b0f',
         border: '#27272a',
+        surface: '#0f0f13',
         badge: '#a1a1aa',
-        layout: 'split'
+        layout: 'single',
+        headerAccent: '#f4f4f5'
     },
     spotlight: {
         accent: '#c2410c',
@@ -38,14 +44,16 @@ const variantThemes: Record<ResumeVariantId, VariantTheme> = {
         muted: '#7c2d12',
         background: '#fffaf0',
         border: '#fde68a',
+        surface: '#fff7e6',
         badge: '#fb923c',
-        layout: 'single'
+        layout: 'single',
+        headerAccent: '#111827'
     }
 }
 
 const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSheet.create({
     page: {
-        padding: 40,
+        padding: 36,
         fontFamily: 'Helvetica',
         fontSize: 11,
         lineHeight: 1.5,
@@ -53,15 +61,12 @@ const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSh
         backgroundColor: theme.background
     },
     header: {
-        marginBottom: 18,
-        paddingBottom: 12,
-        borderBottomWidth: 2,
-        borderBottomColor: theme.border
+        marginBottom: 14
     },
     name: {
         fontSize: 26,
         fontWeight: 700,
-        color: theme.accent,
+        color: theme.headerAccent,
         marginBottom: 4
     },
     title: {
@@ -71,28 +76,25 @@ const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSh
     },
     badge: {
         fontSize: 9,
-        color: theme.accent,
-        backgroundColor: variantId === 'minimal' ? '#18181b' : '#ecfeff',
+        color: theme.text,
+        backgroundColor: variantId === 'minimal' ? '#18181b' : theme.border,
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: 6,
         marginLeft: 8
     },
-    contact: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        fontSize: 10,
+    contactBlock: {
+        marginTop: 6,
+        gap: 4,
+        display: 'flex',
+        flexDirection: 'column'
+    },
+    contactLine: {
+        fontSize: 10.5,
         color: theme.muted
     },
-    contactItem: {
-        marginRight: 8
-    },
-    separator: {
-        color: theme.border
-    },
     section: {
-        marginBottom: 14
+        marginBottom: 16
     },
     sectionTitle: {
         fontSize: 12,
@@ -104,19 +106,16 @@ const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSh
     },
     paragraph: {
         fontSize: 10.5,
-        color: variantId === 'minimal' ? '#e5e7eb' : '#1f2937',
+        color: theme.text,
         lineHeight: 1.5
     },
     item: {
-        marginBottom: 10,
-        paddingBottom: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.border
+        marginBottom: 10
     },
     itemTitle: {
         fontSize: 12,
         fontWeight: 700,
-        color: variantId === 'minimal' ? theme.text : '#0f172a'
+        color: theme.text
     },
     subtitle: {
         fontSize: 11,
@@ -133,7 +132,7 @@ const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSh
     },
     bullet: {
         fontSize: 10,
-        color: variantId === 'minimal' ? '#e5e7eb' : '#334155',
+        color: theme.text,
         marginLeft: 10,
         marginBottom: 3
     },
@@ -156,16 +155,22 @@ const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSh
         width: '100%'
     },
     card: {
-        paddingVertical: 6,
-        paddingHorizontal: 8,
-        ...(variantId === 'minimal' ? {
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: '#111114'
-        } : {
-            backgroundColor: 'transparent'
-        }),
-        borderRadius: 6
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: theme.border,
+        backgroundColor: theme.surface
+    },
+    pageCard: {
+        padding: 18,
+        borderRadius: 14,
+        backgroundColor: theme.surface,
+        borderWidth: 1,
+        borderColor: theme.border
+    },
+    sectionGap: {
+        marginTop: 10
     }
 })
 
@@ -181,12 +186,9 @@ const ContactInfo = ({ data, styles }: { data: ResumeData; styles: ReturnType<ty
     if (!items.length) return null
 
     return (
-        <View style={styles.contact}>
+        <View style={styles.contactBlock}>
             {items.map((item, index) => (
-                <React.Fragment key={index}>
-                    <Text style={styles.contactItem}>{item}</Text>
-                    {index < items.length - 1 && <Text style={styles.separator}>•</Text>}
-                </React.Fragment>
+                <Text key={index} style={styles.contactLine}>{item}</Text>
             ))}
         </View>
     )
@@ -224,7 +226,11 @@ const SectionBlock = ({ section, styles }: { section: ResumeData['sections'][0];
                 <Text style={styles.paragraph}>{section.content}</Text>
             </View>
         ) : (
-            section.content.map((item, index) => <ExperienceItem key={index} item={item} styles={styles} />)
+            <View style={styles.card}>
+                {section.content.map((item, index) => (
+                    <ExperienceItem key={index} item={item} styles={styles} />
+                ))}
+            </View>
         )}
     </View>
 )
@@ -245,37 +251,36 @@ export const ResumeVariantTemplate = ({ data, variantId }: { data: ResumeData; v
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                <View style={styles.header}>
-                    <Text style={styles.name}>{data.personalInfo.name || 'Resume'}</Text>
-                    {data.personalInfo.title && (
-                        <Text style={styles.title}>
-                            {data.personalInfo.title}
-                            <Text style={styles.badge}>  {theme.layout === 'split' ? 'Grid' : 'Flow'}</Text>
-                        </Text>
-                    )}
-                    <ContactInfo data={data} styles={styles} />
-                </View>
+                <View style={styles.pageCard}>
+                    <View style={styles.header}>
+                        <Text style={styles.name}>{data.personalInfo.name || 'Resume'}</Text>
+                        {data.personalInfo.title && (
+                            <Text style={styles.title}>{data.personalInfo.title}</Text>
+                        )}
+                        <ContactInfo data={data} styles={styles} />
+                    </View>
 
-                {shouldSplit ? (
-                    <View style={styles.columns}>
-                        <View style={styles.sidebar}>
-                            {sidebarSections.map((section, index) => (
-                                <SectionBlock key={index} section={section} styles={styles} />
-                            ))}
+                    {shouldSplit ? (
+                        <View style={styles.columns}>
+                            <View style={styles.sidebar}>
+                                {sidebarSections.map((section, index) => (
+                                    <SectionBlock key={index} section={section} styles={styles} />
+                                ))}
+                            </View>
+                            <View style={styles.main}>
+                                {mainSections.map((section, index) => (
+                                    <SectionBlock key={index} section={section} styles={styles} />
+                                ))}
+                            </View>
                         </View>
-                        <View style={styles.main}>
+                    ) : (
+                        <View style={styles.singleColumn}>
                             {mainSections.map((section, index) => (
                                 <SectionBlock key={index} section={section} styles={styles} />
                             ))}
                         </View>
-                    </View>
-                ) : (
-                    <View style={styles.singleColumn}>
-                        {mainSections.map((section, index) => (
-                            <SectionBlock key={index} section={section} styles={styles} />
-                        ))}
-                    </View>
-                )}
+                    )}
+                </View>
             </Page>
         </Document>
     )
