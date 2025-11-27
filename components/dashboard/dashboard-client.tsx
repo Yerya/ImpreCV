@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Loader2, ArrowRight, CheckCircle2, Sparkles, Copy, RefreshCw, Check, Save } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles, Copy, RefreshCw, Check, Save, FileText } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -453,48 +453,78 @@ export default function DashboardClient({
 
             {/* Result Section */}
             {adaptedResume && (
-              <Card className="glass-card p-6 relative z-10 w-full animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                    Adapted Resume
-                  </h2>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => adaptedResume && void saveAdapted(adaptedResume)}
-                      disabled={savingAdapted}
-                    >
-                      {savingAdapted ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                      {savingAdapted ? "Saving..." : "Save"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setAdaptedResume(null)}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Reset
-                    </Button>
-                    <Button size="sm" onClick={copyToClipboard}>
-                      {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                      {copied ? "Copied" : "Copy"}
-                    </Button>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-background via-secondary/40 to-background shadow-inner">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Tailored resume</span>
-                    <span className="text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">Plain text</span>
-                  </div>
-                  <ScrollArea className="w-full h-auto">
-                    <div className="overflow-x-auto">
-                      <pre className="whitespace-pre-wrap break-words px-4 py-4 text-sm leading-relaxed font-mono text-foreground/90 max-w-full w-full [overflow-wrap:anywhere]">
-                        {adaptedResume}
-                      </pre>
+              <>
+                {/* Info Alert */}
+                <Card className="glass-card p-4 relative z-10 w-full mb-4 border-primary/20">
+                  <div className="flex items-start gap-3">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Sparkles className="h-3 w-3 text-primary" />
                     </div>
-                    <ScrollBar orientation="vertical" />
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                </div>
-              </Card>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm mb-1">Resume Ready!</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Choose how to use your adapted resume:<br />
+                        <span className="font-medium text-foreground">• Text Studio</span> - Edit inline, pick a look, then export or copy<br />
+                        <span className="font-medium text-foreground">• Save/Copy Markdown</span> - Use the text version directly
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="glass-card p-6 relative z-10 w-full animate-in fade-in slide-in-from-bottom-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                      Adapted Resume
+                    </h2>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          localStorage.setItem('resume-editor-content', adaptedResume)
+                          window.location.href = '/resume-editor'
+                        }}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Open text studio
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => adaptedResume && void saveAdapted(adaptedResume)}
+                        disabled={savingAdapted}
+                      >
+                        {savingAdapted ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        {savingAdapted ? "Saving..." : "Save"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setAdaptedResume(null)}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Reset
+                      </Button>
+                      <Button size="sm" onClick={copyToClipboard}>
+                        {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                        {copied ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-background via-secondary/40 to-background shadow-inner">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Tailored resume</span>
+                      <span className="text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">Plain text</span>
+                    </div>
+                    <ScrollArea className="w-full h-auto">
+                      <div className="overflow-x-auto">
+                        <pre className="whitespace-pre-wrap break-words px-4 py-4 text-sm leading-relaxed font-mono text-foreground/90 max-w-full w-full [overflow-wrap:anywhere]">
+                          {adaptedResume}
+                        </pre>
+                      </div>
+                      <ScrollBar orientation="vertical" />
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
+                </Card>
+              </>
             )}
           </div>
 
