@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useLayoutEffect, useRef } from 'react'
+import { useState, useMemo, useLayoutEffect, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,8 @@ import type { ResumeData } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
 import { WebResumeRenderer } from './web-renderer'
 import { A4_DIMENSIONS, calculateContentComplexity, getBaseScaleForComplexity, RESUME_SCALE_LIMITS } from '@/lib/resume-templates/server-renderer'
+
+const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 
 interface ResumeEditorProps {
     initialText: string
@@ -38,12 +40,59 @@ export function ResumeEditor({
     const [previewZoom, setPreviewZoom] = useState(1)
     const resumeRef = useRef<HTMLDivElement | null>(null)
     const previewShellRef = useRef<HTMLDivElement | null>(null)
+    const initialVariantRef = useRef(selectedVariant)
+    const initialThemeRef = useRef(themeMode)
 
     const variantMeta = getVariantById(selectedVariant)
     const baseScale = useMemo(
         () => getBaseScaleForComplexity(calculateContentComplexity(resumeData)),
         [resumeData]
     )
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const storedStateRaw = window.localStorage.getItem(EDITOR_STORAGE_KEY)
+        const newContent = window.localStorage.getItem('resume-editor-content')?.trim()
+        let storedState: { data?: ResumeData; variant?: ResumeVariantId; theme?: 'light' | 'dark' } | null = null
+
+        if (storedStateRaw) {
+            try {
+                storedState = JSON.parse(storedStateRaw)
+            } catch {
+                storedState = null
+            }
+        }
+
+        if (newContent) {
+            const parsedData = parseMarkdownToResumeData(newContent)
+            const nextVariant = storedState?.variant ?? initialVariantRef.current
+            const nextTheme = storedState?.theme ?? initialThemeRef.current
+            setResumeData(parsedData)
+            setSelectedVariant(nextVariant)
+            setThemeMode(nextTheme)
+            window.localStorage.setItem(
+                EDITOR_STORAGE_KEY,
+                JSON.stringify({ data: parsedData, variant: nextVariant, theme: nextTheme })
+            )
+            window.localStorage.removeItem('resume-editor-content')
+            return
+        }
+
+        if (storedState?.data) {
+            setResumeData(storedState.data)
+            setSelectedVariant(storedState.variant ?? initialVariantRef.current)
+            setThemeMode(storedState.theme ?? initialThemeRef.current)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        window.localStorage.setItem(
+            EDITOR_STORAGE_KEY,
+            JSON.stringify({ data: resumeData, variant: selectedVariant, theme: themeMode })
+        )
+    }, [resumeData, selectedVariant, themeMode])
 
     useLayoutEffect(() => {
         setPageScale(baseScale)
@@ -60,10 +109,10 @@ export function ResumeEditor({
             const widthFit = A4_DIMENSIONS.widthPx / rawWidth
             const heightFit = A4_DIMENSIONS.heightPx / rawHeight
             const fitScale = Math.min(baseScale, widthFit, heightFit, 1)
-            const nextPageScale = Math.max(
-                RESUME_SCALE_LIMITS.min,
-                Math.min(RESUME_SCALE_LIMITS.max, Number(fitScale.toFixed(3)))
-            )
+                const nextPageScale = Math.max(
+                    RESUME_SCALE_LIMITS.min,
+                    Math.min(RESUME_SCALE_LIMITS.max, Number(fitScale.toFixed(3)))
+                )
 
             if (Math.abs(nextPageScale - pageScale) > 0.01) {
                 setPageScale(nextPageScale)
@@ -71,8 +120,9 @@ export function ResumeEditor({
 
             const renderedWidth = A4_DIMENSIONS.widthPx * nextPageScale
             const availableWidth = shellElement.clientWidth || renderedWidth
-            const zoom = Math.min(1, availableWidth / renderedWidth)
-            const nextZoom = Math.max(0.75, Number(zoom.toFixed(3)))
+            const targetWidth = availableWidth * 0.96
+            const zoom = targetWidth / renderedWidth
+            const nextZoom = Math.max(0.75, Math.min(1.2, Number(zoom.toFixed(3))))
 
             if (Math.abs(nextZoom - previewZoom) > 0.01) {
                 setPreviewZoom(nextZoom)
@@ -192,8 +242,8 @@ export function ResumeEditor({
                     </div>
                 </div>
 
-                <div className="grid xl:grid-cols-[1fr_300px] gap-6 items-start">
-                    <Card className="glass-card p-0 overflow-visible border-0 bg-transparent shadow-none">
+                <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start justify-items-center xl:justify-items-start">
+                    <Card className="glass-card w-full max-w-full p-4 md:p-6 overflow-visible">
                         <div className="w-full overflow-visible flex justify-center" ref={previewShellRef}>
                             <div
                                 style={{
@@ -207,7 +257,8 @@ export function ResumeEditor({
                                     className="transform origin-top"
                                     style={{
                                         ['--resume-scale' as any]: pageScale,
-                                        width: `${A4_DIMENSIONS.widthMm}mm`,
+                                        width: '100%',
+                                        maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
                                         minHeight: `${A4_DIMENSIONS.heightMm}mm`,
                                         transform: 'scale(var(--resume-scale))',
                                         transformOrigin: 'top center',
