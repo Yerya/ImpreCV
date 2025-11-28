@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useLayoutEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +14,7 @@ import { defaultResumeVariant, getVariantById, resumeVariants } from '@/lib/resu
 import type { ResumeData } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
 import { WebResumeRenderer } from './web-renderer'
+import { A4_DIMENSIONS, calculateContentComplexity, getBaseScaleForComplexity, RESUME_SCALE_LIMITS } from '@/lib/resume-templates/server-renderer'
 
 interface ResumeEditorProps {
     initialText: string
@@ -32,8 +33,60 @@ export function ResumeEditor({
     const [resumeData, setResumeData] = useState<ResumeData>(initialData)
     const [selectedVariant, setSelectedVariant] = useState<ResumeVariantId>(initialVariant)
     const [exporting, setExporting] = useState(false)
+    const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
+    const [pageScale, setPageScale] = useState(1)
+    const [previewZoom, setPreviewZoom] = useState(1)
+    const resumeRef = useRef<HTMLDivElement | null>(null)
+    const previewShellRef = useRef<HTMLDivElement | null>(null)
 
     const variantMeta = getVariantById(selectedVariant)
+    const baseScale = useMemo(
+        () => getBaseScaleForComplexity(calculateContentComplexity(resumeData)),
+        [resumeData]
+    )
+
+    useLayoutEffect(() => {
+        setPageScale(baseScale)
+    }, [baseScale])
+
+    useLayoutEffect(() => {
+        const resumeElement = resumeRef.current
+        const shellElement = previewShellRef.current
+        if (!resumeElement || !shellElement) return
+
+        const measure = () => {
+            const rawWidth = resumeElement.scrollWidth || A4_DIMENSIONS.widthPx
+            const rawHeight = resumeElement.scrollHeight || A4_DIMENSIONS.heightPx
+            const widthFit = A4_DIMENSIONS.widthPx / rawWidth
+            const heightFit = A4_DIMENSIONS.heightPx / rawHeight
+            const fitScale = Math.min(baseScale, widthFit, heightFit, 1)
+            const nextPageScale = Math.max(
+                RESUME_SCALE_LIMITS.min,
+                Math.min(RESUME_SCALE_LIMITS.max, Number(fitScale.toFixed(3)))
+            )
+
+            if (Math.abs(nextPageScale - pageScale) > 0.01) {
+                setPageScale(nextPageScale)
+            }
+
+            const renderedWidth = A4_DIMENSIONS.widthPx * nextPageScale
+            const availableWidth = shellElement.clientWidth || renderedWidth
+            const zoom = Math.min(1, availableWidth / renderedWidth)
+            const nextZoom = Math.max(0.75, Number(zoom.toFixed(3)))
+
+            if (Math.abs(nextZoom - previewZoom) > 0.01) {
+                setPreviewZoom(nextZoom)
+            }
+        }
+
+        measure()
+
+        const observer = new ResizeObserver(measure)
+        observer.observe(resumeElement)
+        observer.observe(shellElement)
+
+        return () => observer.disconnect()
+    }, [resumeData, selectedVariant, themeMode, baseScale, pageScale, previewZoom])
 
     const handleReset = () => {
         setResumeData(initialData)
@@ -43,21 +96,52 @@ export function ResumeEditor({
     const handleExport = async () => {
         setExporting(true)
         try {
-            console.log('Exporting resume with data:', resumeData)
-            console.log('Template ID:', selectedVariant)
+            console.log('=== CLIENT: Exporting resume with data:', resumeData)
+            console.log('=== CLIENT: Template ID:', selectedVariant)
+            console.log('=== CLIENT: Theme mode:', themeMode)
 
             const response = await fetch('/api/export-resume', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: resumeData, templateId: selectedVariant, format: 'pdf' })
+                body: JSON.stringify({
+                    data: resumeData,
+                    templateId: selectedVariant,
+                    format: 'pdf',
+                    themeConfig: { mode: themeMode }
+                })
             })
 
+            console.log('=== CLIENT: Response status:', response.status)
+            console.log('=== CLIENT: Response headers:', Object.fromEntries(response.headers.entries()))
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}))
-                throw new Error(errorData.error || 'Failed to export resume')
+                let errorMessage = 'Failed to export resume'
+                let errorDetails = {}
+
+                try {
+                    const contentType = response.headers.get('content-type')
+                    console.log('=== CLIENT: Error response content-type:', contentType)
+
+                    if (contentType?.includes('application/json')) {
+                        errorDetails = await response.json()
+                        errorMessage = errorDetails.error || errorMessage
+                        console.error('=== CLIENT: Server error details:', errorDetails)
+                    } else {
+                        const textError = await response.text()
+                        console.error('=== CLIENT: Server error (text):', textError)
+                        errorMessage = textError || errorMessage
+                    }
+                } catch (parseError) {
+                    console.error('=== CLIENT: Failed to parse error response:', parseError)
+                }
+
+                throw new Error(errorMessage)
             }
 
+            console.log('=== CLIENT: Response OK, reading blob ===')
             const blob = await response.blob()
+            console.log('=== CLIENT: Blob size:', blob.size, 'bytes')
+
             if (blob.size === 0) throw new Error('Generated PDF is empty')
 
             const url = URL.createObjectURL(blob)
@@ -69,9 +153,10 @@ export function ResumeEditor({
             document.body.removeChild(anchor)
             URL.revokeObjectURL(url)
 
+            console.log('=== CLIENT: PDF downloaded successfully ===')
             toast.success('PDF ready')
         } catch (error) {
-            console.error('PDF export error:', error)
+            console.error('=== CLIENT: PDF export error:', error)
             toast.error(error instanceof Error ? error.message : 'Failed to export resume')
         } finally {
             setExporting(false)
@@ -108,12 +193,36 @@ export function ResumeEditor({
                 </div>
 
                 <div className="grid xl:grid-cols-[1fr_300px] gap-6 items-start">
-                    <Card className="glass-card p-0 overflow-hidden border-0 bg-transparent shadow-none">
-                        <WebResumeRenderer
-                            data={resumeData}
-                            variant={selectedVariant}
-                            onUpdate={setResumeData}
-                        />
+                    <Card className="glass-card p-0 overflow-visible border-0 bg-transparent shadow-none">
+                        <div className="w-full overflow-visible flex justify-center" ref={previewShellRef}>
+                            <div
+                                style={{
+                                    transform: `scale(${previewZoom})`,
+                                    transformOrigin: 'top center',
+                                    width: '100%'
+                                }}
+                            >
+                                <div
+                                    ref={resumeRef}
+                                    className="transform origin-top"
+                                    style={{
+                                        ['--resume-scale' as any]: pageScale,
+                                        width: `${A4_DIMENSIONS.widthMm}mm`,
+                                        minHeight: `${A4_DIMENSIONS.heightMm}mm`,
+                                        transform: 'scale(var(--resume-scale))',
+                                        transformOrigin: 'top center',
+                                        margin: '0 auto'
+                                    }}>
+                                    <WebResumeRenderer
+                                        data={resumeData}
+                                        variant={selectedVariant}
+                                        onUpdate={setResumeData}
+                                        themeMode={themeMode}
+                                        onThemeModeChange={setThemeMode}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </Card>
 
                     <div className="space-y-6">
@@ -165,4 +274,3 @@ export function ResumeEditor({
         </div>
     )
 }
-

@@ -1,4 +1,4 @@
-export type ResumeVariantId = 'tailored' | 'minimal' | 'spotlight'
+export type ResumeVariantId = 'tailored' | 'modern' | 'bold'
 
 export interface ResumeVariant {
     id: ResumeVariantId
@@ -19,20 +19,20 @@ export const resumeVariants: ResumeVariant[] = [
         badge: 'Narrative'
     },
     {
-        id: 'minimal',
-        name: 'Mono Grid',
-        tagline: 'Structured mono look for fast scanning',
-        accentFrom: 'from-zinc-900/90',
-        accentTo: 'to-zinc-700/60',
-        badge: 'Minimal'
+        id: 'modern',
+        name: 'Modern Edge',
+        tagline: 'Clean sidebar layout with bold accents',
+        accentFrom: 'from-emerald-900/90',
+        accentTo: 'to-emerald-700/70',
+        badge: 'Creative'
     },
     {
-        id: 'spotlight',
-        name: 'Spotlight',
-        tagline: 'Bold header, spacious sections with highlights',
-        accentFrom: 'from-amber-900/90',
-        accentTo: 'to-amber-700/70',
-        badge: 'Bold'
+        id: 'bold',
+        name: 'Bold Impact',
+        tagline: 'High contrast, large typography, grid layout',
+        accentFrom: 'from-rose-900/90',
+        accentTo: 'to-rose-700/70',
+        badge: 'Impact'
     }
 ]
 

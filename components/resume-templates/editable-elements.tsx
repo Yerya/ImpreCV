@@ -12,6 +12,7 @@ interface EditableTextProps {
     placeholder?: string
     multiline?: boolean
     tagName?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span' | 'div'
+    readOnly?: boolean
 }
 
 export function EditableText({
@@ -20,7 +21,8 @@ export function EditableText({
     className,
     placeholder = 'Click to edit',
     multiline = false,
-    tagName = 'p'
+    tagName = 'p',
+    readOnly = false
 }: EditableTextProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [localValue, setLocalValue] = useState(value)
@@ -50,7 +52,7 @@ export function EditableText({
         }
     }
 
-    if (isEditing) {
+    if (isEditing && !readOnly) {
         const InputComponent = multiline ? 'textarea' : 'input'
         return (
             <InputComponent
@@ -76,13 +78,13 @@ export function EditableText({
 
     return (
         <Tag
-            onClick={() => setIsEditing(true)}
+            onClick={() => !readOnly && setIsEditing(true)}
             className={cn(
-                'cursor-text hover:bg-primary/5 rounded px-1 -mx-1 transition-colors min-w-[20px] min-h-[1em] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/50',
+                !readOnly && 'cursor-text hover:bg-primary/5 rounded px-1 -mx-1 transition-colors min-w-[20px] min-h-[1em] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/50',
                 'break-words whitespace-pre-wrap',
                 className
             )}
-            data-placeholder={placeholder}
+            data-placeholder={readOnly ? '' : placeholder}
         >
             {value}
         </Tag>
@@ -96,6 +98,7 @@ interface EditableListProps<T> {
     newItemTemplate: T
     className?: string
     addButtonLabel?: string
+    readOnly?: boolean
 }
 
 export function EditableList<T>({
@@ -104,7 +107,8 @@ export function EditableList<T>({
     renderItem,
     newItemTemplate,
     className,
-    addButtonLabel = 'Add Item'
+    addButtonLabel = 'Add Item',
+    readOnly = false
 }: EditableListProps<T>) {
     const handleAddItem = () => {
         // Fix: Handle primitive types (strings) correctly by not spreading them
@@ -133,25 +137,29 @@ export function EditableList<T>({
                     <div className="flex-1 min-w-0">
                         {renderItem(item, index, (newItem) => handleUpdateItem(index, newItem))}
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0 mt-0.5"
-                        onClick={() => handleRemoveItem(index)}
-                    >
-                        <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {!readOnly && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0 mt-0.5"
+                            onClick={() => handleRemoveItem(index)}
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </Button>
+                    )}
                 </div>
             ))}
-            <Button
-                variant="ghost"
-                size="sm"
-                className="w-full border border-dashed border-muted-foreground/20 text-muted-foreground hover:text-primary hover:border-primary/50 opacity-0 group-hover/list:opacity-100 transition-all"
-                onClick={handleAddItem}
-            >
-                <Plus className="h-3 w-3 mr-2" />
-                {addButtonLabel}
-            </Button>
+            {!readOnly && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full border border-dashed border-muted-foreground/20 text-muted-foreground hover:text-primary hover:border-primary/50 opacity-0 group-hover/list:opacity-100 transition-all"
+                    onClick={handleAddItem}
+                >
+                    <Plus className="h-3 w-3 mr-2" />
+                    {addButtonLabel}
+                </Button>
+            )}
         </div>
     )
 }

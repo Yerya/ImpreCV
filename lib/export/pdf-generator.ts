@@ -12,10 +12,11 @@ import { defaultResumeVariant } from '../resume-templates/variants'
  */
 export async function generateResumePDF(
     data: ResumeData,
-    templateId: ResumeVariantId = defaultResumeVariant
+    templateId: ResumeVariantId = defaultResumeVariant,
+    themeConfig?: { mode?: 'light' | 'dark' }
 ): Promise<Buffer> {
     const variant = templateId || defaultResumeVariant
-    const element = ResumeVariantTemplate({ data, variantId: variant })
+    const element = ResumeVariantTemplate({ data, variantId: variant, themeConfig })
 
     const stream = await renderToStream(element)
 

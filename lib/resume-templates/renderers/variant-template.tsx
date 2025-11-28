@@ -13,6 +13,8 @@ interface VariantTheme {
     badge: string
     layout: 'single' | 'split'
     headerAccent: string
+    fontFamily?: string
+    headerAlign?: 'left' | 'center' | 'right'
 }
 
 const variantThemes: Record<ResumeVariantId, VariantTheme> = {
@@ -48,15 +50,64 @@ const variantThemes: Record<ResumeVariantId, VariantTheme> = {
         badge: '#fb923c',
         layout: 'single',
         headerAccent: '#111827'
+    },
+    classic: {
+        accent: '#0f172a',
+        text: '#334155',
+        muted: '#64748b',
+        background: '#ffffff',
+        border: '#e2e8f0',
+        surface: '#ffffff',
+        badge: '#94a3b8',
+        layout: 'single',
+        headerAccent: '#0f172a',
+        fontFamily: 'Times-Roman',
+        headerAlign: 'center'
+    },
+    modern: {
+        accent: '#064e3b',
+        text: '#334155',
+        muted: '#047857',
+        background: '#f8fafc',
+        border: '#e2e8f0',
+        surface: '#ffffff',
+        badge: '#059669',
+        layout: 'split',
+        headerAccent: '#ffffff'
+    },
+    bold: {
+        accent: '#facc15',
+        text: '#000000',
+        muted: '#000000',
+        background: '#ffffff',
+        border: '#000000',
+        surface: '#ffffff',
+        badge: '#000000',
+        layout: 'split',
+        headerAccent: '#ffffff'
     }
+}
+
+const classicDarkTheme: VariantTheme = {
+    accent: '#f8fafc',
+    text: '#cbd5e1',
+    muted: '#94a3b8',
+    background: '#0f172a',
+    border: '#334155',
+    surface: '#0f172a',
+    badge: '#475569',
+    layout: 'single',
+    headerAccent: '#f8fafc',
+    fontFamily: 'Times-Roman',
+    headerAlign: 'center'
 }
 
 const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSheet.create({
     page: {
-        padding: 36,
-        fontFamily: 'Helvetica',
-        fontSize: 11,
-        lineHeight: 1.5,
+        padding: 30,
+        fontFamily: theme.fontFamily || 'Helvetica',
+        fontSize: 10,
+        lineHeight: 1.4,
         color: theme.text,
         backgroundColor: theme.background
     },
@@ -235,8 +286,13 @@ const SectionBlock = ({ section, styles }: { section: ResumeData['sections'][0];
     </View>
 )
 
-export const ResumeVariantTemplate = ({ data, variantId }: { data: ResumeData; variantId: ResumeVariantId }) => {
-    const theme = variantThemes[variantId] ?? variantThemes.tailored
+export const ResumeVariantTemplate = ({ data, variantId, themeConfig }: { data: ResumeData; variantId: ResumeVariantId; themeConfig?: { mode?: 'light' | 'dark' } }) => {
+    let theme = variantThemes[variantId] ?? variantThemes.tailored
+
+    if (variantId === 'classic' && themeConfig?.mode === 'dark') {
+        theme = classicDarkTheme
+    }
+
     const styles = buildStyles(theme, variantId)
 
     const sidebarSections = theme.layout === 'split'
