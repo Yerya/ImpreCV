@@ -7,13 +7,11 @@ import { A4_DIMENSIONS, variantStyles } from '@/lib/resume-templates/server-rend
 interface ServerResumeRendererProps {
     data: ResumeData
     variant: ResumeVariantId
-    themeMode?: 'light' | 'dark'
 }
 
 export function ServerResumeRenderer({
     data,
     variant,
-    themeMode = 'light',
 }: ServerResumeRendererProps) {
     // Determine styles based on variant
     const styles = variantStyles[variant] || variantStyles.tailored
@@ -84,12 +82,8 @@ export function ServerResumeRenderer({
 
     return (
         <div
-            className={cn('mx-auto shadow-2xl transition-all duration-300 relative flex flex-col overflow-hidden', styles.page)}
-            style={{
-                width: `${A4_DIMENSIONS.widthMm}mm`,
-                maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
-                minHeight: `${A4_DIMENSIONS.heightMm}mm`
-            }}
+            className={cn('flex flex-col', styles.page)}
+            style={{ minHeight: `${A4_DIMENSIONS.heightMm}mm` }}
         >
             <div className={cn(styles.pageCard, 'flex-1 h-full')}>
                 <div className={styles.header}>

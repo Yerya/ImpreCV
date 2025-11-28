@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
             React.createElement(ServerResumeRenderer, {
                 data,
                 variant: templateId,
-                themeMode: themeConfig?.mode || 'light'
             })
         )
         console.log('=== PDF Export: Component rendered, HTML length:', componentHtml.length, 'chars ===')
@@ -133,7 +132,6 @@ export async function POST(req: NextRequest) {
                         padding: 0;
                         width: 210mm;
                         min-height: 297mm;
-                        overflow: hidden;
                     }
 
                     .resume-page {
@@ -141,7 +139,6 @@ export async function POST(req: NextRequest) {
                         min-height: 297mm;
                         display: flex;
                         flex-direction: column;
-                        overflow: hidden;
                     }
                     
                     /* Prevent content overflow */
