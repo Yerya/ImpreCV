@@ -3,9 +3,27 @@ import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured";
+import { defaultResumeVariant } from "@/lib/resume-templates/variants";
+import type { ResumeData } from "@/lib/resume-templates/types";
+
+const MAX_SAVED = 3;
 
 export async function POST(req: NextRequest) {
     try {
+        if (!isSupabaseConfigured()) {
+            return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
+        }
+
+        const supabase = await getSupabaseServerClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const body = await req.json();
         const { resumeText, resumeId, jobDescription, jobLink } = body;
 
@@ -19,19 +37,7 @@ export async function POST(req: NextRequest) {
 
         let cleanedResume = "";
         if (resumeId) {
-            if (!isSupabaseConfigured()) {
-                return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
-            }
             try {
-                const supabase = await getSupabaseServerClient();
-                const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-
-                if (!user) {
-                    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-                }
-
                 const { data: resumeRecord, error: resumeError } = await supabase
                     .from("resumes")
                     .select("extracted_text, user_id")
@@ -213,7 +219,51 @@ Ensure the JSON is valid and strictly follows this structure.
             console.error("AI did not return valid JSON:", rawResponseText);
         }
 
-        return NextResponse.json({ adaptedResume });
+        const parsedData: ResumeData = parseMarkdownToResumeData(adaptedResume);
+        const serializedContent = JSON.stringify(parsedData);
+
+        const { data: existing } = await supabase
+            .from("rewritten_resumes")
+            .select("id, content, structured_data, resume_id, analysis_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name")
+            .eq("user_id", user.id)
+            .eq("content", serializedContent)
+            .limit(1)
+            .maybeSingle();
+
+        if (existing) {
+            return NextResponse.json({ item: existing, resumeData: parsedData });
+        }
+
+        const { count } = await supabase
+            .from("rewritten_resumes")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id);
+
+        if ((count ?? 0) >= MAX_SAVED) {
+            return NextResponse.json({ error: "You can keep up to 3 recent resumes. Delete one to create a new version." }, { status: 400 });
+        }
+
+        const { data: saved, error: insertError } = await supabase
+            .from("rewritten_resumes")
+            .insert({
+                user_id: user.id,
+                resume_id: resumeId || null,
+                content: serializedContent,
+                structured_data: parsedData,
+                format: "json",
+                variant: defaultResumeVariant,
+                theme: "light",
+                file_name: parsedData.personalInfo.name || "resume",
+            })
+            .select("id, content, structured_data, resume_id, analysis_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name")
+            .single();
+
+        if (insertError || !saved) {
+            console.error("Failed to save adapted resume:", insertError);
+            return NextResponse.json({ error: "Failed to save adapted resume" }, { status: 500 });
+        }
+
+        return NextResponse.json({ item: saved, resumeData: parsedData });
     } catch (error: any) {
         console.error("Error in adapt-resume:", error);
         return NextResponse.json(

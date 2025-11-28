@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -78,6 +80,14 @@ export function GlobalHeader({
     router.refresh()
   }
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push(backHref)
+    }
+  }
+
   return (
     <header className="sticky top-0 left-0 right-0 z-50 w-full">
       <div className="glass-chrome glass-chrome-top w-full max-w-screen-2xl mx-auto overflow-hidden backdrop-blur-xl backdrop-saturate-125">
@@ -85,11 +95,9 @@ export function GlobalHeader({
           {/* Left side - Logo or Back button */}
           <div className="flex items-center">
             {variant === "back" ? (
-              <Link href={backHref}>
-                <Button variant="ghost" size="icon" aria-label={backLabel}>
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <Button variant="ghost" size="icon" aria-label={backLabel} onClick={handleBack}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
             ) : (
               <Link href="/" className="flex items-center gap-1">
                 <BrandMark className="flex items-center gap-1" />

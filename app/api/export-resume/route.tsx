@@ -3,48 +3,37 @@ import puppeteer from 'puppeteer'
 import { A4_DIMENSIONS } from '@/lib/resume-templates/server-renderer'
 import fs from 'fs'
 import path from 'path'
+import { getSupabaseServerClient, isSupabaseConfigured } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
-    console.log('=== PDF Export: POST request received ===')
+    let browser: puppeteer.Browser | null = null
     try {
-        const { data, templateId, themeConfig } = await req.json()
-        console.log('=== PDF Export: Request data parsed ===')
-        console.log('Template ID:', templateId)
-        console.log('Theme mode:', themeConfig?.mode)
-        console.log('Resume data sections:', data?.sections?.length || 0)
+        const { data, templateId, themeConfig, resumeId, fileName } = await req.json()
 
         // Read globals.css to extract CSS variables
-        console.log('=== PDF Export: Reading globals.css ===')
         const globalsCssPath = path.join(process.cwd(), 'styles', 'globals.css')
         let cssContent = ''
         try {
             cssContent = fs.readFileSync(globalsCssPath, 'utf-8')
             cssContent = cssContent.replace(/@import.*;/g, '')
             cssContent = cssContent.replace(/@theme\s+inline\s+\{[^}]+\}/g, '')
-            console.log('=== PDF Export: globals.css read successfully ===')
         } catch (e) {
-            console.error('=== PDF Export: Failed to read globals.css ===', e)
+            console.error('Failed to read globals.css', e)
         }
 
-
-
         // Dynamically import react-dom/server to avoid Next.js static analysis
-        console.log('=== PDF Export: Dynamically importing react-dom/server ===')
         const ReactDOMServer = await import('react-dom/server')
         const { ServerResumeRenderer } = await import('@/components/resume-templates/server-renderer-component')
         const React = await import('react')
 
-        console.log('=== PDF Export: Rendering component to HTML ===')
         const componentHtml = ReactDOMServer.renderToStaticMarkup(
             React.createElement(ServerResumeRenderer, {
                 data,
                 variant: templateId,
             })
         )
-        console.log('=== PDF Export: Component rendered, HTML length:', componentHtml.length, 'chars ===')
 
         // Construct the full HTML document
-        console.log('=== PDF Export: Constructing full HTML document ===')
         const html = `
             <!DOCTYPE html>
             <html lang="en" class="${themeConfig?.mode === 'dark' ? 'dark' : ''}">
@@ -168,19 +157,6 @@ export async function POST(req: NextRequest) {
         console.log('=== PDF Export: HTML document constructed, total length:', html.length, 'chars ===')
 
         // Launch Puppeteer
-        console.log('=== PDF Export: Attempting to launch Puppeteer ===')
-        console.log('Puppeteer config:', {
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
-        })
-
-        let browser
         try {
             browser = await puppeteer.launch({
                 headless: true,
@@ -192,44 +168,30 @@ export async function POST(req: NextRequest) {
                     '--disable-gpu'
                 ]
             })
-            console.log('=== PDF Export: Puppeteer browser launched successfully ===')
         } catch (launchError) {
-            console.error('=== PDF Export: FAILED to launch Puppeteer browser ===')
-            console.error('Launch error:', launchError)
-            console.error('Error details:', {
-                message: launchError instanceof Error ? launchError.message : String(launchError),
-                stack: launchError instanceof Error ? launchError.stack : 'No stack trace'
-            })
             throw new Error(`Puppeteer launch failed: ${launchError instanceof Error ? launchError.message : String(launchError)}`)
         }
 
-        console.log('=== PDF Export: Creating new page ===')
         const page = await browser.newPage()
 
-        console.log('=== PDF Export: Setting viewport ===')
         await page.setViewport({
             width: Math.ceil(A4_DIMENSIONS.widthPx),
             height: Math.ceil(A4_DIMENSIONS.heightPx),
             deviceScaleFactor: 2
         })
-        console.log('Viewport:', A4_DIMENSIONS.widthPx, 'x', A4_DIMENSIONS.heightPx)
 
         // Set content and wait for network idle
-        console.log('=== PDF Export: Setting page content ===')
         await page.setContent(html, {
             waitUntil: 'networkidle0',
             timeout: 30000
         })
-        console.log('=== PDF Export: Page content set, waiting for fonts ===')
 
         await page.evaluate(() => {
             const fonts = (document as any).fonts
             return fonts ? fonts.ready : Promise.resolve()
         })
-        console.log('=== PDF Export: Fonts loaded ===')
 
         // Generate PDF with optimized settings
-        console.log('=== PDF Export: Generating PDF ===')
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
@@ -242,26 +204,76 @@ export async function POST(req: NextRequest) {
                 left: '0mm'
             }
         })
-        console.log('=== PDF Export: PDF generated, size:', pdfBuffer.length, 'bytes ===')
 
-        console.log('=== PDF Export: Closing browser ===')
         await browser.close()
-        console.log('=== PDF Export: Browser closed successfully ===')
+        browser = null
+        const safeName = (fileName || 'resume').replace(/[^a-zA-Z0-9._-]/g, '_') || 'resume'
+        let exportUrl: string | null = null
 
-        console.log('=== PDF Export: Sending response ===')
+        if (isSupabaseConfigured()) {
+            try {
+                const supabase = await getSupabaseServerClient()
+                const {
+                    data: { user },
+                } = await supabase.auth.getUser()
+
+                if (user) {
+                    let previousPath: string | null = null
+                    if (resumeId) {
+                        const { data: existing } = await supabase
+                            .from('rewritten_resumes')
+                            .select('pdf_path')
+                            .eq('id', resumeId)
+                            .eq('user_id', user.id)
+                            .maybeSingle()
+                        previousPath = existing?.pdf_path || null
+                    }
+
+                    const storagePath = `exports/${user.id}/${Date.now()}-${safeName}.pdf`
+                    const { error: uploadError } = await supabase.storage
+                        .from('resumes')
+                        .upload(storagePath, pdfBuffer, { contentType: 'application/pdf', upsert: true })
+
+                    if (!uploadError) {
+                        const {
+                            data: { publicUrl },
+                        } = supabase.storage.from('resumes').getPublicUrl(storagePath)
+                        exportUrl = publicUrl
+
+                        if (resumeId) {
+                            await supabase
+                                .from('rewritten_resumes')
+                                .update({
+                                    pdf_url: publicUrl,
+                                    pdf_path: storagePath,
+                                    updated_at: new Date().toISOString(),
+                                })
+                                .eq('id', resumeId)
+                                .eq('user_id', user.id)
+                        }
+
+                        if (previousPath && previousPath !== storagePath) {
+                            await supabase.storage.from('resumes').remove([previousPath])
+                        }
+                    } else {
+                        console.error('Failed to upload generated PDF:', uploadError)
+                    }
+                }
+            } catch (storageError) {
+                console.error('Failed to store generated PDF:', storageError)
+            }
+        }
+
         return new NextResponse(Buffer.from(pdfBuffer), {
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="resume.pdf"`,
+                'Content-Disposition': `attachment; filename="${safeName}.pdf"`,
+                ...(exportUrl ? { 'x-export-url': exportUrl, 'x-export-name': `${safeName}.pdf` } : {})
             },
         })
 
     } catch (error) {
-        console.error('=== PDF Export: Top-level error caught ===')
-        console.error('Error:', error)
-        console.error('Error type:', typeof error)
-        console.error('Error message:', error instanceof Error ? error.message : String(error))
-        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace available')
+        console.error('PDF export failed:', error)
 
         return NextResponse.json(
             {
@@ -271,5 +283,13 @@ export async function POST(req: NextRequest) {
             },
             { status: 500 }
         )
+    } finally {
+        if (browser) {
+            try {
+                await browser.close()
+            } catch {
+                // swallow close errors
+            }
+        }
     }
 }

@@ -13,25 +13,25 @@ export const resumeVariants: ResumeVariant[] = [
     {
         id: 'tailored',
         name: 'Tailored Flow',
-        tagline: 'Narrative, human tone with gentle contrast',
-        accentFrom: 'from-slate-900/90',
-        accentTo: 'to-slate-700/70',
-        badge: 'Narrative'
+        tagline: 'Editorial, deep blue gradients with soft contrast',
+        accentFrom: 'from-slate-900',
+        accentTo: 'to-indigo-800',
+        badge: 'Editorial'
     },
     {
         id: 'modern',
         name: 'Modern Edge',
-        tagline: 'Clean sidebar layout with bold accents',
-        accentFrom: 'from-emerald-900/90',
-        accentTo: 'to-emerald-700/70',
-        badge: 'Creative'
+        tagline: 'Clean sidebar layout with emerald accents',
+        accentFrom: 'from-emerald-900',
+        accentTo: 'to-emerald-700',
+        badge: 'Minimal'
     },
     {
         id: 'bold',
         name: 'Bold Impact',
-        tagline: 'High contrast, large typography, grid layout',
-        accentFrom: 'from-rose-900/90',
-        accentTo: 'to-rose-700/70',
+        tagline: 'Black + gold, high contrast, block headlines',
+        accentFrom: 'from-yellow-500',
+        accentTo: 'to-amber-600',
         badge: 'Impact'
     }
 ]

@@ -79,6 +79,11 @@ CREATE POLICY "Users can insert their own rewritten resumes"
   ON public.rewritten_resumes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "Users can update their own rewritten resumes"
+  ON public.rewritten_resumes FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 CREATE POLICY "Users can delete their own rewritten resumes"
   ON public.rewritten_resumes FOR DELETE
   USING (auth.uid() = user_id);

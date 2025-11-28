@@ -39,7 +39,7 @@ export default function AnalysisClient({ analysis }: AnalysisClientProps) {
       if (!response.ok) throw new Error("Failed to generate resume")
 
       const { rewriteId } = await response.json()
-      router.push(`/resume-rewrite/${rewriteId}`)
+      router.push(`/resume-editor?id=${rewriteId}`)
     } catch (error) {
       console.error("Resume generation error:", error)
       alert("Failed to generate resume. Please try again.")

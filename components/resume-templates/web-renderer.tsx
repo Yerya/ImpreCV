@@ -18,6 +18,28 @@ interface WebResumeRendererProps {
     onThemeModeChange?: (mode: 'light' | 'dark') => void
 }
 
+const isItemEmpty = (item: ResumeItem) => {
+    const hasBullets = Array.isArray(item.bullets) && item.bullets.some((b) => b && b.trim().length > 0)
+    return !(
+        (item.title && item.title.trim()) ||
+        (item.subtitle && item.subtitle.trim()) ||
+        (item.date && item.date.trim()) ||
+        (item.description && item.description.trim()) ||
+        hasBullets
+    )
+}
+
+const isSectionRenderable = (section: ResumeData['sections'][number]) => {
+    if (typeof section.content === 'string') {
+        return section.content.trim().length > 0
+    }
+    if (Array.isArray(section.content)) {
+        const meaningfulItems = section.content.filter((item) => !isItemEmpty(item))
+        return meaningfulItems.length > 0
+    }
+    return false
+}
+
 export function WebResumeRenderer({
     data,
     variant,
@@ -185,15 +207,22 @@ export function WebResumeRenderer({
         )
     }
 
-    const sidebarSections = data.sections.filter(s => s.type === 'skills' || s.type === 'education')
-    const mainSections = data.sections.filter(s => s.type !== 'skills' && s.type !== 'education')
+    const renderableSections = React.useMemo(
+        () => (isEditing ? data.sections : data.sections.filter((section) => isSectionRenderable(section))),
+        [data.sections, isEditing]
+    )
+
+    const sidebarSections = renderableSections.filter(s => s.type === 'skills' || s.type === 'education')
+    const mainSections = renderableSections.filter(s => s.type !== 'skills' && s.type !== 'education')
     const shouldSplit = layout === 'split' && sidebarSections.length > 0
 
     return (
         <div
             className={cn('w-full mx-auto shadow-2xl transition-all duration-300 relative flex flex-col overflow-hidden', styles.page)}
             style={{
+                width: `${A4_DIMENSIONS.widthMm}mm`,
                 maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
+                minWidth: `${A4_DIMENSIONS.widthMm}mm`,
                 minHeight: `${A4_DIMENSIONS.heightMm}mm`
             }}
         >

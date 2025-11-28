@@ -55,8 +55,15 @@ CREATE TABLE IF NOT EXISTS public.rewritten_resumes (
   resume_id UUID REFERENCES public.resumes(id) ON DELETE SET NULL,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  format TEXT DEFAULT 'markdown',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  structured_data JSONB,
+  format TEXT DEFAULT 'json',
+  variant TEXT DEFAULT 'tailored',
+  theme TEXT DEFAULT 'light',
+  pdf_url TEXT,
+  pdf_path TEXT,
+  file_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Cover letters table
@@ -79,4 +86,5 @@ CREATE INDEX IF NOT EXISTS idx_analyses_resume_id ON public.analyses(resume_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON public.analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_analysis_id ON public.rewritten_resumes(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_user_created_at ON public.rewritten_resumes(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_user_updated_at ON public.rewritten_resumes(user_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_cover_letters_analysis_id ON public.cover_letters(analysis_id);

@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
+import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,13 +54,19 @@ JavaScript, React, Node.js, TypeScript, AWS, Docker, Team Leadership, Agile Meth
 ## Education
 Bachelor of Science in Computer Science | University Name | 2018`
 
+    const parsedResume = parseMarkdownToResumeData(mockRewrittenResume)
+
     const { data: rewriteData, error: rewriteError } = await supabase
       .from("rewritten_resumes")
       .insert({
         analysis_id: analysisId,
         user_id: user.id,
-        content: mockRewrittenResume,
-        format: "markdown",
+        content: JSON.stringify(parsedResume),
+        structured_data: parsedResume,
+        format: "json",
+        variant: defaultResumeVariant,
+        theme: "light",
+        file_name: parsedResume.personalInfo.name || user.user_metadata?.full_name || "resume",
       })
       .select()
       .single()

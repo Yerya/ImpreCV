@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     // Supabase not configured - redirect protected routes to landing page
-    const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings"]
+    const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings", "/resume-editor"]
     const isProtectedPath = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path))
 
     if (isProtectedPath) {
@@ -44,7 +44,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes
-  const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings"]
+  const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings", "/resume-editor"]
   const isProtectedPath = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path))
 
   if (isProtectedPath && !user) {

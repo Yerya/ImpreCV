@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Loader2, ArrowRight, CheckCircle2, Sparkles, Copy, RefreshCw, Check, Save, FileText } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -11,10 +12,8 @@ import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
 import AnalysisList from "./analysis-list"
-import { AdaptedResumeItem, AdaptedResumeList } from "./adapted-resume-list"
 import { analyzeResume } from "@/lib/api-client"
 import { toast } from "sonner"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
 
@@ -22,16 +21,15 @@ interface DashboardClientProps {
   user: any
   resumes: any[]
   recentAnalyses: any[]
-  savedAdaptedResumes: AdaptedResumeItem[]
 }
 
 export default function DashboardClient({
   user,
   resumes: initialResumes,
   recentAnalyses,
-  savedAdaptedResumes,
 }: DashboardClientProps) {
   const authUser = useAppSelector((s) => s.auth.user)
+  const router = useRouter()
   const [resumes, setResumes] = useState(initialResumes)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
   const [resumeText, setResumeText] = useState("")
@@ -41,14 +39,8 @@ export default function DashboardClient({
     inputType: "paste" as "paste" | "link",
   })
   const [analyzing, setAnalyzing] = useState(false)
-  const [adaptedResume, setAdaptedResume] = useState<string | null>(null)
   const [inputError, setInputError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [savedAdapted, setSavedAdapted] = useState<AdaptedResumeItem[]>(savedAdaptedResumes || [])
-  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null)
-  const [savingAdapted, setSavingAdapted] = useState(false)
-  const [deletingSavedId, setDeletingSavedId] = useState<string | null>(null)
   const [lastRequestKey, setLastRequestKey] = useState<string | null>(null)
 
   // Use Redux user name if available, fallback to props
@@ -170,8 +162,6 @@ export default function DashboardClient({
       return
     }
 
-    setAdaptedResume(null)
-    setSelectedSavedId(null)
     setInputError(null)
     const usingLinkOnly = jobPosting.inputType === "link" && normalizedLink && !jobPosting.description.trim()
     const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink
@@ -199,7 +189,7 @@ export default function DashboardClient({
         jobLink: usingLinkOnly ? normalizedLink || "" : undefined,
       })
       if (lastRequestKey === requestKey) {
-        const message = "Already adapted this resume for this job. Check your saved adapted resumes."
+        const message = "Already adapted this resume for this job. Open the Resume Editor to continue."
         setInputError(message)
         toast.info(message)
         return
@@ -213,11 +203,14 @@ export default function DashboardClient({
           jobDescription: usingLinkOnly ? "" : sanitizePlainText(jobText),
           jobLink: normalizedLink,
         })
-        setAdaptedResume(result)
-        setSelectedSavedId(null)
+
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
+        }
+
         setRequestKey(requestKey)
-        toast.success("Resume adapted successfully!")
-        void saveAdapted(result)
+        toast.success("Resume adapted. Opening editor...")
+        router.push(`/resume-editor?id=${result.id}`)
       } catch (error: any) {
         console.error("Analysis error:", error)
         toast.error(error.message || "Failed to analyze. Please try again.")
@@ -244,7 +237,7 @@ export default function DashboardClient({
         jobLink: jobPosting.inputType === "link" ? normalizedLink || jobPosting.jobLink.trim() : "",
       })
       if (lastRequestKey === requestKey) {
-        const message = "Already adapted this resume for this job. Check your saved adapted resumes."
+        const message = "Already adapted this resume for this job. Open the Resume Editor to continue."
         setInputError(message)
         toast.info(message)
         return
@@ -257,11 +250,12 @@ export default function DashboardClient({
           jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : "",
           jobLink: normalizedLink,
         })
-        setAdaptedResume(result)
-        setSelectedSavedId(null)
         setRequestKey(requestKey)
-        toast.success("Resume adapted successfully!")
-        void saveAdapted(result)
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
+        }
+        toast.success("Resume adapted. Opening editor...")
+        router.push(`/resume-editor?id=${result.id}`)
       } catch (error: any) {
         console.error("Analysis error:", error)
         toast.error(error.message || "Failed to analyze. Please try again.")
@@ -274,83 +268,6 @@ export default function DashboardClient({
   const hasJobInfo =
     jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
   const canAnalyze = (selectedResumeId || resumeText.trim().length > 0) && hasJobInfo
-
-  const saveAdapted = async (content: string) => {
-    if (!content || savingAdapted) return
-
-    const existing = savedAdapted.find((item) => item.content === content)
-    if (existing) {
-      setSelectedSavedId(existing.id)
-      toast.success("Already saved")
-      return
-    }
-
-    setSavingAdapted(true)
-    try {
-      const response = await fetch("/api/rewritten-resumes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, resumeId: selectedResumeId || null }),
-      })
-
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : "Failed to save adapted resume."
-        throw new Error(message)
-      }
-
-      const saved = data.item as AdaptedResumeItem
-      setSavedAdapted((prev) => {
-        const next = [saved, ...prev]
-        return next.slice(0, 3)
-      })
-      setSelectedSavedId(saved.id)
-      toast.success("Adapted resume saved")
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to save adapted resume.")
-    } finally {
-      setSavingAdapted(false)
-    }
-  }
-
-  const handleDeleteSaved = async (id: string) => {
-    setDeletingSavedId(id)
-    try {
-      const response = await fetch(`/api/rewritten-resumes/${id}`, { method: "DELETE" })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : "Failed to delete adapted resume."
-        throw new Error(message)
-      }
-      setSavedAdapted((prev) => prev.filter((item) => item.id !== id))
-      if (selectedSavedId === id) {
-        setSelectedSavedId(null)
-        setAdaptedResume(null)
-      }
-      clearRequestKey()
-      toast.success("Adapted resume deleted")
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to delete adapted resume.")
-    } finally {
-      setDeletingSavedId(null)
-    }
-  }
-
-  const handleUseSaved = (item: AdaptedResumeItem) => {
-    setAdaptedResume(item.content)
-    setSelectedSavedId(item.id)
-    setCopied(false)
-  }
-
-  const copyToClipboard = () => {
-    if (adaptedResume) {
-      navigator.clipboard.writeText(adaptedResume)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
-      toast.success("Copied to clipboard")
-    }
-  }
 
   return (
     <div className="min-h-screen relative pb-20">
@@ -444,88 +361,12 @@ export default function DashboardClient({
                       : "Please enter the job posting link")}
                 </p>
               )}
-              {inputError && (
-                <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
-                  {inputError}
-                </div>
-              )}
-            </Card>
-
-            {/* Result Section */}
-            {adaptedResume && (
-              <>
-                {/* Info Alert */}
-                <Card className="glass-card p-4 relative z-10 w-full mb-4 border-primary/20">
-                  <div className="flex items-start gap-3">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm mb-1">Resume Ready!</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Choose how to use your adapted resume:<br />
-                        <span className="font-medium text-foreground">• Text Studio</span> - Edit inline, pick a look, then export or copy<br />
-                        <span className="font-medium text-foreground">• Save/Copy Markdown</span> - Use the text version directly
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="glass-card p-6 relative z-10 w-full animate-in fade-in slide-in-from-bottom-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
-                      <Sparkles className="h-6 w-6 text-primary" />
-                      Adapted Resume
-                    </h2>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          localStorage.setItem('resume-editor-content', adaptedResume)
-                          window.location.href = '/resume-editor'
-                        }}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Open text studio
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => adaptedResume && void saveAdapted(adaptedResume)}
-                        disabled={savingAdapted}
-                      >
-                        {savingAdapted ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                        {savingAdapted ? "Saving..." : "Save"}
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => setAdaptedResume(null)}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Reset
-                      </Button>
-                      <Button size="sm" onClick={copyToClipboard}>
-                        {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                        {copied ? "Copied" : "Copy"}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-background via-secondary/40 to-background shadow-inner">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Tailored resume</span>
-                      <span className="text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">Plain text</span>
-                    </div>
-                    <ScrollArea className="w-full h-auto">
-                      <div className="overflow-x-auto">
-                        <pre className="whitespace-pre-wrap break-words px-4 py-4 text-sm leading-relaxed font-mono text-foreground/90 max-w-full w-full [overflow-wrap:anywhere]">
-                          {adaptedResume}
-                        </pre>
-                      </div>
-                      <ScrollBar orientation="vertical" />
-                      <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                  </div>
-                </Card>
-              </>
+            {inputError && (
+              <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+                {inputError}
+              </div>
             )}
+          </Card>
           </div>
 
           {/* Sidebar */}
@@ -536,19 +377,19 @@ export default function DashboardClient({
               <AnalysisList analyses={recentAnalyses} />
             </Card>
 
-            {/* Saved Adapted Resumes */}
-            <Card className="glass-card p-6 relative z-10 w-full">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xl font-semibold">Saved Adapted Resumes</h3>
-                <span className="text-xs text-muted-foreground">{savedAdapted.length}/3</span>
+            <Card className="glass-card-primary p-6 relative z-10 w-full">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-semibold mb-1">Resume Editor</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Edit and export your tailored resumes in one place.
+                  </p>
+                </div>
+                <Sparkles className="h-5 w-5 text-primary mt-1" />
               </div>
-              <AdaptedResumeList
-                items={savedAdapted}
-                selectedId={selectedSavedId}
-                onUse={handleUseSaved}
-                onDelete={handleDeleteSaved}
-                deletingId={deletingSavedId}
-              />
+              <Button className="w-full mt-4" onClick={() => router.push("/resume-editor")}>
+                Open Editor
+              </Button>
             </Card>
 
             {/* Quick Stats */}
