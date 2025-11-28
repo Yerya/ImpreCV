@@ -193,8 +193,8 @@ export function ResumeEditor({
                 </div>
 
                 <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start justify-items-center xl:justify-items-start">
-                    <Card className="glass-card w-full max-w-full p-4 md:p-6 overflow-auto">
-                        <div className="w-full flex justify-center p-4">
+                    <Card className="glass-card p-4 md:p-6 overflow-auto" style={{ maxWidth: 'calc(210mm + 3rem)' }}>
+                        <div className="w-full flex justify-center">
                             <WebResumeRenderer
                                 data={resumeData}
                                 variant={selectedVariant}
