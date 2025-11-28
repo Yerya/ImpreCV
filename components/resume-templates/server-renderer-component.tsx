@@ -20,17 +20,20 @@ export function ServerResumeRenderer({
         const isList = Array.isArray(section.content)
 
         return (
-            <div key={index} className={styles.section}>
+            <div key={index} className={cn('resume-print-section', styles.section)}>
                 <div className={styles.sectionTitle}>
                     <span>{section.title || ''}</span>
                 </div>
 
-                <div className={styles.card}>
+                <div className={cn('resume-print-block', styles.card)}>
                     {isList ? (
                         <div>
                             {(section.content as ResumeItem[]).map((item, itemIndex) => (
-                                <div key={itemIndex} className="mb-3 last:mb-0">
-                                    <div className="flex justify-between items-start">
+                                <div
+                                    key={itemIndex}
+                                    className="resume-print-item mb-3 last:mb-0"
+                                >
+                                    <div className="resume-print-item-head flex justify-between items-start">
                                         <div>
                                             <div className={styles.itemTitle}>
                                                 <span>{item.title}</span>
@@ -53,9 +56,9 @@ export function ServerResumeRenderer({
                                         </div>
                                     )}
                                     {item.bullets && (
-                                        <div className="mt-1">
+                                        <div className="resume-print-item-body mt-1">
                                             {item.bullets.map((bullet, bulletIndex) => (
-                                                <div key={bulletIndex} className={styles.bullet + ' flex items-start'}>
+                                                <div key={bulletIndex} className={styles.bullet + ' resume-print-bullet flex items-start'}>
                                                     <span className={styles.bulletMarker}>•</span>
                                                     <span className="flex-1">{bullet}</span>
                                                 </div>
@@ -114,10 +117,10 @@ export function ServerResumeRenderer({
 
     return (
         <div
-            className={cn('flex flex-col', styles.page)}
+            className={cn('resume-export-root resume-print-page flex flex-col', styles.page)}
             style={{ minHeight: `${A4_DIMENSIONS.heightMm}mm` }}
         >
-            <div className={cn(styles.pageCard, 'flex-1 h-full')}>
+            <div className={cn('resume-print-card', styles.pageCard, 'flex-1 h-full')}>
                 <div className={styles.header}>
                     <div className={styles.name}>
                         <h1>{data.personalInfo.name}</h1>
@@ -137,7 +140,7 @@ export function ServerResumeRenderer({
                 </div>
 
                 {shouldSplit ? (
-                    <div className={styles.columns}>
+                    <div className={cn('resume-print-columns', styles.columns)} style={{ alignItems: 'flex-start' }}>
                         <div className={styles.sidebar} style={sidebarStyle}>
                             {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                         </div>
@@ -154,3 +157,4 @@ export function ServerResumeRenderer({
         </div>
     )
 }
+

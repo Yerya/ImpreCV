@@ -123,6 +123,29 @@ export async function POST(req: NextRequest) {
                         min-height: 297mm;
                     }
 
+                    /* Keep blocks intact across pages */
+                    .resume-print-page {
+                        break-after: page;
+                        page-break-after: always;
+                        overflow: visible;
+                        -webkit-box-decoration-break: clone;
+                        box-decoration-break: clone;
+                    }
+                    .resume-print-page:last-child {
+                        break-after: auto;
+                        page-break-after: auto;
+                    }
+                    .resume-print-card {
+                        display: block;
+                    }
+                    .resume-print-section { break-inside: auto; page-break-inside: auto; }
+                    .resume-print-block { break-inside: auto; page-break-inside: auto; }
+                    .resume-print-item { break-inside: auto; page-break-inside: auto; }
+                    .resume-print-item-head { break-inside: avoid; page-break-inside: avoid; }
+                    .resume-print-item-body { break-inside: auto; page-break-inside: auto; }
+                    .resume-print-bullet { break-inside: avoid; page-break-inside: avoid; }
+                    .resume-print-columns { align-items: flex-start; }
+
                     .resume-page {
                         width: 210mm;
                         min-height: 297mm;
