@@ -1,8 +1,7 @@
-import React from 'react'
 import { cn } from '@/lib/utils'
 import type { ResumeData, ResumeItem } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
-import { A4_DIMENSIONS, variantStyles } from '@/lib/resume-templates/server-renderer'
+import { A4_DIMENSIONS, balanceSectionsAcrossColumns, resolveSidebarRatio, variantStyles } from '@/lib/resume-templates/server-renderer'
 
 interface ServerResumeRendererProps {
     data: ResumeData
@@ -99,10 +98,19 @@ export function ServerResumeRenderer({
     }
 
     const renderableSections = data.sections.filter((section) => isSectionRenderable(section))
+    let sidebarSections: typeof renderableSections = []
+    let mainSections: typeof renderableSections = renderableSections
 
-    const sidebarSections = renderableSections.filter(s => s.type === 'skills' || s.type === 'education')
-    const mainSections = renderableSections.filter(s => s.type !== 'skills' && s.type !== 'education')
+    if (layout === 'split') {
+        const balanced = balanceSectionsAcrossColumns(renderableSections)
+        sidebarSections = balanced.sidebar
+        mainSections = balanced.main
+    }
     const shouldSplit = layout === 'split' && sidebarSections.length > 0
+    const sidebarRatio = resolveSidebarRatio(data, variant)
+    const mainWidth = 100 - sidebarRatio
+    const sidebarStyle = shouldSplit ? { flexBasis: `${sidebarRatio}%`, maxWidth: `${sidebarRatio}%` } : undefined
+    const mainStyle = shouldSplit ? { flexBasis: `${mainWidth}%`, maxWidth: `${mainWidth}%` } : undefined
 
     return (
         <div
@@ -130,16 +138,16 @@ export function ServerResumeRenderer({
 
                 {shouldSplit ? (
                     <div className={styles.columns}>
-                        <div className={styles.sidebar}>
+                        <div className={styles.sidebar} style={sidebarStyle}>
                             {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                         </div>
-                        <div className={styles.main}>
+                        <div className={styles.main} style={mainStyle}>
                             {mainSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                         </div>
                     </div>
                 ) : (
                     <div className="w-full">
-                        {data.sections.map((section, index) => renderSection(section, index))}
+                        {renderableSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                     </div>
                 )}
             </div>

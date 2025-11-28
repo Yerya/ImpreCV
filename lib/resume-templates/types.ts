@@ -18,6 +18,10 @@ export interface ResumeItem {
     bullets?: string[]
 }
 
+export interface ResumeLayout {
+    sidebarRatio?: number
+}
+
 export type SectionType =
     | 'header'
     | 'summary'
@@ -35,4 +39,5 @@ export interface ResumeSection {
 export interface ResumeData {
     personalInfo: PersonalInfo
     sections: ResumeSection[]
+    layout?: ResumeLayout
 }

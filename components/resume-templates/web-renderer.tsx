@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import type { ResumeData, ResumeItem } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
 import { EditableText, EditableList } from './editable-elements'
-import { A4_DIMENSIONS, variantStyles } from '@/lib/resume-templates/server-renderer'
+import { A4_DIMENSIONS, balanceSectionsAcrossColumns, clampSidebarRatio, resolveSidebarRatio, variantStyles } from '@/lib/resume-templates/server-renderer'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2 } from 'lucide-react'
 
@@ -54,6 +54,55 @@ export function WebResumeRenderer({
     }, [variant])
 
     const layout = (variant === 'tailored' || variant === 'modern' || variant === 'bold') ? 'split' : 'single'
+    const columnsRef = React.useRef<HTMLDivElement | null>(null)
+    const draggingRef = React.useRef(false)
+    const [sidebarRatio, setSidebarRatio] = React.useState(() => resolveSidebarRatio(data, variant))
+
+    React.useEffect(() => {
+        setSidebarRatio(resolveSidebarRatio(data, variant))
+    }, [data.layout?.sidebarRatio, variant])
+
+    const applySidebarRatio = React.useCallback((value: number) => {
+        const clamped = clampSidebarRatio(value)
+        setSidebarRatio(clamped)
+        onUpdate({
+            ...data,
+            layout: {
+                ...(data.layout || {}),
+                sidebarRatio: clamped
+            }
+        })
+    }, [data, onUpdate])
+
+    const handlePointerMove = React.useCallback((event: PointerEvent) => {
+        if (!draggingRef.current || !columnsRef.current) return
+        const rect = columnsRef.current.getBoundingClientRect()
+        if (rect.width <= 0) return
+        const percent = ((event.clientX - rect.left) / rect.width) * 100
+        applySidebarRatio(percent)
+    }, [applySidebarRatio])
+
+    const stopDragging = React.useCallback(() => {
+        if (!draggingRef.current) return
+        draggingRef.current = false
+        window.removeEventListener('pointermove', handlePointerMove)
+        window.removeEventListener('pointerup', stopDragging)
+    }, [handlePointerMove])
+
+    const startDragging = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        event.preventDefault()
+        draggingRef.current = true
+        window.addEventListener('pointermove', handlePointerMove)
+        window.addEventListener('pointerup', stopDragging)
+        handlePointerMove(event.nativeEvent)
+    }, [handlePointerMove, stopDragging])
+
+    const stopDraggingRef = React.useRef(stopDragging)
+    React.useEffect(() => {
+        stopDraggingRef.current = stopDragging
+    }, [stopDragging])
+
+    React.useEffect(() => () => stopDraggingRef.current(), [])
 
     const updatePersonalInfo = (field: keyof typeof data.personalInfo, value: string) => {
         onUpdate({
@@ -212,9 +261,20 @@ export function WebResumeRenderer({
         [data.sections, isEditing]
     )
 
-    const sidebarSections = renderableSections.filter(s => s.type === 'skills' || s.type === 'education')
-    const mainSections = renderableSections.filter(s => s.type !== 'skills' && s.type !== 'education')
+    const { sidebarSections, mainSections } = React.useMemo(() => {
+        if (layout !== 'split') {
+            return { sidebarSections: [] as typeof renderableSections, mainSections: renderableSections }
+        }
+        const balanced = balanceSectionsAcrossColumns(renderableSections)
+        return { sidebarSections: balanced.sidebar, mainSections: balanced.main }
+    }, [layout, renderableSections])
+
     const shouldSplit = layout === 'split' && sidebarSections.length > 0
+    const sidebarWidth = sidebarRatio
+    const mainWidth = 100 - sidebarWidth
+    const sidebarStyle = shouldSplit ? { flexBasis: `${sidebarWidth}%`, maxWidth: `${sidebarWidth}%` } : undefined
+    const mainStyle = shouldSplit ? { flexBasis: `${mainWidth}%`, maxWidth: `${mainWidth}%` } : undefined
+    const handlePositionStyle = shouldSplit ? { left: `${sidebarWidth}%` } : undefined
 
     return (
         <div
@@ -265,17 +325,32 @@ export function WebResumeRenderer({
                 </div>
 
                 {shouldSplit ? (
-                    <div className={styles.columns}>
-                        <div className={styles.sidebar}>
+                    <div ref={columnsRef} className={cn(styles.columns, 'relative')}>
+                        <div className={styles.sidebar} style={sidebarStyle}>
                             {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                         </div>
-                        <div className={styles.main}>
+
+                        {isEditing && (
+                            <div className="absolute top-0 bottom-0 pointer-events-none" style={handlePositionStyle}>
+                                <div
+                                    role="separator"
+                                    aria-orientation="vertical"
+                                    aria-label="Resize columns"
+                                    className="h-full w-3 -translate-x-1/2 cursor-col-resize pointer-events-auto flex items-stretch"
+                                    onPointerDown={startDragging}
+                                >
+                                    <span className="mx-auto h-full w-px bg-border rounded-full transition-colors duration-150 hover:bg-primary" />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className={styles.main} style={mainStyle}>
                             {mainSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                         </div>
                     </div>
                 ) : (
                     <div className="w-full">
-                        {data.sections.map((section, index) => renderSection(section, index))}
+                        {renderableSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                     </div>
                 )}
 

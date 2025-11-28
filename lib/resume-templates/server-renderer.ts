@@ -13,6 +13,17 @@ export const RESUME_SCALE_LIMITS = {
     max: 1
 }
 
+export const SIDEBAR_RATIO_LIMITS = {
+    min: 28,
+    max: 55
+}
+
+const DEFAULT_SIDEBAR_RATIO: Record<ResumeVariantId, number> = {
+    tailored: 40,
+    modern: 38,
+    bold: 42
+}
+
 export const variantStyles: Record<ResumeVariantId, {
     page: string
     header: string
@@ -91,14 +102,27 @@ export const variantStyles: Record<ResumeVariantId, {
         date: 'text-[10px] font-bold border border-black px-1.5 py-0.5 ml-2 inline-block',
         bullet: 'text-xs font-bold flex items-start gap-2 mb-1',
         bulletMarker: 'text-base leading-none text-yellow-500',
-        columns: 'grid grid-cols-12 gap-4',
-        sidebar: 'col-span-5 border-r-4 border-black pr-4',
-        main: 'col-span-7',
+        columns: 'flex flex-row gap-4',
+        sidebar: 'w-[42%] border-r-4 border-black pr-4',
+        main: 'flex-1',
         card: 'p-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white',
         pageCard: 'w-full h-full flex flex-col'
     }
 }
 
+
+export function getDefaultSidebarRatio(variant: ResumeVariantId): number {
+    return DEFAULT_SIDEBAR_RATIO[variant] ?? DEFAULT_SIDEBAR_RATIO.tailored
+}
+
+export function clampSidebarRatio(value: number): number {
+    return Math.min(SIDEBAR_RATIO_LIMITS.max, Math.max(SIDEBAR_RATIO_LIMITS.min, value))
+}
+
+export function resolveSidebarRatio(data: ResumeData, variant: ResumeVariantId): number {
+    const fromData = typeof data.layout?.sidebarRatio === 'number' ? data.layout.sidebarRatio : null
+    return clampSidebarRatio(fromData ?? getDefaultSidebarRatio(variant))
+}
 
 
 // Calculate content complexity to determine if compact mode is needed
@@ -124,6 +148,88 @@ export function getBaseScaleForComplexity(complexity: number): number {
     if (complexity > 120) return 0.88
     if (complexity > 90) return 0.94
     return 1
+}
+
+type ResumeSection = ResumeData['sections'][number]
+
+const SIDEBAR_PRIORITY_TYPES: Set<ResumeSection['type']> = new Set(['skills', 'education'])
+const MAIN_ANCHOR_TYPES: Set<ResumeSection['type']> = new Set(['experience', 'summary'])
+const REBALANCE_THRESHOLD = 140
+const SECTION_BASE_WEIGHT = 70
+const ITEM_BASE_WEIGHT = 32
+
+export function estimateSectionWeight(section: ResumeSection): number {
+    if (Array.isArray(section.content)) {
+        return section.content.reduce((sum, item) => {
+            const bulletsWeight = Array.isArray(item.bullets)
+                ? item.bullets.reduce((acc, bullet) => acc + Math.max(12, bullet.length * 0.2), 0)
+                : 0
+            const descriptionWeight = item.description ? Math.max(18, item.description.length * 0.28) : 0
+            return sum + ITEM_BASE_WEIGHT + bulletsWeight + descriptionWeight
+        }, SECTION_BASE_WEIGHT)
+    }
+
+    const textLength = typeof section.content === 'string' ? section.content.length : 0
+    return SECTION_BASE_WEIGHT + Math.max(24, textLength * 0.18)
+}
+
+export function balanceSectionsAcrossColumns(sections: ResumeSection[]) {
+    const indexedSections = sections.map((section, index) => ({
+        section,
+        index,
+        weight: estimateSectionWeight(section)
+    }))
+
+    const sidebar: ResumeSection[] = []
+    const main: ResumeSection[] = []
+    let sidebarWeight = 0
+    let mainWeight = 0
+
+    indexedSections.forEach(({ section, weight }) => {
+        if (SIDEBAR_PRIORITY_TYPES.has(section.type)) {
+            sidebar.push(section)
+            sidebarWeight += weight
+            return
+        }
+
+        if (MAIN_ANCHOR_TYPES.has(section.type)) {
+            main.push(section)
+            mainWeight += weight
+            return
+        }
+
+        main.push(section)
+        mainWeight += weight
+    })
+
+    const moveToSidebar = (allowedTypes: ResumeSection['type'][]) => {
+        allowedTypes.forEach((type) => {
+            indexedSections
+                .filter((entry) => entry.section.type === type)
+                .forEach(({ section, weight }) => {
+                    if (!main.includes(section)) return
+                    if (mainWeight - sidebarWeight <= REBALANCE_THRESHOLD) return
+
+                    main.splice(main.indexOf(section), 1)
+                    sidebar.push(section)
+                    mainWeight -= weight
+                    sidebarWeight += weight
+                })
+        })
+    }
+
+    if (mainWeight - sidebarWeight > REBALANCE_THRESHOLD) {
+        moveToSidebar(['custom'])
+    }
+
+    const orderMap = new Map(sections.map((section, index) => [section, index]))
+    const sortByOriginalOrder = (list: ResumeSection[]) =>
+        list.sort((a, b) => (orderMap.get(a) ?? 0) - (orderMap.get(b) ?? 0))
+
+    sortByOriginalOrder(sidebar)
+    sortByOriginalOrder(main)
+
+    return { sidebar, main }
 }
 
 
