@@ -114,6 +114,25 @@ export function ServerResumeRenderer({
     const mainWidth = 100 - sidebarRatio
     const sidebarStyle = shouldSplit ? { flexBasis: `${sidebarRatio}%`, maxWidth: `${sidebarRatio}%` } : undefined
     const mainStyle = shouldSplit ? { flexBasis: `${mainWidth}%`, maxWidth: `${mainWidth}%` } : undefined
+    const header = (
+        <div className={cn('resume-print-header', styles.header)}>
+            <div className={styles.name}>
+                <h1>{data.personalInfo.name}</h1>
+            </div>
+            <div className={styles.title}>
+                <p>{data.personalInfo.title || ''}</p>
+            </div>
+            <div className={styles.contactBlock}>
+                {['email', 'phone', 'location', 'linkedin', 'website']
+                    .filter((field) => ((data.personalInfo as any)[field] || '').trim().length > 0)
+                    .map((field) => (
+                        <div key={field} className={styles.contactLine}>
+                            <span>{(data.personalInfo as any)[field] || ''}</span>
+                        </div>
+                    ))}
+            </div>
+        </div>
+    )
 
     return (
         <div
@@ -121,27 +140,11 @@ export function ServerResumeRenderer({
             style={{ minHeight: `${A4_DIMENSIONS.heightMm}mm` }}
         >
             <div className={cn('resume-print-card', styles.pageCard, 'flex-1 h-full')}>
-                <div className={styles.header}>
-                    <div className={styles.name}>
-                        <h1>{data.personalInfo.name}</h1>
-                    </div>
-                    <div className={styles.title}>
-                        <p>{data.personalInfo.title || ''}</p>
-                    </div>
-                    <div className={styles.contactBlock}>
-                        {['email', 'phone', 'location', 'linkedin', 'website']
-                            .filter((field) => ((data.personalInfo as any)[field] || '').trim().length > 0)
-                            .map((field) => (
-                                <div key={field} className={styles.contactLine}>
-                                    <span>{(data.personalInfo as any)[field] || ''}</span>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-
+                {!shouldSplit && header}
                 {shouldSplit ? (
                     <div className={cn('resume-print-columns', styles.columns)} style={{ alignItems: 'flex-start' }}>
                         <div className={styles.sidebar} style={sidebarStyle}>
+                            {header}
                             {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                         </div>
                         <div className={styles.main} style={mainStyle}>

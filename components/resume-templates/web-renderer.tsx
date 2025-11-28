@@ -261,6 +261,45 @@ export function WebResumeRenderer({
         [data.sections, isEditing]
     )
 
+    const header = (
+        <div className={styles.header}>
+            <div className={styles.name}>
+                <EditableText
+                    value={data.personalInfo.name}
+                    onChange={(val) => updatePersonalInfo('name', val)}
+                    tagName="h1"
+                    readOnly={!isEditing}
+                />
+            </div>
+            <div className={styles.title}>
+                <EditableText
+                    value={data.personalInfo.title || ''}
+                    onChange={(val) => updatePersonalInfo('title', val)}
+                    tagName="p"
+                    readOnly={!isEditing}
+                />
+            </div>
+            <div className={styles.contactBlock}>
+                {(isEditing
+                    ? ['email', 'phone', 'location', 'linkedin', 'website']
+                    : ['email', 'phone', 'location', 'linkedin', 'website'].filter(
+                        (field) => ((data.personalInfo as any)[field] || '').trim().length > 0
+                      )
+                ).map((field) => (
+                    <div key={field} className={styles.contactLine}>
+                        <EditableText
+                            value={(data.personalInfo as any)[field] || ''}
+                            onChange={(val) => updatePersonalInfo(field as any, val)}
+                            placeholder={field}
+                            tagName="span"
+                            readOnly={!isEditing}
+                        />
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+
     const { sidebarSections, mainSections } = React.useMemo(() => {
         if (layout !== 'split') {
             return { sidebarSections: [] as typeof renderableSections, mainSections: renderableSections }
@@ -283,55 +322,19 @@ export function WebResumeRenderer({
                 width: `${A4_DIMENSIONS.widthMm}mm`,
                 maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
                 minWidth: `${A4_DIMENSIONS.widthMm}mm`,
-                minHeight: `${A4_DIMENSIONS.heightMm}mm`
-            }}
-        >
-            <div className={cn(styles.pageCard, 'flex-1 h-full')}>
-                <div className={styles.header}>
-                    <div className={styles.name}>
-                        <EditableText
-                            value={data.personalInfo.name}
-                            onChange={(val) => updatePersonalInfo('name', val)}
-                            tagName="h1"
-                            readOnly={!isEditing}
-                        />
+            minHeight: `${A4_DIMENSIONS.heightMm}mm`
+        }}
+    >
+        <div className={cn(styles.pageCard, 'flex-1 h-full')}>
+            {shouldSplit ? (
+                <div ref={columnsRef} className={cn(styles.columns, 'relative')}>
+                    <div className={styles.sidebar} style={sidebarStyle}>
+                        {header}
+                        {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                     </div>
-                    <div className={styles.title}>
-                        <EditableText
-                            value={data.personalInfo.title || ''}
-                            onChange={(val) => updatePersonalInfo('title', val)}
-                            tagName="p"
-                            readOnly={!isEditing}
-                        />
-                    </div>
-                    <div className={styles.contactBlock}>
-                        {(isEditing
-                            ? ['email', 'phone', 'location', 'linkedin', 'website']
-                            : ['email', 'phone', 'location', 'linkedin', 'website'].filter(
-                                (field) => ((data.personalInfo as any)[field] || '').trim().length > 0
-                              )
-                        ).map((field) => (
-                            <div key={field} className={styles.contactLine}>
-                                <EditableText
-                                    value={(data.personalInfo as any)[field] || ''}
-                                    onChange={(val) => updatePersonalInfo(field as any, val)}
-                                    placeholder={field}
-                                    tagName="span"
-                                    readOnly={!isEditing}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
 
-                {shouldSplit ? (
-                    <div ref={columnsRef} className={cn(styles.columns, 'relative')}>
-                        <div className={styles.sidebar} style={sidebarStyle}>
-                            {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
-                        </div>
-
-                        {isEditing && (
-                            <div className="absolute top-0 bottom-0 pointer-events-none" style={handlePositionStyle}>
+                    {isEditing && (
+                        <div className="absolute top-0 bottom-0 pointer-events-none" style={handlePositionStyle}>
                                 <div
                                     role="separator"
                                     aria-orientation="vertical"
@@ -342,17 +345,18 @@ export function WebResumeRenderer({
                                     <span className="mx-auto h-full w-px bg-border rounded-full transition-colors duration-150 hover:bg-primary" />
                                 </div>
                             </div>
-                        )}
+                    )}
 
-                        <div className={styles.main} style={mainStyle}>
-                            {mainSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
-                        </div>
+                    <div className={styles.main} style={mainStyle}>
+                        {mainSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
                     </div>
-                ) : (
-                    <div className="w-full">
-                        {renderableSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
-                    </div>
-                )}
+                </div>
+            ) : (
+                <div className="w-full">
+                    {header}
+                    {renderableSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
+                </div>
+            )}
 
                 {isEditing && (
                     <div className="mt-8 flex justify-center opacity-0 hover:opacity-100 transition-opacity">

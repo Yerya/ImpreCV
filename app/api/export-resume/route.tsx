@@ -101,6 +101,13 @@ export async function POST(req: NextRequest) {
                     /* Injected globals.css */
                     ${cssContent}
 
+                    /* Font fallbacks to mirror editor */
+                    :root {
+                        --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+                        --font-display: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+                        --font-mono: 'Roboto Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+                    }
+
                     /* Print optimizations for single-page output */
                     @media print {
                         @page {
