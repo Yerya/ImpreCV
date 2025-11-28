@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useLayoutEffect, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ import { defaultResumeVariant, getVariantById, resumeVariants } from '@/lib/resu
 import type { ResumeData } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
 import { WebResumeRenderer } from './web-renderer'
-import { A4_DIMENSIONS, calculateContentComplexity, getBaseScaleForComplexity, RESUME_SCALE_LIMITS } from '@/lib/resume-templates/server-renderer'
+import { A4_DIMENSIONS } from '@/lib/resume-templates/server-renderer'
 
 const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 
@@ -36,18 +36,10 @@ export function ResumeEditor({
     const [selectedVariant, setSelectedVariant] = useState<ResumeVariantId>(initialVariant)
     const [exporting, setExporting] = useState(false)
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
-    const [pageScale, setPageScale] = useState(1)
-    const [previewZoom, setPreviewZoom] = useState(1)
-    const resumeRef = useRef<HTMLDivElement | null>(null)
-    const previewShellRef = useRef<HTMLDivElement | null>(null)
     const initialVariantRef = useRef(selectedVariant)
     const initialThemeRef = useRef(themeMode)
 
     const variantMeta = getVariantById(selectedVariant)
-    const baseScale = useMemo(
-        () => getBaseScaleForComplexity(calculateContentComplexity(resumeData)),
-        [resumeData]
-    )
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -94,49 +86,7 @@ export function ResumeEditor({
         )
     }, [resumeData, selectedVariant, themeMode])
 
-    useLayoutEffect(() => {
-        setPageScale(baseScale)
-    }, [baseScale])
 
-    useLayoutEffect(() => {
-        const resumeElement = resumeRef.current
-        const shellElement = previewShellRef.current
-        if (!resumeElement || !shellElement) return
-
-        const measure = () => {
-            const rawWidth = resumeElement.scrollWidth || A4_DIMENSIONS.widthPx
-            const rawHeight = resumeElement.scrollHeight || A4_DIMENSIONS.heightPx
-            const widthFit = A4_DIMENSIONS.widthPx / rawWidth
-            const heightFit = A4_DIMENSIONS.heightPx / rawHeight
-            const fitScale = Math.min(baseScale, widthFit, heightFit, 1)
-                const nextPageScale = Math.max(
-                    RESUME_SCALE_LIMITS.min,
-                    Math.min(RESUME_SCALE_LIMITS.max, Number(fitScale.toFixed(3)))
-                )
-
-            if (Math.abs(nextPageScale - pageScale) > 0.01) {
-                setPageScale(nextPageScale)
-            }
-
-            const renderedWidth = A4_DIMENSIONS.widthPx * nextPageScale
-            const availableWidth = shellElement.clientWidth || renderedWidth
-            const targetWidth = availableWidth * 0.96
-            const zoom = targetWidth / renderedWidth
-            const nextZoom = Math.max(0.75, Math.min(1.2, Number(zoom.toFixed(3))))
-
-            if (Math.abs(nextZoom - previewZoom) > 0.01) {
-                setPreviewZoom(nextZoom)
-            }
-        }
-
-        measure()
-
-        const observer = new ResizeObserver(measure)
-        observer.observe(resumeElement)
-        observer.observe(shellElement)
-
-        return () => observer.disconnect()
-    }, [resumeData, selectedVariant, themeMode, baseScale, pageScale, previewZoom])
 
     const handleReset = () => {
         setResumeData(initialData)
@@ -166,7 +116,7 @@ export function ResumeEditor({
 
             if (!response.ok) {
                 let errorMessage = 'Failed to export resume'
-                let errorDetails = {}
+                let errorDetails: { error?: string } = {}
 
                 try {
                     const contentType = response.headers.get('content-type')
@@ -243,36 +193,15 @@ export function ResumeEditor({
                 </div>
 
                 <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start justify-items-center xl:justify-items-start">
-                    <Card className="glass-card w-full max-w-full p-4 md:p-6 overflow-visible">
-                        <div className="w-full overflow-visible flex justify-center" ref={previewShellRef}>
-                            <div
-                                style={{
-                                    transform: `scale(${previewZoom})`,
-                                    transformOrigin: 'top center',
-                                    width: '100%'
-                                }}
-                            >
-                                <div
-                                    ref={resumeRef}
-                                    className="transform origin-top"
-                                    style={{
-                                        ['--resume-scale' as any]: pageScale,
-                                        width: '100%',
-                                        maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
-                                        minHeight: `${A4_DIMENSIONS.heightMm}mm`,
-                                        transform: 'scale(var(--resume-scale))',
-                                        transformOrigin: 'top center',
-                                        margin: '0 auto'
-                                    }}>
-                                    <WebResumeRenderer
-                                        data={resumeData}
-                                        variant={selectedVariant}
-                                        onUpdate={setResumeData}
-                                        themeMode={themeMode}
-                                        onThemeModeChange={setThemeMode}
-                                    />
-                                </div>
-                            </div>
+                    <Card className="glass-card w-full max-w-full p-4 md:p-6 overflow-auto">
+                        <div className="w-full flex justify-center p-4">
+                            <WebResumeRenderer
+                                data={resumeData}
+                                variant={selectedVariant}
+                                onUpdate={setResumeData}
+                                themeMode={themeMode}
+                                onThemeModeChange={setThemeMode}
+                            />
                         </div>
                     </Card>
 

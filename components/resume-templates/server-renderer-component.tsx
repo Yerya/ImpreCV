@@ -84,8 +84,12 @@ export function ServerResumeRenderer({
 
     return (
         <div
-            className={cn('w-full mx-auto shadow-2xl transition-all duration-300 relative flex flex-col', styles.page)}
-            style={{ minHeight: `${A4_DIMENSIONS.heightMm}mm` }}
+            className={cn('mx-auto shadow-2xl transition-all duration-300 relative flex flex-col overflow-hidden', styles.page)}
+            style={{
+                width: `${A4_DIMENSIONS.widthMm}mm`,
+                maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
+                minHeight: `${A4_DIMENSIONS.heightMm}mm`
+            }}
         >
             <div className={cn(styles.pageCard, 'flex-1 h-full')}>
                 <div className={styles.header}>

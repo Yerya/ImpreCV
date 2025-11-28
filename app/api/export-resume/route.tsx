@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
-import {
-    calculateContentComplexity,
-    getBaseScaleForComplexity,
-    A4_DIMENSIONS,
-    RESUME_SCALE_LIMITS
-} from '@/lib/resume-templates/server-renderer'
+import { A4_DIMENSIONS } from '@/lib/resume-templates/server-renderer'
 import fs from 'fs'
 import path from 'path'
 
@@ -31,10 +26,7 @@ export async function POST(req: NextRequest) {
             console.error('=== PDF Export: Failed to read globals.css ===', e)
         }
 
-        console.log('=== PDF Export: Calculating complexity ===')
-        const complexity = calculateContentComplexity(data)
-        const baseScale = getBaseScaleForComplexity(complexity)
-        console.log('Complexity:', complexity, 'Base scale:', baseScale)
+
 
         // Dynamically import react-dom/server to avoid Next.js static analysis
         console.log('=== PDF Export: Dynamically importing react-dom/server ===')
@@ -141,7 +133,7 @@ export async function POST(req: NextRequest) {
                         padding: 0;
                         width: 210mm;
                         min-height: 297mm;
-                        overflow: visible;
+                        overflow: hidden;
                     }
 
                     .resume-page {
@@ -149,6 +141,15 @@ export async function POST(req: NextRequest) {
                         min-height: 297mm;
                         display: flex;
                         flex-direction: column;
+                        overflow: hidden;
+                    }
+                    
+                    /* Prevent content overflow */
+                    * {
+                        max-width: 100%;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                        box-sizing: border-box;
                     }
                     
                     /* Ensure icons are visible */
