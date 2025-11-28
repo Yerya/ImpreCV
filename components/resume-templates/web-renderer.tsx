@@ -245,7 +245,12 @@ export function WebResumeRenderer({
                         />
                     </div>
                     <div className={styles.contactBlock}>
-                        {['email', 'phone', 'location', 'linkedin', 'website'].map((field) => (
+                        {(isEditing
+                            ? ['email', 'phone', 'location', 'linkedin', 'website']
+                            : ['email', 'phone', 'location', 'linkedin', 'website'].filter(
+                                (field) => ((data.personalInfo as any)[field] || '').trim().length > 0
+                              )
+                        ).map((field) => (
                             <div key={field} className={styles.contactLine}>
                                 <EditableText
                                     value={(data.personalInfo as any)[field] || ''}
