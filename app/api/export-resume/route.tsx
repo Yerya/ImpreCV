@@ -153,6 +153,7 @@ export async function POST(req: NextRequest) {
                     .resume-print-bullet { break-inside: avoid; page-break-inside: avoid; }
                     .resume-print-columns { align-items: flex-start; }
 
+
                     .resume-page {
                         width: 210mm;
                         min-height: 297mm;
@@ -165,6 +166,8 @@ export async function POST(req: NextRequest) {
                         max-width: 100%;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
+                        word-break: break-word;
+                        hyphens: auto;
                         box-sizing: border-box;
                     }
                     

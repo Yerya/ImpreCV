@@ -24,6 +24,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Check limit first to save resources
+        const { count } = await supabase
+            .from("rewritten_resumes")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id);
+
+        if ((count ?? 0) >= MAX_SAVED) {
+            return NextResponse.json({ error: "You can keep up to 3 recent resumes. Delete one to create a new version." }, { status: 400 });
+        }
+
         const body = await req.json();
         const { resumeText, resumeId, jobDescription, jobLink } = body;
 
@@ -126,64 +136,156 @@ CRITICAL INSTRUCTIONS:
 3. **Professional Summary**: Rewrite it to immediately highlight the match between the candidate's background and the job.
 4. **Missing Information**: If specific personal info (like phone or LinkedIn) is missing from the input, return an empty string "" or null. Do NOT make up fake contact info.
 
-OUTPUT FORMAT:
-You must return a valid JSON object matching the following schema. Do NOT include any markdown formatting (like \`\`\`json). Return ONLY the raw JSON string.
+OUTPUT FORMAT - ABSOLUTE REQUIREMENTS:
+
+⚠️ CRITICAL: Your response MUST be a valid JSON object.
+- Your response MUST start with '{' and end with '}'
+- Do NOT include ANY text before or after the JSON object
+- Do NOT wrap in markdown code blocks (no \`\`\`json)
+- Do NOT include comments or explanations
+- Return ONLY the raw JSON string
+
+SECTION CONTENT RULES:
+1. **Simple Text Sections** (summary, skills, languages): Use a PLAIN STRING
+   - "content": "Text content here..."
+   - If empty: "content": ""
+   
+2. **Structured List Sections** (experience, education, projects, certifications): Use ARRAY OF OBJECTS
+   - Each object MUST have: "title", optionally "subtitle", "date", "description", "bullets"
+   - "content": [{ "title": "...", "subtitle": "...", "date": "...", "bullets": ["..."] }]
+   - If section exists but has no items: "content": []
+   - ⚠️ NEVER use empty string "" for array sections
+   - ⚠️ NEVER use plain string arrays like ["item1", "item2"]
+
+MINIMAL VALID JSON TEMPLATE - Always follow this exact structure:
 
 {
   "personalInfo": {
-    "name": "Candidate Name",
-    "title": "Target Job Title",
-    "email": "email@example.com",
-    "phone": "Phone Number",
-    "location": "City, Country",
-    "linkedin": "LinkedIn URL (optional)",
-    "website": "Portfolio URL (optional)"
+    "name": "",
+    "title": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "linkedin": "",
+    "website": ""
   },
   "sections": [
     {
       "type": "summary",
       "title": "Professional Summary",
-      "content": "The professional summary text..."
+      "content": ""
     },
     {
       "type": "experience",
       "title": "Work Experience",
-      "content": [
-        {
-          "title": "Job Title",
-          "subtitle": "Company Name",
-          "date": "Date Range",
-          "description": "Brief description (optional)",
-          "bullets": ["Bullet point 1", "Bullet point 2"]
-        }
-      ]
+      "content": []
     },
     {
       "type": "education",
       "title": "Education",
-      "content": [
-        {
-          "title": "Degree",
-          "subtitle": "University",
-          "date": "Date Range"
-        }
-      ]
+      "content": []
     },
     {
       "type": "skills",
       "title": "Skills",
-      "content": "List of skills separated by commas"
-    },
-    {
-      "type": "custom",
-      "title": "Projects / Languages / Volunteering",
-      "content": "Content string OR array of items like experience"
+      "content": ""
     }
   ]
 }
 
-Ensure the JSON is valid and strictly follows this structure.
+DETAILED EXAMPLES:
+
+Summary section (string):
+{
+  "type": "summary",
+  "title": "Professional Summary",
+  "content": "Highly analytical and detail-oriented professional with 5+ years of experience..."
+}
+
+Experience section (array of objects):
+{
+  "type": "experience",
+  "title": "Work Experience",
+  "content": [
+    {
+      "title": "Software Developer",
+      "subtitle": "Tech Solutions Inc., City, State",
+      "date": "January 2020 - Present",
+      "description": null,
+      "bullets": [
+        "Developed web applications using React and Node.js",
+        "Improved system performance by 40%"
+      ]
+    }
+  ]
+}
+
+Education section (array of objects):
+{
+  "type": "education",
+  "title": "Education",
+  "content": [
+    {
+      "title": "Bachelor of Science in Computer Science",
+      "subtitle": "XYZ University, City, State",
+      "date": "Graduated: May 2019"
+    }
+  ]
+}
+
+Skills section (string):
+{
+  "type": "skills",
+  "title": "Skills",
+  "content": "SQL, Python, JavaScript, React, Node.js, Docker, AWS, Git, Agile"
+}
+
+Projects section (array of objects):
+{
+  "type": "custom",
+  "title": "Projects",
+  "content": [
+    {
+      "title": "Online Shopping Platform",
+      "description": "Developed a full-stack e-commerce platform using React, Node.js, and MongoDB",
+      "bullets": [
+        "Implemented user authentication and payment integration",
+        "Deployed using AWS services"
+      ]
+    }
+  ]
+}
+
+Certifications section (array of objects):
+{
+  "type": "custom",
+  "title": "Certifications",
+  "content": [
+    {
+      "title": "AWS Certified Developer – Associate",
+      "subtitle": "Amazon Web Services",
+      "date": "2023"
+    }
+  ]
+}
+
+Languages section (string):
+{
+  "type": "custom",
+  "title": "Languages",
+  "content": "English (Fluent), Spanish (Conversational)"
+}
+
+FINAL REMINDERS:
+✅ Response MUST start with '{' and end with '}'
+✅ For array sections: use [] if empty, NEVER ""
+✅ For string sections: use "" if empty, NEVER []
+✅ Projects/Certifications = array of objects
+✅ Skills/Languages = string
+✅ No markdown, no comments, no explanations
+
 `;
+
 
         // 4. Call Gemini API
         const response = await ai.models.generateContent({
@@ -234,14 +336,7 @@ Ensure the JSON is valid and strictly follows this structure.
             return NextResponse.json({ item: existing, resumeData: parsedData });
         }
 
-        const { count } = await supabase
-            .from("rewritten_resumes")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id);
 
-        if ((count ?? 0) >= MAX_SAVED) {
-            return NextResponse.json({ error: "You can keep up to 3 recent resumes. Delete one to create a new version." }, { status: 400 });
-        }
 
         const { data: saved, error: insertError } = await supabase
             .from("rewritten_resumes")

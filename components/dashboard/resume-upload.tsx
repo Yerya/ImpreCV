@@ -120,8 +120,13 @@ export default function ResumeUpload({
     } catch (error: any) {
       console.error("Upload error:", error)
       const message = error?.message || "Failed to upload resume. Please try again."
-      setUploadError(message)
-      toast.error(message)
+
+      if (message.includes("upload up to 3 resumes") || message.includes("limit")) {
+        setUploadError("limit_reached")
+      } else {
+        setUploadError(message)
+        toast.error(message)
+      }
     } finally {
       setUploading(false)
     }
@@ -202,7 +207,29 @@ export default function ResumeUpload({
               </div>
             )}
           </div>
-          {uploadError && <p className="text-xs text-destructive mt-2 text-center">{uploadError}</p>}
+          {uploadError === "limit_reached" ? (
+            <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+              <p className="font-medium mb-1">Resume limit reached</p>
+              <p className="mb-2">You can keep up to 3 resumes. Please delete one from the list below.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-destructive/30 hover:bg-destructive/10 text-destructive hover:text-destructive"
+                onClick={() => {
+                  const listElement = document.getElementById("resume-list-section")
+                  if (listElement) {
+                    listElement.scrollIntoView({ behavior: "smooth" })
+                  }
+                }}
+              >
+                View Resumes
+              </Button>
+            </div>
+          ) : uploadError && (
+            <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+              {uploadError}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

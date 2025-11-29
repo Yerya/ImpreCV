@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import AuthSync from "@/components/auth-sync"
 import PaletteSync from "@/components/palette-sync"
 import UiScaleSync from "@/components/ui-scale-sync"
+import { Toaster } from "@/components/ui/sonner"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <PaletteSync />
         <UiScaleSync />
         {children}
+        <Toaster />
       </Provider>
     </ThemeProvider>
   )

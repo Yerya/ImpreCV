@@ -25,11 +25,11 @@ export function EditableText({
     readOnly = false
 }: EditableTextProps) {
     const [isEditing, setIsEditing] = useState(false)
-    const [localValue, setLocalValue] = useState(value)
+    const [localValue, setLocalValue] = useState(value || '')
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
     useEffect(() => {
-        setLocalValue(value)
+        setLocalValue(value || '')
     }, [value])
 
     useEffect(() => {

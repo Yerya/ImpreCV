@@ -54,7 +54,6 @@ export async function analyzeResume(payload: AnalyzeResumePayload): Promise<Anal
             pdfUrl: item.pdf_url || null,
         };
     } catch (error) {
-        console.error("Error calling adapt-resume API:", error);
         throw error;
     }
 }

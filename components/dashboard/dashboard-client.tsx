@@ -21,12 +21,16 @@ interface DashboardClientProps {
   user: any
   resumes: any[]
   recentAnalyses: any[]
+  adaptedResumesCount: number
 }
+
+const MAX_ADAPTED_RESUMES = 3
 
 export default function DashboardClient({
   user,
   resumes: initialResumes,
   recentAnalyses,
+  adaptedResumesCount: initialAdaptedCount,
 }: DashboardClientProps) {
   const authUser = useAppSelector((s) => s.auth.user)
   const router = useRouter()
@@ -146,6 +150,12 @@ export default function DashboardClient({
   }
 
   const handleAnalyze = async () => {
+    // Check limit before starting
+    if (initialAdaptedCount >= MAX_ADAPTED_RESUMES) {
+      setInputError("limit_reached")
+      return
+    }
+
     const hasJobInfo =
       jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
     const normalizedLink = normalizeJobLink(jobPosting.jobLink)
@@ -213,7 +223,14 @@ export default function DashboardClient({
         router.push(`/resume-editor?id=${result.id}`)
       } catch (error: any) {
         console.error("Analysis error:", error)
-        toast.error(error.message || "Failed to analyze. Please try again.")
+
+        // Check if it's the resume limit error
+        if (error.message?.includes("keep up to 3")) {
+          setInputError("limit_reached")
+        } else {
+          setInputError(error.message || "Failed to analyze. Please try again.")
+          toast.error(error.message || "Failed to analyze. Please try again.")
+        }
       } finally {
         setAnalyzing(false)
       }
@@ -258,7 +275,14 @@ export default function DashboardClient({
         router.push(`/resume-editor?id=${result.id}`)
       } catch (error: any) {
         console.error("Analysis error:", error)
-        toast.error(error.message || "Failed to analyze. Please try again.")
+
+        // Check if it's the resume limit error
+        if (error.message?.includes("keep up to 3")) {
+          setInputError("limit_reached")
+        } else {
+          setInputError(error.message || "Failed to analyze. Please try again.")
+          toast.error(error.message || "Failed to analyze. Please try again.")
+        }
       } finally {
         setAnalyzing(false)
       }
@@ -307,7 +331,7 @@ export default function DashboardClient({
               />
 
               {resumes.length > 0 && (
-                <div className="mt-6">
+                <div className="mt-6" id="resume-list-section">
                   <h3 className="text-sm font-medium mb-3 text-muted-foreground">
                     Or select from your uploaded resumes:
                   </h3>
@@ -361,12 +385,25 @@ export default function DashboardClient({
                       : "Please enter the job posting link")}
                 </p>
               )}
-            {inputError && (
-              <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
-                {inputError}
-              </div>
-            )}
-          </Card>
+              {inputError === "limit_reached" ? (
+                <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+                  <p className="font-medium mb-1">Resume limit reached</p>
+                  <p className="mb-2">You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive/30 hover:bg-destructive/10 text-destructive hover:text-destructive"
+                    onClick={() => router.push("/resume-editor")}
+                  >
+                    Open Editor
+                  </Button>
+                </div>
+              ) : inputError && (
+                <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+                  {inputError}
+                </div>
+              )}
+            </Card>
           </div>
 
           {/* Sidebar */}

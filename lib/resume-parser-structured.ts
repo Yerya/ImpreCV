@@ -12,6 +12,51 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             const jsonData = JSON.parse(trimmed)
             // Validate basic structure
             if (jsonData.personalInfo && Array.isArray(jsonData.sections)) {
+                // NORMALIZE: Fix invalid content formats from AI
+                jsonData.sections = jsonData.sections.map((section: any) => {
+                    if (Array.isArray(section.content)) {
+                        // Check if it's an array of plain strings (INVALID format)
+                        const allStrings = section.content.every((item: any) => typeof item === 'string')
+                        if (allStrings && section.content.length > 0) {
+                            // Convert string array to structured format
+                            console.warn(`Converting invalid string[] to structured format for section: ${section.title}`)
+                            return {
+                                ...section,
+                                content: section.content.map((item: string) => {
+                                    // Split by first colon to separate title from description
+                                    const colonIndex = item.indexOf(':')
+
+                                    if (colonIndex > 0 && colonIndex < 100) {
+                                        // Has colon in reasonable position - use it to split
+                                        return {
+                                            title: item.substring(0, colonIndex).trim(),
+                                            description: item.substring(colonIndex + 1).trim() || null,
+                                            bullets: []
+                                        }
+                                    } else {
+                                        // No colon or colon too far - use first sentence as title, rest as description
+                                        const sentences = item.split(/[.!?]\s+/)
+                                        if (sentences.length > 1 && sentences[0].length < 100) {
+                                            return {
+                                                title: sentences[0].trim(),
+                                                description: sentences.slice(1).join('. ').trim() || null,
+                                                bullets: []
+                                            }
+                                        } else {
+                                            // Single sentence or very long first sentence - keep everything
+                                            return {
+                                                title: item.trim(),
+                                                description: null,
+                                                bullets: []
+                                            }
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    }
+                    return section
+                })
                 return jsonData as ResumeData
             }
         }
@@ -19,10 +64,10 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
         // Not valid JSON, fall back to markdown parsing
     }
 
+    // Markdown parsing fallback
     const markdown = input
     const lines = markdown.split('\n')
 
-    // Initialize resume data
     const resumeData: ResumeData = {
         personalInfo: {
             name: '',
@@ -38,11 +83,9 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
     let currentItem: ResumeItem | null = null
     let headerParsed = false
 
-    // Email and phone regex
     const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/
     const phoneRegex = /[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}/
 
-    // Section keywords mapping
     const sectionKeywords: Record<string, ResumeSection['type']> = {
         'summary': 'summary',
         'professional summary': 'summary',
@@ -66,10 +109,8 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim()
 
-        // Skip empty lines
         if (!line) continue
 
-        // Try to extract contact info from early lines
         if (!headerParsed && i < 15) {
             const emailMatch = line.match(emailRegex)
             const phoneMatch = line.match(phoneRegex)
@@ -78,14 +119,12 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             if (phoneMatch && !resumeData.personalInfo.phone) resumeData.personalInfo.phone = phoneMatch[0]
         }
 
-        // Main heading (name) - markdown style
         if (line.startsWith('# ')) {
             resumeData.personalInfo.name = line.replace('# ', '').trim()
             headerParsed = true
             continue
         }
 
-        // First non-empty line as name if no markdown header found
         if (!resumeData.personalInfo.name && !line.startsWith('#') && i < 5) {
             const isNotEmail = !emailRegex.test(line)
             const isNotPhone = !phoneRegex.test(line)
@@ -99,22 +138,18 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             }
         }
 
-        // Check for section headers
         let isSectionHeader = false
         let sectionType: ResumeSection['type'] = 'custom'
         let sectionTitle = ''
 
-        // 1. Markdown headers
         if (line.startsWith('## ')) {
             isSectionHeader = true
             sectionTitle = line.replace('## ', '').trim()
         }
-        // 2. Uppercase lines (likely headers)
         else if (line === line.toUpperCase() && line.length > 3 && line.length < 40 && /^[A-Z\s]+$/.test(line)) {
             isSectionHeader = true
             sectionTitle = line
         }
-        // 3. Keyword match (case insensitive)
         else {
             const lowerLine = line.toLowerCase().replace(':', '').trim()
             if (sectionKeywords[lowerLine]) {
@@ -125,7 +160,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
         }
 
         if (isSectionHeader) {
-            // Determine type if not already found via keyword
             if (sectionType === 'custom') {
                 const lowerTitle = sectionTitle.toLowerCase()
                 for (const [keyword, type] of Object.entries(sectionKeywords)) {
@@ -136,7 +170,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
                 }
             }
 
-            // Save previous section
             if (currentSection) {
                 resumeData.sections.push(currentSection)
             }
@@ -150,7 +183,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             continue
         }
 
-        // Sub-headings (job titles, education)
         if (line.startsWith('### ')) {
             if (currentSection && Array.isArray(currentSection.content)) {
                 if (currentItem) (currentSection.content as ResumeItem[]).push(currentItem)
@@ -159,7 +191,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             continue
         }
 
-        // Italic lines (company, dates)
         if (line.startsWith('*') && line.endsWith('*')) {
             if (currentItem) {
                 const content = line.replace(/^\*|\*$/g, '').trim()
@@ -174,7 +205,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             continue
         }
 
-        // Bullet points
         if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*')) {
             const bullet = line.replace(/^[-•*]\s*/, '').trim()
             if (currentItem && currentItem.bullets) {
@@ -182,7 +212,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             } else if (currentSection && typeof currentSection.content === 'string') {
                 currentSection.content += bullet + '\n'
             } else if (currentSection && Array.isArray(currentSection.content)) {
-                // If we are in a list section but no current item, create a generic one
                 if (!currentItem) {
                     currentItem = { title: 'Item', bullets: [] }
                 }
@@ -191,31 +220,24 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             continue
         }
 
-        // Regular text handling
         if (currentSection) {
             if (typeof currentSection.content === 'string') {
                 currentSection.content += line + '\n'
             } else if (Array.isArray(currentSection.content)) {
-                // If we are in a structured section (Experience/Education)
-
-                // Heuristic: If line looks like a date range, assign to current item
                 const datePattern = /\d{4}.*\d{4}|present|current/i
                 if (currentItem && !currentItem.date && datePattern.test(line) && line.length < 30) {
                     currentItem.date = line
                     continue
                 }
 
-                // Heuristic: If we have no current item, this might be a title
                 if (!currentItem) {
                     currentItem = { title: line, bullets: [] }
                 } else {
-                    // Otherwise it's description
                     if (!currentItem.description) currentItem.description = line
                     else currentItem.description += ' ' + line
                 }
             }
         } else {
-            // If no section yet and we've parsed header, create a summary section
             if (headerParsed && !currentSection) {
                 currentSection = {
                     type: 'summary',
@@ -226,7 +248,6 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
         }
     }
 
-    // Save last item and section
     if (currentItem && currentSection && Array.isArray(currentSection.content)) {
         (currentSection.content as ResumeItem[]).push(currentItem)
     }
@@ -234,14 +255,12 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
         resumeData.sections.push(currentSection)
     }
 
-    // Clean up string content
     resumeData.sections.forEach(section => {
         if (typeof section.content === 'string') {
             section.content = section.content.trim()
         }
     })
 
-    // Fallback: If no sections were created, create one big summary
     if (resumeData.sections.length === 0) {
         resumeData.sections.push({
             type: 'summary',
@@ -250,11 +269,9 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
         })
     }
 
-    // Fallback: Name
     if (!resumeData.personalInfo.name) {
         resumeData.personalInfo.name = 'Resume'
     }
 
     return resumeData
 }
-

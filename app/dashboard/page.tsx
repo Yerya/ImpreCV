@@ -41,11 +41,18 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(5)
 
+  // Fetch adapted resumes count to check limit
+  const { count: adaptedResumesCount } = await supabase
+    .from("rewritten_resumes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+
   return (
     <DashboardClient
       user={user}
       resumes={resumes || []}
       recentAnalyses={analyses || []}
+      adaptedResumesCount={adaptedResumesCount || 0}
     />
   )
 }
