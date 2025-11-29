@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,7 @@ export function ResumeEditor({
     recentResumes = [],
     backHref = '/dashboard'
 }: ResumeEditorProps) {
+    const router = useRouter()
     const [resumeData, setResumeData] = useState<ResumeData>(initialData)
     const [baselineData, setBaselineData] = useState<ResumeData>(initialData)
     const [selectedVariant, setSelectedVariant] = useState<ResumeVariantId>(initialVariant)
@@ -197,6 +199,7 @@ export function ResumeEditor({
             }
 
             toast.success('Resume deleted')
+            router.refresh()
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to delete resume')
         } finally {
@@ -247,6 +250,7 @@ export function ResumeEditor({
             setBaselineData(resumeData)
             upsertAvailableResume(mapped)
             toast.success('Resume saved')
+            router.refresh()
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to save resume')
         } finally {
