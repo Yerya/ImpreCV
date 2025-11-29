@@ -20,6 +20,7 @@ import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/app
 import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
 import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 interface SettingsClientProps {
   user: any
@@ -54,8 +55,10 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
       const res = await updateProfile({ id: user.id, fullName })
       if ('data' in res && res.data?.ok) {
         router.refresh()
+        toast.success("Profile updated")
       } else {
         console.error("Profile update error:", (res as any))
+        toast.error("Failed to update profile")
       }
     } finally {
       setSaving(false)
