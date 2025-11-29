@@ -24,8 +24,6 @@ interface DashboardClientProps {
   adaptedResumesCount: number
 }
 
-const MAX_ADAPTED_RESUMES = 3
-
 export default function DashboardClient({
   user,
   resumes: initialResumes,
@@ -130,7 +128,6 @@ export default function DashboardClient({
 
     if (!isMeaningfulText(cleanedResume) || !isMeaningfulText(cleanedJobText)) {
       setInputError("This doesn't look like a resume or a job description. Please upload your resume and vacancy details.")
-      toast.error("Invalid information. Upload your resume and vacancy description.")
       return null
     }
 
@@ -150,12 +147,6 @@ export default function DashboardClient({
   }
 
   const handleAnalyze = async () => {
-    // Check limit before starting
-    if (initialAdaptedCount >= MAX_ADAPTED_RESUMES) {
-      setInputError("limit_reached")
-      return
-    }
-
     const hasJobInfo =
       jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
     const normalizedLink = normalizeJobLink(jobPosting.jobLink)
@@ -182,7 +173,6 @@ export default function DashboardClient({
 
       if (!isMeaningfulText(cleanedResume)) {
         setInputError("This doesn't look like a resume. Please upload your resume.")
-        toast.error("Invalid resume text. Please upload your resume.")
         return
       }
 
@@ -222,14 +212,26 @@ export default function DashboardClient({
         toast.success("Resume adapted. Opening editor...")
         router.push(`/resume-editor?id=${result.id}`)
       } catch (error: any) {
-        console.error("Analysis error:", error)
+        const rawMessage =
+          error && typeof error.message === "string"
+            ? error.message
+            : "Failed to analyze. Please try again."
 
-        // Check if it's the resume limit error
-        if (error.message?.includes("keep up to 3")) {
-          setInputError("limit_reached")
+        if (rawMessage.includes("keep up to 3 adapted resumes")) {
+          console.info("Analysis limit reached:", rawMessage)
+          setInputError(null)
+          toast.error("Resume limit reached", {
+            description:
+              "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.",
+            action: {
+              label: "Open Editor",
+              onClick: () => router.push("/resume-editor"),
+            },
+          })
         } else {
-          setInputError(error.message || "Failed to analyze. Please try again.")
-          toast.error(error.message || "Failed to analyze. Please try again.")
+          console.error("Analysis error:", error)
+          setInputError(rawMessage)
+          toast.error(rawMessage)
         }
       } finally {
         setAnalyzing(false)
@@ -274,14 +276,26 @@ export default function DashboardClient({
         toast.success("Resume adapted. Opening editor...")
         router.push(`/resume-editor?id=${result.id}`)
       } catch (error: any) {
-        console.error("Analysis error:", error)
+        const rawMessage =
+          error && typeof error.message === "string"
+            ? error.message
+            : "Failed to analyze. Please try again."
 
-        // Check if it's the resume limit error
-        if (error.message?.includes("keep up to 3")) {
-          setInputError("limit_reached")
+        if (rawMessage.includes("keep up to 3 adapted resumes")) {
+          console.info("Analysis limit reached:", rawMessage)
+          setInputError(null)
+          toast.error("Resume limit reached", {
+            description:
+              "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.",
+            action: {
+              label: "Open Editor",
+              onClick: () => router.push("/resume-editor"),
+            },
+          })
         } else {
-          setInputError(error.message || "Failed to analyze. Please try again.")
-          toast.error(error.message || "Failed to analyze. Please try again.")
+          console.error("Analysis error:", error)
+          setInputError(rawMessage)
+          toast.error(rawMessage)
         }
       } finally {
         setAnalyzing(false)
@@ -385,20 +399,7 @@ export default function DashboardClient({
                       : "Please enter the job posting link")}
                 </p>
               )}
-              {inputError === "limit_reached" ? (
-                <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
-                  <p className="font-medium mb-1">Resume limit reached</p>
-                  <p className="mb-2">You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-destructive/30 hover:bg-destructive/10 text-destructive hover:text-destructive"
-                    onClick={() => router.push("/resume-editor")}
-                  >
-                    Open Editor
-                  </Button>
-                </div>
-              ) : inputError && (
+              {inputError && (
                 <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
                   {inputError}
                 </div>

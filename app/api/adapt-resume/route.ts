@@ -8,6 +8,7 @@ import { defaultResumeVariant } from "@/lib/resume-templates/variants";
 import type { ResumeData } from "@/lib/resume-templates/types";
 
 const MAX_SAVED = 3;
+const LIMIT_ERROR_MESSAGE = "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.";
 
 export async function POST(req: NextRequest) {
     try {
@@ -25,13 +26,17 @@ export async function POST(req: NextRequest) {
         }
 
         // Check limit first to save resources
-        const { count } = await supabase
+        const { count, error: countError } = await supabase
             .from("rewritten_resumes")
             .select("id", { count: "exact", head: true })
             .eq("user_id", user.id);
 
+        if (countError) {
+            return NextResponse.json({ error: "Failed to check saved resumes limit" }, { status: 500 });
+        }
+
         if ((count ?? 0) >= MAX_SAVED) {
-            return NextResponse.json({ error: "You can keep up to 3 recent resumes. Delete one to create a new version." }, { status: 400 });
+            return NextResponse.json({ error: LIMIT_ERROR_MESSAGE }, { status: 400 });
         }
 
         const body = await req.json();

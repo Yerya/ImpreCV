@@ -6,6 +6,7 @@ import type { ResumeData } from "@/lib/resume-templates/types"
 
 export const runtime = "nodejs"
 const MAX_SAVED = 3
+const LIMIT_ERROR_MESSAGE = "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor."
 const MAX_LENGTH = 50000
 
 export async function GET() {
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
   }
 
   if ((count ?? 0) >= MAX_SAVED) {
-    return NextResponse.json({ error: "You can save up to 3 adapted resumes. Delete one to add another." }, { status: 400 })
+    return NextResponse.json({ error: LIMIT_ERROR_MESSAGE }, { status: 400 })
   }
 
   const { data, error: insertError } = await supabase
