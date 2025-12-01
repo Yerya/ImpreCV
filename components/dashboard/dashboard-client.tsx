@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
 import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
@@ -12,7 +13,7 @@ import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
 import AnalysisList from "./analysis-list"
-import { analyzeResume } from "@/lib/api-client"
+import { analyzeResume, generateCoverLetter, type GenerateCoverLetterResult } from "@/lib/api-client"
 import { toast } from "sonner"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
@@ -44,6 +45,7 @@ export default function DashboardClient({
   const [inputError, setInputError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [lastRequestKey, setLastRequestKey] = useState<string | null>(null)
+  const [shouldGenerateCoverLetter, setShouldGenerateCoverLetter] = useState(true)
 
   // Use Redux user name if available, fallback to props
   const displayName = authUser?.user_metadata?.full_name || user?.user_metadata?.full_name || "there"
@@ -53,6 +55,10 @@ export default function DashboardClient({
     const stored = window.localStorage.getItem("cvify:lastAdaptRequest")
     if (stored) {
       setLastRequestKey(stored)
+    }
+    const storedCoverLetterPref = window.localStorage.getItem("cvify:shouldGenerateCoverLetter")
+    if (storedCoverLetterPref) {
+      setShouldGenerateCoverLetter(storedCoverLetterPref === "true")
     }
   }, [])
 
@@ -67,6 +73,13 @@ export default function DashboardClient({
     setLastRequestKey(null)
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("cvify:lastAdaptRequest")
+    }
+  }
+
+  const updateCoverLetterPreference = (value: boolean) => {
+    setShouldGenerateCoverLetter(value)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cvify:shouldGenerateCoverLetter", value ? "true" : "false")
     }
   }
 
@@ -122,20 +135,51 @@ export default function DashboardClient({
     clearRequestKey()
   }
 
-  const validateTextInputs = (resume: string, jobText: string) => {
-    const cleanedResume = sanitizePlainText(resume)
-    const cleanedJobText = sanitizePlainText(jobText)
+  const notifyCoverLetterResult = async (result: GenerateCoverLetterResult | null) => {
+    console.log("[Cover Letter] notifyCoverLetterResult called with:", result)
 
-    if (!isMeaningfulText(cleanedResume) || !isMeaningfulText(cleanedJobText)) {
-      setInputError("This doesn't look like a resume or a job description. Please upload your resume and vacancy details.")
-      return null
+    if (!result) return
+
+    if (result.warning) {
+      toast.info(result.warning)
     }
 
-    setInputError(null)
-    return {
-      cleanedResume,
-      cleanedJobText,
+    if (result.id) {
+      console.log("[Cover Letter] Cover letter saved with ID:", result.id)
+      toast.success("Cover letter generated and saved", {
+        description: "Click to open and review.",
+        action: {
+          label: "Open",
+          onClick: () => router.push(`/cover-letter/${result.id}`),
+        },
+      })
+      return
     }
+
+    console.log("[Cover Letter] No ID, attempting to copy to clipboard")
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(result.content)
+        toast.success("Cover letter copied to clipboard", {
+          description: "Not saved to your account. Paste it into your email.",
+        })
+        return
+      }
+    } catch (error) {
+      console.error("Clipboard copy failed for cover letter:", error)
+    }
+
+    toast.success("Cover letter generated", {
+      description: "Copy it before leaving this page.",
+      action: {
+        label: "Copy",
+        onClick: () => {
+          if (typeof navigator !== "undefined" && navigator.clipboard) {
+            navigator.clipboard.writeText(result.content)
+          }
+        },
+      },
+    })
   }
 
   const buildRequestKey = (opts: { resumeId?: string | null; resumeText?: string; jobText?: string; jobLink?: string }) => {
@@ -164,142 +208,93 @@ export default function DashboardClient({
     }
 
     setInputError(null)
-    const usingLinkOnly = jobPosting.inputType === "link" && normalizedLink && !jobPosting.description.trim()
-    const jobText = jobPosting.inputType === "paste" ? jobPosting.description : jobPosting.description || normalizedLink
+    const usingResumeText = resumeText.trim().length > 0
+    const cleanedResume = usingResumeText ? sanitizePlainText(resumeText) : ""
+    const cleanedJobText = jobPosting.inputType === "paste" ? sanitizePlainText(jobPosting.description) : ""
 
-    // If we have resume text, use the "text-only" flow
-    if (resumeText.trim().length > 0) {
-      const cleanedResume = sanitizePlainText(resumeText)
-
-      if (!isMeaningfulText(cleanedResume)) {
-        setInputError("This doesn't look like a resume. Please upload your resume.")
-        return
-      }
-
-      if (!usingLinkOnly) {
-        const validated = validateTextInputs(resumeText, jobText)
-        if (!validated) {
-          return
-        }
-      }
-
-      const requestKey = buildRequestKey({
-        resumeText: cleanedResume,
-        jobText: usingLinkOnly ? "" : sanitizePlainText(jobText),
-        jobLink: usingLinkOnly ? normalizedLink || "" : undefined,
-      })
-      if (lastRequestKey === requestKey) {
-        const message = "Already adapted this resume for this job. Open the Resume Editor to continue."
-        setInputError(message)
-        toast.info(message)
-        return
-      }
-
-      setAnalyzing(true)
-
-      try {
-        const result = await analyzeResume({
-          resumeText: cleanedResume,
-          jobDescription: usingLinkOnly ? "" : sanitizePlainText(jobText),
-          jobLink: normalizedLink,
-        })
-
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
-        }
-
-        setRequestKey(requestKey)
-        toast.success("Resume adapted. Opening editor...")
-        router.push(`/resume-editor?id=${result.id}`)
-      } catch (error: any) {
-        const rawMessage =
-          error && typeof error.message === "string"
-            ? error.message
-            : "Failed to analyze. Please try again."
-
-        if (rawMessage.includes("keep up to 3 adapted resumes")) {
-          console.info("Analysis limit reached:", rawMessage)
-          setInputError(null)
-          toast.error("Resume limit reached", {
-            description:
-              "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.",
-            action: {
-              label: "Open Editor",
-              onClick: () => router.push("/resume-editor"),
-            },
-          })
-        } else {
-          console.error("Analysis error:", error)
-          setInputError(rawMessage)
-          toast.error(rawMessage)
-        }
-      } finally {
-        setAnalyzing(false)
-      }
-
+    if (usingResumeText && !isMeaningfulText(cleanedResume)) {
+      setInputError("This doesn't look like a resume. Please upload your resume.")
       return
     }
 
-    if (selectedResumeId) {
-      if (jobPosting.inputType === "paste") {
-        const cleanedJob = sanitizePlainText(jobPosting.description)
-        if (!isMeaningfulText(cleanedJob)) {
-          setInputError("This doesn't look like a job description. Please paste the vacancy text.")
-          toast.error("Invalid job description text.")
-          return
-        }
+    if (jobPosting.inputType === "paste" && !isMeaningfulText(cleanedJobText)) {
+      setInputError("This doesn't look like a job description. Please paste the vacancy text.")
+      toast.error("Invalid job description text.")
+      return
+    }
+
+    const requestKey = buildRequestKey({
+      resumeId: selectedResumeId,
+      resumeText: cleanedResume,
+      jobText: jobPosting.inputType === "paste" ? cleanedJobText : "",
+      jobLink: jobPosting.inputType === "link" ? normalizedLink || jobPosting.jobLink.trim() : "",
+    })
+    if (lastRequestKey === requestKey) {
+      const message = "Already adapted this resume for this job. Open the Resume Editor to continue."
+      setInputError(message)
+      toast.info(message)
+      return
+    }
+
+    setAnalyzing(true)
+    try {
+      const analyzePayload = {
+        resumeId: selectedResumeId || undefined,
+        resumeText: usingResumeText ? cleanedResume : undefined,
+        jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : "",
+        jobLink: normalizedLink,
       }
 
-      const requestKey = buildRequestKey({
-        resumeId: selectedResumeId,
-        jobText: jobPosting.inputType === "paste" ? sanitizePlainText(jobPosting.description) : "",
-        jobLink: jobPosting.inputType === "link" ? normalizedLink || jobPosting.jobLink.trim() : "",
-      })
-      if (lastRequestKey === requestKey) {
-        const message = "Already adapted this resume for this job. Open the Resume Editor to continue."
-        setInputError(message)
-        toast.info(message)
-        return
-      }
+      const result = await analyzeResume(analyzePayload)
 
-      setAnalyzing(true)
-      try {
-        const result = await analyzeResume({
-          resumeId: selectedResumeId,
+      // Generate cover letter AFTER resume adaptation using adapted content
+      if (shouldGenerateCoverLetter && (selectedResumeId || usingResumeText)) {
+        const coverLetterPayload = {
+          rewrittenResumeId: result.id, // Link to adapted resume
           jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : "",
           jobLink: normalizedLink,
-        })
-        setRequestKey(requestKey)
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
         }
-        toast.success("Resume adapted. Opening editor...")
-        router.push(`/resume-editor?id=${result.id}`)
-      } catch (error: any) {
-        const rawMessage =
-          error && typeof error.message === "string"
-            ? error.message
-            : "Failed to analyze. Please try again."
 
-        if (rawMessage.includes("keep up to 3 adapted resumes")) {
-          console.info("Analysis limit reached:", rawMessage)
-          setInputError(null)
-          toast.error("Resume limit reached", {
-            description:
-              "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.",
-            action: {
-              label: "Open Editor",
-              onClick: () => router.push("/resume-editor"),
-            },
+        generateCoverLetter(coverLetterPayload)
+          .then((letter) => notifyCoverLetterResult(letter))
+          .catch((error: any) => {
+            console.error("Cover letter generation error:", error)
+            toast.error("Cover letter request failed. Try again from the dashboard.")
           })
-        } else {
-          console.error("Analysis error:", error)
-          setInputError(rawMessage)
-          toast.error(rawMessage)
-        }
-      } finally {
-        setAnalyzing(false)
       }
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
+      }
+
+      setRequestKey(requestKey)
+      toast.success(
+        shouldGenerateCoverLetter ? "Resume adapted. Drafting cover letter in the background..." : "Resume adapted. Opening editor...",
+      )
+      router.push(`/resume-editor?id=${result.id}`)
+    } catch (error: any) {
+      const rawMessage =
+        error && typeof error.message === "string"
+          ? error.message
+          : "Failed to analyze. Please try again."
+
+      if (rawMessage.includes("keep up to 3 adapted resumes")) {
+        console.info("Analysis limit reached:", rawMessage)
+        setInputError(null)
+        toast.error("Resume limit reached", {
+          description: "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.",
+          action: {
+            label: "Open Editor",
+            onClick: () => router.push("/resume-editor"),
+          },
+        })
+      } else {
+        console.error("Analysis error:", error)
+        setInputError(rawMessage)
+        toast.error(rawMessage)
+      }
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -375,6 +370,25 @@ export default function DashboardClient({
 
             {/* Analyze Button */}
             <Card className="glass-card p-6 relative z-10 w-full">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">Cover letter</p>
+                  <p className="text-xs text-muted-foreground">
+                    Generate a matching cover letter in the background. Saved when an uploaded resume is selected.
+                  </p>
+                </div>
+                <Switch
+                  checked={shouldGenerateCoverLetter}
+                  onCheckedChange={updateCoverLetterPreference}
+                  disabled={analyzing}
+                  aria-label="Toggle cover letter generation"
+                />
+              </div>
+              {shouldGenerateCoverLetter && !selectedResumeId && resumeText.trim().length > 0 && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  We will copy the letter for you, but it will not be saved without an uploaded resume.
+                </p>
+              )}
               <Button onClick={handleAnalyze} disabled={!canAnalyze || analyzing} size="lg" className="w-full">
                 {analyzing ? (
                   <>

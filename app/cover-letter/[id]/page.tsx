@@ -2,7 +2,8 @@ import { redirect } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import CoverLetterClient from "@/components/cover-letter/cover-letter-client"
 
-export default async function CoverLetterPage({ params }: { params: { id: string } }) {
+export default async function CoverLetterPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await getSupabaseServerClient()
   const {
     data: { user },
@@ -14,21 +15,8 @@ export default async function CoverLetterPage({ params }: { params: { id: string
 
   const { data: coverLetter, error } = await supabase
     .from("cover_letters")
-    .select(
-      `
-      *,
-      analyses (
-        id,
-        match_score,
-        job_postings (
-          title,
-          company,
-          description
-        )
-      )
-    `,
-    )
-    .eq("id", params.id)
+    .select("*")
+    .eq("id", id)
     .eq("user_id", user.id)
     .single()
 

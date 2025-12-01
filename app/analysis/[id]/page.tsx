@@ -2,7 +2,8 @@ import { redirect } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import AnalysisClient from "@/components/analysis/analysis-client"
 
-export default async function AnalysisPage({ params }: { params: { id: string } }) {
+export default async function AnalysisPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await getSupabaseServerClient()
   const {
     data: { user },
@@ -30,7 +31,7 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
       )
     `,
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .single()
 

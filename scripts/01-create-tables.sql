@@ -69,10 +69,13 @@ CREATE TABLE IF NOT EXISTS public.rewritten_resumes (
 -- Cover letters table
 CREATE TABLE IF NOT EXISTS public.cover_letters (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  analysis_id UUID NOT NULL REFERENCES public.analyses(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  job_title TEXT,
+  job_company TEXT,
+  rewritten_resume_id UUID REFERENCES public.rewritten_resumes(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes for better query performance
@@ -87,4 +90,5 @@ CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON public.analyses(created_at
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_analysis_id ON public.rewritten_resumes(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_user_created_at ON public.rewritten_resumes(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rewritten_resumes_user_updated_at ON public.rewritten_resumes(user_id, updated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_cover_letters_analysis_id ON public.cover_letters(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_cover_letters_rewritten_resume_id ON public.cover_letters(rewritten_resume_id);
+CREATE INDEX IF NOT EXISTS idx_cover_letters_user_created_at ON public.cover_letters(user_id, created_at DESC);

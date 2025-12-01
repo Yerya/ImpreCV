@@ -96,3 +96,12 @@ CREATE POLICY "Users can view their own cover letters"
 CREATE POLICY "Users can insert their own cover letters"
   ON public.cover_letters FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own cover letters"
+  ON public.cover_letters FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own cover letters"
+  ON public.cover_letters FOR DELETE
+  USING (auth.uid() = user_id);

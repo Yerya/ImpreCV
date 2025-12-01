@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const supabase = await getSupabaseServerClient()
     const {
       data: { user },
@@ -17,12 +18,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data, error } = await supabase
       .from("cover_letters")
       .update({ content })
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single()
 
     if (error) {
+      console.error("Failed to update cover letter:", error)
       return NextResponse.json({ error: "Failed to update cover letter" }, { status: 500 })
     }
 
