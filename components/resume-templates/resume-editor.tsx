@@ -1,11 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GlobalHeader } from "@/components/global-header"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { cn } from "@/lib/utils"
@@ -15,8 +16,14 @@ import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
 import { defaultResumeVariant, getVariantById, resumeVariants } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"
+import { CoverLetterPanel, type CoverLetter } from "./cover-letter-panel"
+import { generateCoverLetter } from "@/lib/api-client"
 import { WebResumeRenderer } from "./web-renderer"
-import { A4_DIMENSIONS } from "@/lib/resume-templates/server-renderer"
+import {
+    clearCoverLetterPending,
+    isCoverLetterPending,
+    loadCoverLetterContext
+} from "@/lib/cover-letter-context"
 
 const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 const EMPTY_RESUME: ResumeData = {
@@ -69,6 +76,15 @@ export function ResumeEditor({
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(initialTheme)
     const [activeResumeId, setActiveResumeId] = useState<string | null>(resumeId)
+    const [activeTab, setActiveTab] = useState<'resume' | 'cover'>('resume')
+    const [coverLettersByResume, setCoverLettersByResume] = useState<Record<string, CoverLetter[]>>({})
+    const [coverLetterLoading, setCoverLetterLoading] = useState(false)
+    const [coverLetterError, setCoverLetterError] = useState<string | null>(null)
+    const coverLetterRequestRef = useRef<AbortController | null>(null)
+    const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false)
+    const [deletingCoverLetterId, setDeletingCoverLetterId] = useState<string | null>(null)
+    const coverLetterPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const coverLetterPollStartRef = useRef<number | null>(null)
     const [availableResumes, setAvailableResumes] = useState<SavedResume[]>(
         () =>
             recentResumes.map((item) => ({
@@ -87,6 +103,57 @@ export function ResumeEditor({
     }, [])
 
     const variantMeta = getVariantById(selectedVariant)
+    const activeCoverLetters = activeResumeId ? coverLettersByResume[activeResumeId] || [] : []
+    const activeResumeLabel = useMemo(() => {
+        if (activeResumeId) {
+            const existing = availableResumes.find((resume) => resume.id === activeResumeId)
+            if (existing?.fileName) return existing.fileName
+            if (existing?.data?.personalInfo?.name) return existing.data.personalInfo.name
+        }
+        return resumeData.personalInfo.name || 'Resume'
+    }, [activeResumeId, availableResumes, resumeData])
+    const waitingForCoverLetter = activeTab === 'cover' && !!activeResumeId && !activeCoverLetters.length && (coverLetterLoading || generatingCoverLetter)
+
+    const loadCoverLetters = useCallback(
+        async (resumeId: string, options?: { force?: boolean; silent?: boolean }) => {
+            if (!resumeId) return
+            if (!options?.force && coverLettersByResume[resumeId]) return
+
+            coverLetterRequestRef.current?.abort()
+            const controller = new AbortController()
+            coverLetterRequestRef.current = controller
+            if (!options?.silent) {
+                setCoverLetterLoading(true)
+            }
+            setCoverLetterError(null)
+
+            try {
+                const response = await fetch(`/api/cover-letter?rewrittenResumeId=${resumeId}`, { signal: controller.signal })
+                const data = await response.json().catch(() => ({}))
+
+                if (!response.ok) {
+                    const message = typeof data?.error === 'string' ? data.error : 'Failed to load cover letter'
+                    throw new Error(message)
+                }
+
+                if (controller.signal.aborted) return
+
+                const items = Array.isArray((data as any).items) ? ((data as any).items as CoverLetter[]) : []
+                setCoverLettersByResume((prev) => ({ ...prev, [resumeId]: items }))
+            } catch (error) {
+                if (controller.signal.aborted) return
+                setCoverLetterError(error instanceof Error ? error.message : 'Failed to load cover letter')
+                if (options?.silent) {
+                    setCoverLetterLoading(false)
+                }
+            } finally {
+                if (!controller.signal.aborted && !options?.silent) {
+                    setCoverLetterLoading(false)
+                }
+            }
+        },
+        [coverLettersByResume]
+    )
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -152,11 +219,173 @@ export function ResumeEditor({
         })
     }, [activeResumeId, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
 
+    useEffect(() => {
+        if (activeTab !== 'cover' || !activeResumeId) {
+            setCoverLetterLoading(false)
+            return
+        }
 
+        const hasLoaded = coverLettersByResume[activeResumeId] !== undefined
+        if (!hasLoaded) {
+            setCoverLetterLoading(true)
+            loadCoverLetters(activeResumeId, { force: true })
+        }
+    }, [activeResumeId, activeTab, coverLettersByResume, loadCoverLetters])
 
+    useEffect(() => {
+        if (!activeResumeId) {
+            setCoverLetterError(null)
+            setCoverLetterLoading(false)
+        }
+    }, [activeResumeId])
+
+    const stopCoverLetterPoll = useCallback(() => {
+        if (coverLetterPollRef.current) {
+            clearInterval(coverLetterPollRef.current)
+            coverLetterPollRef.current = null
+        }
+        coverLetterPollStartRef.current = null
+    }, [])
+
+    const startCoverLetterPoll = useCallback(
+        (resumeId: string) => {
+            if (coverLetterPollRef.current) return
+            coverLetterPollStartRef.current = Date.now()
+            coverLetterPollRef.current = setInterval(() => {
+                const elapsed = coverLetterPollStartRef.current ? Date.now() - coverLetterPollStartRef.current : 0
+                if (elapsed > 45000) {
+                    stopCoverLetterPoll()
+                    setGeneratingCoverLetter(false)
+                    setCoverLetterLoading(false)
+                    clearCoverLetterPending(resumeId)
+                    return
+                }
+                loadCoverLetters(resumeId, { force: true, silent: true })
+            }, 3000)
+        },
+        [loadCoverLetters, stopCoverLetterPoll]
+    )
+
+    useEffect(() => {
+        return () => {
+            coverLetterRequestRef.current?.abort()
+            stopCoverLetterPoll()
+        }
+    }, [stopCoverLetterPoll])
+
+    useEffect(() => {
+        if (!activeResumeId) {
+            stopCoverLetterPoll()
+            return
+        }
+
+        if (isCoverLetterPending(activeResumeId)) {
+            setGeneratingCoverLetter(true)
+            setCoverLetterError(null)
+            setCoverLetterLoading(true)
+            loadCoverLetters(activeResumeId, { force: true, silent: true })
+            startCoverLetterPoll(activeResumeId)
+        }
+    }, [activeResumeId, loadCoverLetters, startCoverLetterPoll, stopCoverLetterPoll])
+
+    useEffect(() => {
+        if (!activeResumeId) return
+        if (!activeCoverLetters.length) return
+
+        clearCoverLetterPending(activeResumeId)
+        stopCoverLetterPoll()
+        setGeneratingCoverLetter(false)
+        setCoverLetterLoading(false)
+    }, [activeCoverLetters.length, activeResumeId, stopCoverLetterPoll])
     const handleReset = () => {
         setResumeData(baselineData)
         toast.success('Reset to last saved version')
+    }
+
+    const handleReloadCoverLetters = () => {
+        if (activeResumeId) {
+            loadCoverLetters(activeResumeId, { force: true })
+        }
+    }
+
+    const handleDeleteCoverLetter = async (id: string) => {
+        if (!activeResumeId || !id) return
+        setDeletingCoverLetterId(id)
+        setCoverLetterError(null)
+        try {
+            const response = await fetch(`/api/cover-letter/${id}`, { method: 'DELETE' })
+            const data = await response.json().catch(() => ({}))
+            if (!response.ok) {
+                const message = typeof data.error === 'string' ? data.error : 'Failed to delete cover letter'
+                throw new Error(message)
+            }
+
+            setCoverLettersByResume((prev) => {
+                const existing = prev[activeResumeId] || []
+                return { ...prev, [activeResumeId]: existing.filter((letter) => letter.id !== id) }
+            })
+            toast.success('Cover letter deleted')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to delete cover letter')
+        } finally {
+            setDeletingCoverLetterId(null)
+        }
+    }
+
+    const handleGenerateCoverLetter = async () => {
+        if (!activeResumeId) {
+            toast.error('Save this resume first')
+            return
+        }
+
+        const cachedContext = loadCoverLetterContext(activeResumeId)
+        if (!cachedContext?.jobDescription && !cachedContext?.jobLink) {
+            const message = 'Add a job description or link on the dashboard, then generate again.'
+            setCoverLetterError(message)
+            toast.error(message)
+            return
+        }
+        setGeneratingCoverLetter(true)
+        setCoverLetterError(null)
+        setCoverLetterLoading(true)
+        try {
+            const result = await generateCoverLetter({
+                rewrittenResumeId: activeResumeId,
+                jobDescription: cachedContext?.jobDescription,
+                jobLink: cachedContext?.jobLink
+            })
+
+            const now = new Date().toISOString()
+            const newLetter: CoverLetter = {
+                id: result.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
+                content: result.content,
+                jobTitle: result.metadata?.title || null,
+                jobCompany: result.metadata?.company || null,
+                rewrittenResumeId: activeResumeId,
+                createdAt: now,
+                updatedAt: now
+            }
+
+            setCoverLettersByResume((prev) => {
+                const existing = prev[activeResumeId] || []
+                return { ...prev, [activeResumeId]: [newLetter, ...existing] }
+            })
+            setActiveTab('cover')
+            toast.success('Cover letter ready')
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to generate cover letter'
+            setCoverLetterError(message)
+            toast.error(
+                message.includes('job description')
+                    ? 'Add a job description or link on the dashboard, then generate again.'
+                    : message
+            )
+        } finally {
+            setGeneratingCoverLetter(false)
+            if (!activeCoverLetters.length) {
+                setCoverLetterLoading(false)
+            }
+        }
     }
 
     const handleSelectSaved = (item: SavedResume) => {
@@ -180,6 +409,11 @@ export function ResumeEditor({
 
             const next = availableResumes.filter((resume) => resume.id !== id)
             setAvailableResumes(next)
+            setCoverLettersByResume((prev) => {
+                const updated = { ...prev }
+                delete updated[id]
+                return updated
+            })
 
             if (activeResumeId === id) {
                 const fallback = next[0]
@@ -380,20 +614,70 @@ export function ResumeEditor({
                 </div>
 
                 <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start justify-items-center xl:justify-items-start">
-                    <Card
-                        className="glass-card p-4 md:p-6 overflow-auto"
-                        style={{ maxWidth: 'calc(210mm + 3rem)', minWidth: 'calc(210mm + 3rem)' }}
-                    >
-                        <div className="w-full flex justify-center">
-                            <WebResumeRenderer
-                                data={resumeData}
-                                variant={selectedVariant}
-                                onUpdate={setResumeData}
-                                themeMode={themeMode}
-                                onThemeModeChange={setThemeMode}
-                            />
-                        </div>
-                    </Card>
+                    <div className="w-full">
+                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover')}>
+                            <div className="flex items-center justify-between mb-4">
+                                <TabsList>
+                                    <TabsTrigger value="resume">Resume</TabsTrigger>
+                                    <TabsTrigger value="cover" className="flex items-center gap-2">
+                                        Cover Letter
+                                        {activeTab === 'cover' && (coverLetterLoading || waitingForCoverLetter) && (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                        )}
+                                    </TabsTrigger>
+                                </TabsList>
+                                {activeTab === 'cover' && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={handleReloadCoverLetters}
+                                        disabled={!activeResumeId || coverLetterLoading || waitingForCoverLetter}
+                                    >
+                                        {coverLetterLoading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="h-4 w-4" />
+                                        )}
+                                        Refresh
+                                    </Button>
+                                )}
+                            </div>
+
+                            <TabsContent value="resume">
+                                <Card
+                                    className="glass-card p-4 md:p-6 overflow-auto"
+                                    style={{ maxWidth: 'calc(210mm + 3rem)', minWidth: 'calc(210mm + 3rem)' }}
+                                >
+                                    <div className="w-full flex justify-center">
+                                        <WebResumeRenderer
+                                            data={resumeData}
+                                            variant={selectedVariant}
+                                            onUpdate={setResumeData}
+                                            themeMode={themeMode}
+                                            onThemeModeChange={setThemeMode}
+                                        />
+                                    </div>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="cover">
+                                <CoverLetterPanel
+                                    activeResumeId={activeResumeId}
+                                    resumeName={activeResumeLabel}
+                                    coverLetters={activeCoverLetters}
+                                    loading={coverLetterLoading}
+                                    forceLoading={waitingForCoverLetter}
+                                    error={coverLetterError}
+                                    onReload={handleReloadCoverLetters}
+                                    onDelete={handleDeleteCoverLetter}
+                                    deletingId={deletingCoverLetterId}
+                                    generating={generatingCoverLetter}
+                                    onGenerate={handleGenerateCoverLetter}
+                                />
+                            </TabsContent>
+                        </Tabs>
+                    </div>
 
                     <div className="space-y-6">
                         <Card className="glass-card p-5 space-y-4">

@@ -14,6 +14,7 @@ import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
 import AnalysisList from "./analysis-list"
 import { analyzeResume, generateCoverLetter, type GenerateCoverLetterResult } from "@/lib/api-client"
+import { markCoverLetterPending, saveCoverLetterContext, clearCoverLetterPending } from "@/lib/cover-letter-context"
 import { toast } from "sonner"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
@@ -247,6 +248,13 @@ export default function DashboardClient({
 
       const result = await analyzeResume(analyzePayload)
 
+      if (typeof window !== "undefined") {
+        saveCoverLetterContext(result.id, {
+          jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : undefined,
+          jobLink: normalizedLink || jobPosting.jobLink.trim() || undefined,
+        })
+      }
+
       // Generate cover letter AFTER resume adaptation using adapted content
       if (shouldGenerateCoverLetter && (selectedResumeId || usingResumeText)) {
         const coverLetterPayload = {
@@ -255,10 +263,16 @@ export default function DashboardClient({
           jobLink: normalizedLink,
         }
 
+        markCoverLetterPending(result.id)
+
         generateCoverLetter(coverLetterPayload)
-          .then((letter) => notifyCoverLetterResult(letter))
+          .then((letter) => {
+            clearCoverLetterPending(result.id)
+            notifyCoverLetterResult(letter)
+          })
           .catch((error: any) => {
             console.error("Cover letter generation error:", error)
+            clearCoverLetterPending(result.id)
             toast.error("Cover letter request failed. Try again from the dashboard.")
           })
       }

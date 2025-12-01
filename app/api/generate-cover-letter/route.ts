@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     // Fetch rewritten resume
     const { data: rewrittenResume, error: resumeError } = await supabase
       .from("rewritten_resumes")
-      .select("id, user_id, structured_data, content")
+      .select("id, user_id, structured_data, content, analysis_id, file_name")
       .eq("id", rewrittenResumeId)
       .single()
 
@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
     let cleanedJobDescription = ""
     let jobTitle = ""
     let jobCompany: string | undefined
+    let derivedFromAnalysis = false
 
     // Use adapted resume content
     cleanedResume = sanitizePlainText(
@@ -131,11 +132,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Try to reuse job description from linked analysis if nothing provided
+    if (!cleanedJobDescription && rewrittenResume.analysis_id) {
+      const { data: analysis } = await supabase
+        .from("analyses")
+        .select("job_posting_id, job_postings(description, title, company)")
+        .eq("id", rewrittenResume.analysis_id)
+        .eq("user_id", user.id)
+        .single()
+
+      const descriptionFromAnalysis = analysis?.job_postings?.description
+      if (descriptionFromAnalysis) {
+        cleanedJobDescription = sanitizePlainText(descriptionFromAnalysis)
+        jobTitle = analysis.job_postings?.title || jobTitle
+        jobCompany = analysis.job_postings?.company || jobCompany
+        derivedFromAnalysis = true
+      }
+    }
+
     console.log("[Cover Letter API] Cleaned data:", {
       resumeLength: cleanedResume.length,
       jobDescriptionLength: cleanedJobDescription.length,
       rewrittenResumeId,
     })
+
+    if (!isMeaningfulText(cleanedJobDescription)) {
+      return NextResponse.json(
+        {
+          error: derivedFromAnalysis
+            ? "Job description is missing for this tailored resume. Please re-run the analysis to regenerate a cover letter."
+            : "Please provide a job description or link to generate a cover letter.",
+        },
+        { status: 400 },
+      )
+    }
 
     const looksValid = isMeaningfulText(cleanedResume) && isMeaningfulText(cleanedJobDescription)
     if (!looksValid) {
