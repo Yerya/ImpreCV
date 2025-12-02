@@ -1,4 +1,6 @@
--- Create a function to handle new user profile creation
+-- Triggers for business logic automation
+
+-- Function to automatically create profile on user registration
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -10,9 +12,10 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public;
 
--- Create a trigger to automatically create profile on signup
+-- Trigger to create profile on signup
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

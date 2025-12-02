@@ -174,6 +174,9 @@ export function estimateSectionWeight(section: ResumeSection): number {
 }
 
 export function balanceSectionsAcrossColumns(sections: ResumeSection[]) {
+    if (!sections || !Array.isArray(sections)) {
+        return { sidebar: [], main: [] }
+    }
     const indexedSections = sections.map((section, index) => ({
         section,
         index,

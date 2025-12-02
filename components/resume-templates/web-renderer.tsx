@@ -257,7 +257,10 @@ export function WebResumeRenderer({
     }
 
     const renderableSections = React.useMemo(
-        () => (isEditing ? data.sections : data.sections.filter((section) => isSectionRenderable(section))),
+        () => {
+            const sections = data.sections || []
+            return isEditing ? sections : sections.filter((section) => isSectionRenderable(section))
+        },
         [data.sections, isEditing]
     )
 
