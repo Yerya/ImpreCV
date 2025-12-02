@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { deleteRecordWithFile } from "@/lib/supabase/transaction"
 
 export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
   if (!isSupabaseConfigured()) {
@@ -42,24 +43,23 @@ export async function DELETE(_: NextRequest, context: { params: Promise<{ id: st
     return resume.file_url.slice(idx + marker.length)
   })()
 
-  if (storagePath) {
-    const { error: removeError } = await supabase.storage.from("resumes").remove([storagePath])
-    const canIgnore = removeError?.message && removeError.message.toLowerCase().includes("not found")
-    if (removeError && !canIgnore) {
-      return NextResponse.json({ error: "Failed to delete file." }, { status: 500 })
-    }
-  }
+  // Use transactional pattern: delete record + remove file with proper error handling
+  const txResult = await deleteRecordWithFile(supabase, {
+    bucket: "resumes",
+    filePath: storagePath,
+    deleteRecord: async () => {
+      return await supabase
+        .from("resumes")
+        .delete()
+        .eq("id", resumeId)
+        .eq("user_id", user.id)
+    },
+  })
 
-  const { error: deleteError, status: deleteStatus } = await supabase
-    .from("resumes")
-    .delete()
-    .eq("id", resumeId)
-    .eq("user_id", user.id)
-
-  if (deleteError) {
+  if (!txResult.success) {
     return NextResponse.json(
-      { error: deleteError.message || "Failed to delete resume record." },
-      { status: deleteStatus ?? 500 },
+      { error: txResult.error || "Failed to delete resume." },
+      { status: 500 },
     )
   }
 

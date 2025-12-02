@@ -1,9 +1,5 @@
--- 99-seed-test-data.sql
--- Тестовые данные для демонстрации работоспособности
--- Используется только для демонстрации и тестирования.
-
--- Для работы этого скрипта нужен существующий пользователь.
--- Скрипт использует первого пользователя в таблице profiles.
+-- Test data for demonstration and testing purposes
+-- Requires an existing user in profiles table
 
 DO $$
 DECLARE
@@ -12,11 +8,13 @@ DECLARE
   test_job_id_1 UUID;
   test_job_id_2 UUID;
   test_job_id_3 UUID;
+  test_job_id_4 UUID;
   test_rewritten_id_1 UUID;
   test_rewritten_id_2 UUID;
   test_rewritten_id_3 UUID;
+  test_rewritten_id_4 UUID;
 BEGIN
-  -- Получаем ID тестового пользователя (последний зарегистрированный)
+  -- Get the last registered user
   SELECT id INTO test_user_id FROM public.profiles ORDER BY created_at DESC LIMIT 1;
   
   IF test_user_id IS NULL THEN
@@ -26,7 +24,7 @@ BEGIN
 
   RAISE NOTICE 'Using test user: %', test_user_id;
   
-  -- Вакансия 1: Frontend Developer
+  -- Job Posting 1: Standard Frontend Developer position
   INSERT INTO public.job_postings (id, user_id, title, company, description, link)
   VALUES (
     gen_random_uuid(),
@@ -58,7 +56,7 @@ We offer:
   )
   RETURNING id INTO test_job_id_1;
 
-  -- Вакансия 2: Full Stack Developer
+  -- Job Posting 2: Full Stack Developer at startup
   INSERT INTO public.job_postings (id, user_id, title, company, description, link)
   VALUES (
     gen_random_uuid(),
@@ -88,7 +86,7 @@ Benefits:
   )
   RETURNING id INTO test_job_id_2;
 
-  -- Вакансия 3: Backend Developer
+  -- Job Posting 3: Backend Developer without link (edge case: NULL link)
   INSERT INTO public.job_postings (id, user_id, title, company, description, link)
   VALUES (
     gen_random_uuid(),
@@ -118,12 +116,21 @@ Preferred:
   )
   RETURNING id INTO test_job_id_3;
 
-  RAISE NOTICE 'Created 3 test job postings';
+  -- Job Posting 4: Edge case - minimal data, special characters in title
+  INSERT INTO public.job_postings (id, user_id, title, company, description, link)
+  VALUES (
+    gen_random_uuid(),
+    test_user_id,
+    'C++ / Rust Developer (Senior)',
+    NULL,
+    'Looking for experienced systems programmer.',
+    'https://jobs.example.org/cpp-rust?ref=linkedin&utm_source=test'
+  )
+  RETURNING id INTO test_job_id_4;
 
-  -- Тестовые адаптированные резюме (rewritten_resumes)
+  RAISE NOTICE 'Created 4 test job postings';
 
-
-  -- Адаптированное резюме 1 (для Frontend вакансии)
+  -- Adapted Resume 1: Full data, high match (Frontend)
   INSERT INTO public.rewritten_resumes (id, user_id, job_posting_id, content, structured_data, variant, theme)
   VALUES (
     gen_random_uuid(),
@@ -196,7 +203,7 @@ Preferred:
   )
   RETURNING id INTO test_rewritten_id_1;
 
-  -- Адаптированное резюме 2 (для Full Stack вакансии)
+  -- Adapted Resume 2: Medium match (Full Stack)
   INSERT INTO public.rewritten_resumes (id, user_id, job_posting_id, content, structured_data, variant, theme)
   VALUES (
     gen_random_uuid(),
@@ -245,7 +252,7 @@ Preferred:
   )
   RETURNING id INTO test_rewritten_id_2;
 
-  -- Адаптированное резюме 3 (для Backend вакансии)
+  -- Adapted Resume 3: Low match (Backend)
   INSERT INTO public.rewritten_resumes (id, user_id, job_posting_id, content, structured_data, variant, theme)
   VALUES (
     gen_random_uuid(),
@@ -291,13 +298,70 @@ Preferred:
   )
   RETURNING id INTO test_rewritten_id_3;
 
-  RAISE NOTICE 'Created 3 test rewritten resumes';
+  -- Adapted Resume 4: Edge case - minimal personal info, special chars, unicode
+  INSERT INTO public.rewritten_resumes (id, user_id, job_posting_id, content, structured_data, variant, theme)
+  VALUES (
+    gen_random_uuid(),
+    test_user_id,
+    test_job_id_4,
+    'José García-López - C++/Rust Systems Developer...',
+    '{
+      "personalInfo": {
+        "name": "José García-López",
+        "title": "Systems Developer",
+        "email": "jose.garcia@example.com",
+        "phone": "",
+        "location": "",
+        "linkedin": "",
+        "website": ""
+      },
+      "sections": [
+        {
+          "type": "summary",
+          "title": "Summary",
+          "content": "Experienced systems programmer specializing in C++ and Rust. Strong background in performance optimization and memory-safe programming."
+        },
+        {
+          "type": "experience",
+          "title": "Work Experience",
+          "content": [
+            {
+              "title": "Systems Developer",
+              "subtitle": "Embedded Systems Ltd.",
+              "date": "2017-01 - Present",
+              "bullets": [
+                "Developed real-time systems in C++ with strict latency requirements (<1ms)",
+                "Migrated legacy C codebase to Rust, improving memory safety",
+                "Implemented lock-free data structures for concurrent processing"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "education",
+          "title": "Education",
+          "content": []
+        },
+        {
+          "type": "skills",
+          "title": "Technical Skills",
+          "content": "C++17/20, Rust, LLVM, CMake, Memory management, Concurrency, Linux kernel, Embedded systems"
+        },
+        {
+          "type": "custom",
+          "title": "Languages",
+          "content": "English (Fluent), Spanish (Native), German (Basic)"
+        }
+      ]
+    }'::jsonb,
+    'tailored',
+    'classic'
+  )
+  RETURNING id INTO test_rewritten_id_4;
 
-  -- ============================================
-  -- Тестовые анализы навыков (skill_maps)
-  -- ============================================
+  RAISE NOTICE 'Created 4 test rewritten resumes';
 
-  -- Skill map 1 (высокое соответствие)
+  -- Skill map 1: High match (85%) with full analysis data
   INSERT INTO public.skill_maps (user_id, rewritten_resume_id, match_score, adaptation_score, data)
   VALUES (
     test_user_id,
@@ -340,7 +404,7 @@ Preferred:
     }'::jsonb
   );
 
-  -- Skill map 2 (среднее соответствие)
+  -- Skill map 2: Medium match (72%)
   INSERT INTO public.skill_maps (user_id, rewritten_resume_id, match_score, adaptation_score, data)
   VALUES (
     test_user_id,
@@ -369,7 +433,7 @@ Preferred:
     }'::jsonb
   );
 
-  -- Skill map 3 (низкое соответствие)
+  -- Skill map 3: Low match (58%)
   INSERT INTO public.skill_maps (user_id, rewritten_resume_id, match_score, adaptation_score, data)
   VALUES (
     test_user_id,
@@ -401,12 +465,27 @@ Preferred:
     }'::jsonb
   );
 
-  RAISE NOTICE 'Created 3 test skill maps';
+  -- Skill map 4: Edge case - boundary score (0), minimal data
+  INSERT INTO public.skill_maps (user_id, rewritten_resume_id, match_score, adaptation_score, data)
+  VALUES (
+    test_user_id,
+    test_rewritten_id_4,
+    45,
+    NULL,
+    '{
+      "matchScore": 45,
+      "matchedSkills": [
+        {"name": "C++", "priority": "high", "category": "matched", "matchPercentage": 100},
+        {"name": "Rust", "priority": "high", "category": "matched", "matchPercentage": 100}
+      ],
+      "missingSkills": [],
+      "summary": "Skills match the core requirements. Limited job description made comprehensive analysis difficult."
+    }'::jsonb
+  );
 
-  -- ============================================
-  -- Тестовые сопроводительные письма (cover_letters)
-  -- ============================================
+  RAISE NOTICE 'Created 4 test skill maps';
 
+  -- Cover letter 1: Full, professional letter
   INSERT INTO public.cover_letters (user_id, rewritten_resume_id, content)
   VALUES (
     test_user_id,
@@ -429,6 +508,7 @@ Best regards,
 Ivan Ivanov'
   );
 
+  -- Cover letter 2: Shorter, startup-focused letter
   INSERT INTO public.cover_letters (user_id, rewritten_resume_id, content)
   VALUES (
     test_user_id,
@@ -447,5 +527,21 @@ Best,
 Mark Zuckerberg'
   );
 
-  RAISE NOTICE 'Created 2 test cover letters';
+  -- Cover letter 3: Edge case - minimal content (but valid)
+  INSERT INTO public.cover_letters (user_id, rewritten_resume_id, content)
+  VALUES (
+    test_user_id,
+    test_rewritten_id_3,
+    'Hello,
+
+I am interested in the Backend Developer position. My Python and FastAPI experience match your requirements.
+
+Regards,
+Ya Batman'
+  );
+
+  RAISE NOTICE 'Created 3 test cover letters';
+
+  RAISE NOTICE 'Test data seeding completed successfully!';
+  RAISE NOTICE 'Summary: 4 job postings, 4 adapted resumes, 4 skill maps, 3 cover letters';
 END $$;

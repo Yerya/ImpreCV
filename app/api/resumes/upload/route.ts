@@ -3,6 +3,7 @@ import { createHash } from "crypto"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { extractAndSanitizeResume, MAX_FILE_SIZE_BYTES, resolveResumeFileType } from "@/lib/resume-parser"
 import { isMeaningfulText } from "@/lib/text-utils"
+import { uploadFileWithRecord } from "@/lib/supabase/transaction"
 
 export const runtime = "nodejs"
 const MAX_RESUMES_PER_USER = 3
@@ -118,44 +119,58 @@ export async function POST(req: NextRequest) {
   }
 
   const filePath = `${user.id}/${Date.now()}-${safeName(originalName)}`
-  const { error: uploadError } = await supabase.storage.from("resumes").upload(filePath, buffer, {
-    contentType: mimeType || undefined,
-  })
 
-  if (uploadError) {
-    return NextResponse.json({ error: "Failed to store file." }, { status: 500 })
-  }
-
+  // Use transactional pattern: upload file + insert record with automatic rollback
   const {
     data: { publicUrl },
   } = supabase.storage.from("resumes").getPublicUrl(filePath)
 
-  const { data: resume, error: dbError } = await supabase
-    .from("resumes")
-    .insert({
-      user_id: user.id,
-      file_name: originalName,
-      file_url: publicUrl,
-      file_size: fileSize,
-      extracted_text: extractedText,
-      content_hash: contentHash,
-    })
-    .select()
-    .single()
+  let savedResume: Record<string, unknown> | null = null
 
-  if (dbError) {
-    await supabase.storage.from("resumes").remove([filePath])
-    if (dbError.code === "23505") {
+  // TRANSACTION LOGIC: Compensation Pattern
+  // This helper implements a "compensating transaction" to ensure consistency between Storage and DB.
+  // 1. Upload file to Storage (External Service)
+  // 2. Insert metadata to Database (Transactional DB)
+  // 3. IF DB insert fails -> COMPENSATE by automatically deleting the file from Storage
+  // See lib/supabase/transaction.ts for implementation details.
+  const txResult = await uploadFileWithRecord(supabase, {
+    bucket: "resumes",
+    filePath,
+    fileBuffer: buffer,
+    contentType: mimeType || undefined,
+    insertRecord: async () => {
+      const result = await supabase
+        .from("resumes")
+        .insert({
+          user_id: user.id,
+          file_name: originalName,
+          file_url: publicUrl,
+          file_size: fileSize,
+          extracted_text: extractedText,
+          content_hash: contentHash,
+        })
+        .select()
+        .single()
+
+      if (result.data) {
+        savedResume = result.data
+      }
+      return result
+    },
+  })
+
+  if (!txResult.success) {
+    if (txResult.error?.includes("23505")) {
       return NextResponse.json(
         { error: "You already uploaded a resume with this name. Rename the file and try again." },
         { status: 400 },
       )
     }
-    return NextResponse.json({ error: "Failed to save resume metadata." }, { status: 500 })
+    return NextResponse.json({ error: txResult.error || "Failed to save resume." }, { status: 500 })
   }
 
   return NextResponse.json({
-    resume,
+    resume: savedResume,
     preview: extractedText.slice(0, 1200),
     textLength: extractedText.length,
   })
