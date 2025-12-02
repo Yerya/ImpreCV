@@ -25,7 +25,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("rewritten_resumes")
-    .select("id, content, structured_data, resume_id, analysis_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name")
+    .select("id, content, structured_data, resume_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name, job_title, job_company")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
     .limit(MAX_SAVED)
@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
   const rawContent = typeof body?.content === "string" ? body.content : ""
   const structuredData = (body?.structuredData || body?.structured_data) as ResumeData | undefined
   const resumeId = typeof body?.resumeId === "string" ? body.resumeId : null
-  const analysisId = typeof body?.analysisId === "string" ? body.analysisId : null
   const variant = typeof body?.variant === "string" ? body.variant : defaultResumeVariant
   const theme = body?.theme === "dark" ? "dark" : "light"
 
@@ -73,7 +72,7 @@ export async function POST(req: NextRequest) {
   // If identical content already saved for this user, return it instead of creating a duplicate
   const { data: existing, error: existingError } = await supabase
     .from("rewritten_resumes")
-    .select("id, content, structured_data, resume_id, analysis_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name")
+    .select("id, content, structured_data, resume_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name, job_title, job_company")
     .eq("user_id", user.id)
     .eq("content", content)
     .limit(1)
@@ -100,13 +99,12 @@ export async function POST(req: NextRequest) {
       content,
       structured_data: parsedData,
       resume_id: resumeId,
-      analysis_id: analysisId,
       format: "json",
       variant,
       theme,
       file_name: parsedData.personalInfo.name || "resume",
     })
-    .select("id, content, structured_data, resume_id, analysis_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name")
+    .select("id, content, structured_data, resume_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name, job_title, job_company")
     .single()
 
   if (insertError) {

@@ -27,16 +27,17 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // Fetch user's resumes and recent analyses
+  // Fetch user's resumes
   const { data: resumes } = await supabase
     .from("resumes")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
 
-  const { data: analyses } = await supabase
-    .from("analyses")
-    .select("*, resumes(file_name), job_postings(title, company)")
+  // Fetch recent skill maps (replaces old analyses)
+  const { data: skillMaps } = await supabase
+    .from("skill_maps")
+    .select("id, match_score, adaptation_score, job_title, job_company, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5)
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
     <DashboardClient
       user={user}
       resumes={resumes || []}
-      recentAnalyses={analyses || []}
+      recentSkillMaps={skillMaps || []}
       adaptedResumesCount={adaptedResumesCount || 0}
     />
   )

@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     .eq("id", id)
     .eq("user_id", user.id)
-    .select("id, content, structured_data, resume_id, analysis_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name")
+    .select("id, content, structured_data, resume_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name, job_title, job_company")
     .single()
 
   if (error) {

@@ -1,6 +1,7 @@
 import type { ResumeData } from "@/lib/resume-templates/types";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
 import type { ResumeVariantId } from "@/lib/resume-templates/variants";
+import type { SkillMapData, SkillMapRecord } from "@/types/skill-map";
 
 interface AnalyzeResumePayload {
     resumeText?: string;
@@ -113,4 +114,74 @@ export async function generateCoverLetter(payload: GenerateCoverLetterPayload): 
         warning: (data as any).warning || null,
         metadata: (data as any).metadata,
     };
+}
+
+export interface GenerateSkillMapPayload {
+    rewrittenResumeId: string;
+    jobDescription?: string;
+    jobLink?: string;
+}
+
+export interface GenerateSkillMapResult {
+    skillMap: SkillMapRecord;
+    cached: boolean;
+    warning?: string | null;
+}
+
+export async function generateSkillMap(payload: GenerateSkillMapPayload): Promise<GenerateSkillMapResult> {
+    const response = await fetch("/api/generate-skill-map", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            rewrittenResumeId: payload.rewrittenResumeId,
+            jobDescription: payload.jobDescription || "",
+            jobLink: payload.jobLink || "",
+        }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : `Skill map generation failed with status ${response.status}`;
+        throw new Error(message);
+    }
+
+    if (!data.skillMap) {
+        throw new Error("Failed to generate skill map");
+    }
+
+    return {
+        skillMap: data.skillMap,
+        cached: data.cached || false,
+        warning: data.warning || null,
+    };
+}
+
+export async function getSkillMap(id: string): Promise<SkillMapRecord> {
+    const response = await fetch(`/api/skill-map/${id}`, {
+        method: "GET",
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : "Failed to fetch skill map";
+        throw new Error(message);
+    }
+
+    return data.skillMap;
+}
+
+export async function deleteSkillMap(id: string): Promise<void> {
+    const response = await fetch(`/api/skill-map/${id}`, {
+        method: "DELETE",
+    });
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const message = typeof data.error === "string" ? data.error : "Failed to delete skill map";
+        throw new Error(message);
+    }
 }

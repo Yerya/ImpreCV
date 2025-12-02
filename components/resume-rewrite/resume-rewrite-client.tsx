@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,8 +9,15 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
+interface RewrittenResume {
+  id: string
+  content: string
+  job_title?: string
+  job_company?: string
+}
+
 interface ResumeRewriteClientProps {
-  rewrittenResume: any
+  rewrittenResume: RewrittenResume
   user: any
 }
 
@@ -32,7 +38,7 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `resume-${rewrittenResume.analyses?.job_postings?.title || "rewritten"}.md`
+    a.download = `resume-${rewrittenResume.job_title || "rewritten"}.md`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -63,20 +69,22 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
     <div className="min-h-screen relative pb-20">
       <GlobalHeader 
         variant="back" 
-        backHref={`/analysis/${rewrittenResume.analyses?.id}`} 
-        backLabel="Back to Analysis" 
+        backHref="/dashboard" 
+        backLabel="Back to Dashboard" 
       />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            <span className="gradient-text">Rewritten Resume</span>
+            <span className="gradient-text">Adapted Resume</span>
           </h1>
-          <p className="text-muted-foreground">
-            Optimized for {rewrittenResume.analyses?.job_postings?.title}
-            {rewrittenResume.analyses?.job_postings?.company && ` at ${rewrittenResume.analyses.job_postings.company}`}
-          </p>
+          {(rewrittenResume.job_title || rewrittenResume.job_company) && (
+            <p className="text-muted-foreground">
+              Optimized for {rewrittenResume.job_title}
+              {rewrittenResume.job_company && ` at ${rewrittenResume.job_company}`}
+            </p>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -182,12 +190,20 @@ export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRew
             </Card>
 
             {/* Match Score */}
-            {rewrittenResume.analyses?.match_score && (
+            {rewrittenResume.job_title && (
               <Card className="glass-card p-6 relative z-10">
-                <h3 className="text-lg font-semibold mb-4">Match Score</h3>
-                <div className="text-center">
-                  <div className="text-5xl font-bold gradient-text mb-2">{rewrittenResume.analyses.match_score}%</div>
-                  <p className="text-sm text-muted-foreground">Compatibility with job posting</p>
+                <h3 className="text-lg font-semibold mb-4">Job Details</h3>
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Position:</span>{" "}
+                    <span className="font-medium">{rewrittenResume.job_title}</span>
+                  </p>
+                  {rewrittenResume.job_company && (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Company:</span>{" "}
+                      <span className="font-medium">{rewrittenResume.job_company}</span>
+                    </p>
+                  )}
                 </div>
               </Card>
             )}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server";
+import { deriveJobMetadata } from "@/lib/job-posting";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
@@ -107,6 +108,11 @@ export async function POST(req: NextRequest) {
         if (cleanedJobDescription.length > 50000) {
             return NextResponse.json({ error: "Job description is too long" }, { status: 400 });
         }
+
+        // Derive job metadata for storage
+        const jobMetadata = deriveJobMetadata(cleanedJobDescription, jobLink || "");
+        const derivedJobTitle = jobMetadata.title || "Job Opportunity";
+        const derivedJobCompany = jobMetadata.company || null;
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -331,7 +337,7 @@ FINAL REMINDERS:
 
         const { data: existing } = await supabase
             .from("rewritten_resumes")
-            .select("id, content, structured_data, resume_id, analysis_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name")
+            .select("id, content, structured_data, resume_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name, job_title, job_company")
             .eq("user_id", user.id)
             .eq("content", serializedContent)
             .limit(1)
@@ -354,8 +360,12 @@ FINAL REMINDERS:
                 variant: defaultResumeVariant,
                 theme: "light",
                 file_name: parsedData.personalInfo.name || "resume",
+                job_description: cleanedJobDescription,
+                job_link: jobLink || null,
+                job_title: derivedJobTitle,
+                job_company: derivedJobCompany,
             })
-            .select("id, content, structured_data, resume_id, analysis_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name")
+            .select("id, content, structured_data, resume_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name, job_title, job_company")
             .single();
 
         if (insertError || !saved) {

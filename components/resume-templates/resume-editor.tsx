@@ -17,13 +17,14 @@ import { defaultResumeVariant, getVariantById, resumeVariants } from "@/lib/resu
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"
 import { CoverLetterPanel, type CoverLetter } from "./cover-letter-panel"
-import { generateCoverLetter } from "@/lib/api-client"
+import { SkillMapPanel } from "./skill-map-panel"
+import { generateCoverLetter, generateSkillMap } from "@/lib/api-client"
 import { WebResumeRenderer } from "./web-renderer"
 import {
     clearCoverLetterPending,
     isCoverLetterPending,
-    loadCoverLetterContext
 } from "@/lib/cover-letter-context"
+import type { SkillMapRecord } from "@/types/skill-map"
 
 const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 const EMPTY_RESUME: ResumeData = {
@@ -76,7 +77,7 @@ export function ResumeEditor({
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(initialTheme)
     const [activeResumeId, setActiveResumeId] = useState<string | null>(resumeId)
-    const [activeTab, setActiveTab] = useState<'resume' | 'cover'>('resume')
+    const [activeTab, setActiveTab] = useState<'resume' | 'cover' | 'skills'>('resume')
     const [coverLettersByResume, setCoverLettersByResume] = useState<Record<string, CoverLetter[]>>({})
     const [coverLetterLoading, setCoverLetterLoading] = useState(false)
     const [coverLetterError, setCoverLetterError] = useState<string | null>(null)
@@ -85,6 +86,12 @@ export function ResumeEditor({
     const [deletingCoverLetterId, setDeletingCoverLetterId] = useState<string | null>(null)
     const coverLetterPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const coverLetterPollStartRef = useRef<number | null>(null)
+    const [generatingSkillMap, setGeneratingSkillMap] = useState(false)
+    const [skillMapsByResume, setSkillMapsByResume] = useState<Record<string, SkillMapRecord[]>>({})
+    const [skillMapLoading, setSkillMapLoading] = useState(false)
+    const [skillMapError, setSkillMapError] = useState<string | null>(null)
+    const skillMapRequestRef = useRef<AbortController | null>(null)
+    const [deletingSkillMapId, setDeletingSkillMapId] = useState<string | null>(null)
     const [availableResumes, setAvailableResumes] = useState<SavedResume[]>(
         () =>
             recentResumes.map((item) => ({
@@ -104,6 +111,7 @@ export function ResumeEditor({
 
     const variantMeta = getVariantById(selectedVariant)
     const activeCoverLetters = activeResumeId ? coverLettersByResume[activeResumeId] || [] : []
+    const activeSkillMaps = activeResumeId ? skillMapsByResume[activeResumeId] || [] : []
     const activeResumeLabel = useMemo(() => {
         if (activeResumeId) {
             const existing = availableResumes.find((resume) => resume.id === activeResumeId)
@@ -113,6 +121,48 @@ export function ResumeEditor({
         return resumeData.personalInfo.name || 'Resume'
     }, [activeResumeId, availableResumes, resumeData])
     const waitingForCoverLetter = activeTab === 'cover' && !!activeResumeId && !activeCoverLetters.length && (coverLetterLoading || generatingCoverLetter)
+    const waitingForSkillMap = activeTab === 'skills' && !!activeResumeId && !activeSkillMaps.length && (skillMapLoading || generatingSkillMap)
+
+    const loadSkillMaps = useCallback(
+        async (resumeId: string, options?: { force?: boolean; silent?: boolean }) => {
+            if (!resumeId) return
+            if (!options?.force && skillMapsByResume[resumeId]) return
+
+            skillMapRequestRef.current?.abort()
+            const controller = new AbortController()
+            skillMapRequestRef.current = controller
+            if (!options?.silent) {
+                setSkillMapLoading(true)
+            }
+            setSkillMapError(null)
+
+            try {
+                const response = await fetch(`/api/skill-map?rewrittenResumeId=${resumeId}`, { signal: controller.signal })
+                const data = await response.json().catch(() => ({}))
+
+                if (!response.ok) {
+                    const message = typeof data?.error === 'string' ? data.error : 'Failed to load skill maps'
+                    throw new Error(message)
+                }
+
+                if (controller.signal.aborted) return
+
+                const items = Array.isArray((data as any).items) ? ((data as any).items as SkillMapRecord[]) : []
+                setSkillMapsByResume((prev) => ({ ...prev, [resumeId]: items }))
+            } catch (error) {
+                if (controller.signal.aborted) return
+                setSkillMapError(error instanceof Error ? error.message : 'Failed to load skill maps')
+                if (options?.silent) {
+                    setSkillMapLoading(false)
+                }
+            } finally {
+                if (!controller.signal.aborted && !options?.silent) {
+                    setSkillMapLoading(false)
+                }
+            }
+        },
+        [skillMapsByResume]
+    )
 
     const loadCoverLetters = useCallback(
         async (resumeId: string, options?: { force?: boolean; silent?: boolean }) => {
@@ -233,9 +283,24 @@ export function ResumeEditor({
     }, [activeResumeId, activeTab, coverLettersByResume, loadCoverLetters])
 
     useEffect(() => {
+        if (activeTab !== 'skills' || !activeResumeId) {
+            setSkillMapLoading(false)
+            return
+        }
+
+        const hasLoaded = skillMapsByResume[activeResumeId] !== undefined
+        if (!hasLoaded) {
+            setSkillMapLoading(true)
+            loadSkillMaps(activeResumeId, { force: true })
+        }
+    }, [activeResumeId, activeTab, skillMapsByResume, loadSkillMaps])
+
+    useEffect(() => {
         if (!activeResumeId) {
             setCoverLetterError(null)
             setCoverLetterLoading(false)
+            setSkillMapError(null)
+            setSkillMapLoading(false)
         }
     }, [activeResumeId])
 
@@ -269,6 +334,7 @@ export function ResumeEditor({
     useEffect(() => {
         return () => {
             coverLetterRequestRef.current?.abort()
+            skillMapRequestRef.current?.abort()
             stopCoverLetterPoll()
         }
     }, [stopCoverLetterPoll])
@@ -308,6 +374,36 @@ export function ResumeEditor({
         }
     }
 
+    const handleReloadSkillMaps = () => {
+        if (activeResumeId) {
+            loadSkillMaps(activeResumeId, { force: true })
+        }
+    }
+
+    const handleDeleteSkillMap = async (id: string) => {
+        if (!activeResumeId || !id) return
+        setDeletingSkillMapId(id)
+        setSkillMapError(null)
+        try {
+            const response = await fetch(`/api/skill-map/${id}`, { method: 'DELETE' })
+            const data = await response.json().catch(() => ({}))
+            if (!response.ok) {
+                const message = typeof data.error === 'string' ? data.error : 'Failed to delete skill map'
+                throw new Error(message)
+            }
+
+            setSkillMapsByResume((prev) => {
+                const existing = prev[activeResumeId] || []
+                return { ...prev, [activeResumeId]: existing.filter((sm) => sm.id !== id) }
+            })
+            toast.success('Skill map deleted')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to delete skill map')
+        } finally {
+            setDeletingSkillMapId(null)
+        }
+    }
+
     const handleDeleteCoverLetter = async (id: string) => {
         if (!activeResumeId || !id) return
         setDeletingCoverLetterId(id)
@@ -338,21 +434,13 @@ export function ResumeEditor({
             return
         }
 
-        const cachedContext = loadCoverLetterContext(activeResumeId)
-        if (!cachedContext?.jobDescription && !cachedContext?.jobLink) {
-            const message = 'Add a job description or link on the dashboard, then generate again.'
-            setCoverLetterError(message)
-            toast.error(message)
-            return
-        }
         setGeneratingCoverLetter(true)
         setCoverLetterError(null)
         setCoverLetterLoading(true)
         try {
+            // Job data is now stored in database, no need to pass from client
             const result = await generateCoverLetter({
                 rewrittenResumeId: activeResumeId,
-                jobDescription: cachedContext?.jobDescription,
-                jobLink: cachedContext?.jobLink
             })
 
             const now = new Date().toISOString()
@@ -375,15 +463,66 @@ export function ResumeEditor({
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to generate cover letter'
             setCoverLetterError(message)
-            toast.error(
-                message.includes('job description')
-                    ? 'Add a job description or link on the dashboard, then generate again.'
-                    : message
-            )
+            toast.error(message)
         } finally {
             setGeneratingCoverLetter(false)
             if (!activeCoverLetters.length) {
                 setCoverLetterLoading(false)
+            }
+        }
+    }
+
+    const handleGenerateSkillMap = async () => {
+        if (!activeResumeId) {
+            toast.error('Save this resume first')
+            return
+        }
+
+        setGeneratingSkillMap(true)
+        setSkillMapError(null)
+        setSkillMapLoading(true)
+        try {
+            const result = await generateSkillMap({
+                rewrittenResumeId: activeResumeId,
+            })
+
+            if (result.skillMap) {
+                const newSkillMap: SkillMapRecord = {
+                    id: result.skillMap.id,
+                    user_id: result.skillMap.user_id,
+                    resume_id: result.skillMap.resume_id,
+                    rewritten_resume_id: result.skillMap.rewritten_resume_id,
+                    match_score: result.skillMap.match_score,
+                    adaptation_score: result.skillMap.adaptation_score,
+                    data: result.skillMap.data,
+                    job_title: result.skillMap.job_title,
+                    job_company: result.skillMap.job_company,
+                    created_at: result.skillMap.created_at,
+                    updated_at: result.skillMap.updated_at
+                }
+
+                setSkillMapsByResume((prev) => {
+                    const existing = prev[activeResumeId] || []
+                    const filtered = existing.filter((sm) => sm.id !== newSkillMap.id)
+                    return { ...prev, [activeResumeId]: [newSkillMap, ...filtered] }
+                })
+            }
+
+            if (result.cached) {
+                toast.info('Skill map already exists')
+            } else {
+                toast.success('Skill map generated!')
+            }
+
+            setActiveTab('skills')
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to generate skill map'
+            setSkillMapError(message)
+            toast.error(message)
+        } finally {
+            setGeneratingSkillMap(false)
+            if (!activeSkillMaps.length) {
+                setSkillMapLoading(false)
             }
         }
     }
@@ -615,13 +754,19 @@ export function ResumeEditor({
 
                 <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start justify-items-center xl:justify-items-start">
                     <div className="w-full">
-                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover')}>
+                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
                             <div className="flex items-center justify-between mb-4">
                                 <TabsList>
                                     <TabsTrigger value="resume">Resume</TabsTrigger>
                                     <TabsTrigger value="cover" className="flex items-center gap-2">
                                         Cover Letter
                                         {activeTab === 'cover' && (coverLetterLoading || waitingForCoverLetter) && (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="skills" className="flex items-center gap-2">
+                                        Skill Map
+                                        {activeTab === 'skills' && (skillMapLoading || waitingForSkillMap) && (
                                             <Loader2 className="h-3 w-3 animate-spin" />
                                         )}
                                     </TabsTrigger>
@@ -635,6 +780,22 @@ export function ResumeEditor({
                                         disabled={!activeResumeId || coverLetterLoading || waitingForCoverLetter}
                                     >
                                         {coverLetterLoading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="h-4 w-4" />
+                                        )}
+                                        Refresh
+                                    </Button>
+                                )}
+                                {activeTab === 'skills' && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={handleReloadSkillMaps}
+                                        disabled={!activeResumeId || skillMapLoading || waitingForSkillMap}
+                                    >
+                                        {skillMapLoading ? (
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         ) : (
                                             <RefreshCw className="h-4 w-4" />
@@ -674,6 +835,22 @@ export function ResumeEditor({
                                     deletingId={deletingCoverLetterId}
                                     generating={generatingCoverLetter}
                                     onGenerate={handleGenerateCoverLetter}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="skills">
+                                <SkillMapPanel
+                                    activeResumeId={activeResumeId}
+                                    resumeName={activeResumeLabel}
+                                    skillMaps={activeSkillMaps}
+                                    loading={skillMapLoading}
+                                    forceLoading={waitingForSkillMap}
+                                    error={skillMapError}
+                                    onReload={handleReloadSkillMaps}
+                                    onDelete={handleDeleteSkillMap}
+                                    deletingId={deletingSkillMapId}
+                                    generating={generatingSkillMap}
+                                    onGenerate={handleGenerateSkillMap}
                                 />
                             </TabsContent>
                         </Tabs>

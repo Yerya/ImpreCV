@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles, Target } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
-import AnalysisList from "./analysis-list"
+import SkillMapList from "./skill-map-list"
 import { analyzeResume, generateCoverLetter, type GenerateCoverLetterResult } from "@/lib/api-client"
-import { markCoverLetterPending, saveCoverLetterContext, clearCoverLetterPending } from "@/lib/cover-letter-context"
+import { markCoverLetterPending, clearCoverLetterPending } from "@/lib/cover-letter-context"
 import { toast } from "sonner"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
@@ -22,14 +22,14 @@ import { normalizeJobLink } from "@/lib/job-posting"
 interface DashboardClientProps {
   user: any
   resumes: any[]
-  recentAnalyses: any[]
+  recentSkillMaps: any[]
   adaptedResumesCount: number
 }
 
 export default function DashboardClient({
   user,
   resumes: initialResumes,
-  recentAnalyses,
+  recentSkillMaps,
   adaptedResumesCount: initialAdaptedCount,
 }: DashboardClientProps) {
   const authUser = useAppSelector((s) => s.auth.user)
@@ -248,19 +248,11 @@ export default function DashboardClient({
 
       const result = await analyzeResume(analyzePayload)
 
-      if (typeof window !== "undefined") {
-        saveCoverLetterContext(result.id, {
-          jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : undefined,
-          jobLink: normalizedLink || jobPosting.jobLink.trim() || undefined,
-        })
-      }
-
       // Generate cover letter AFTER resume adaptation using adapted content
+      // Job data is now stored in database, so cover letter API will get it from there
       if (shouldGenerateCoverLetter && (selectedResumeId || usingResumeText)) {
         const coverLetterPayload = {
-          rewrittenResumeId: result.id, // Link to adapted resume
-          jobDescription: jobPosting.inputType === "paste" ? jobPosting.description : "",
-          jobLink: normalizedLink,
+          rewrittenResumeId: result.id,
         }
 
         markCoverLetterPending(result.id)
@@ -437,10 +429,13 @@ export default function DashboardClient({
 
           {/* Sidebar */}
           <div className="space-y-6 min-w-0">
-            {/* Recent Analyses */}
+            {/* Recent Skill Maps */}
             <Card className="glass-card p-6 relative z-10 w-full">
-              <h3 className="text-xl font-semibold mb-4">Recent Analyses</h3>
-              <AnalysisList analyses={recentAnalyses} />
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-semibold">Skill Analyses</h3>
+              </div>
+              <SkillMapList skillMaps={recentSkillMaps} />
             </Card>
 
             <Card className="glass-card-primary p-6 relative z-10 w-full">
@@ -467,8 +462,8 @@ export default function DashboardClient({
                   <div className="text-sm text-muted-foreground">Resumes Uploaded</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold gradient-text">{recentAnalyses.length}</div>
-                  <div className="text-sm text-muted-foreground">Analyses Completed</div>
+                  <div className="text-3xl font-bold gradient-text">{recentSkillMaps.length}</div>
+                  <div className="text-sm text-muted-foreground">Skill Analyses</div>
                 </div>
               </div>
             </Card>

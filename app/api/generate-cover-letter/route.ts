@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "rewrittenResumeId is required" }, { status: 400 })
     }
 
-    // Fetch rewritten resume
+    // Fetch rewritten resume with job data
     const { data: rewrittenResume, error: resumeError } = await supabase
       .from("rewritten_resumes")
-      .select("id, user_id, structured_data, content, analysis_id, file_name")
+      .select("id, user_id, structured_data, content, file_name, job_description, job_title, job_company")
       .eq("id", rewrittenResumeId)
       .single()
 
@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
     let cleanedJobDescription = ""
     let jobTitle = ""
     let jobCompany: string | undefined
-    let derivedFromAnalysis = false
 
     // Use adapted resume content
     cleanedResume = sanitizePlainText(
@@ -117,8 +116,19 @@ export async function POST(request: NextRequest) {
         : rewrittenResume.content || ""
     )
 
-    cleanedJobDescription = sanitizePlainText(jobDescription || "")
+    // 1. First try database stored job description (preferred)
+    if (rewrittenResume.job_description) {
+      cleanedJobDescription = rewrittenResume.job_description
+      jobTitle = rewrittenResume.job_title || ""
+      jobCompany = rewrittenResume.job_company || undefined
+    }
 
+    // 2. Fallback: client-provided job description (for older resumes)
+    if (!cleanedJobDescription) {
+      cleanedJobDescription = sanitizePlainText(jobDescription || "")
+    }
+
+    // 3. Fallback: fetch from link
     if (!cleanedJobDescription && normalizedLink) {
       try {
         const fetched = await fetchJobPostingFromUrl(normalizedLink)
@@ -132,24 +142,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Try to reuse job description from linked analysis if nothing provided
-    if (!cleanedJobDescription && rewrittenResume.analysis_id) {
-      const { data: analysis } = await supabase
-        .from("analyses")
-        .select("job_posting_id, job_postings(description, title, company)")
-        .eq("id", rewrittenResume.analysis_id)
-        .eq("user_id", user.id)
-        .single()
-
-      const descriptionFromAnalysis = analysis?.job_postings?.description
-      if (descriptionFromAnalysis) {
-        cleanedJobDescription = sanitizePlainText(descriptionFromAnalysis)
-        jobTitle = analysis.job_postings?.title || jobTitle
-        jobCompany = analysis.job_postings?.company || jobCompany
-        derivedFromAnalysis = true
-      }
-    }
-
     console.log("[Cover Letter API] Cleaned data:", {
       resumeLength: cleanedResume.length,
       jobDescriptionLength: cleanedJobDescription.length,
@@ -158,11 +150,7 @@ export async function POST(request: NextRequest) {
 
     if (!isMeaningfulText(cleanedJobDescription)) {
       return NextResponse.json(
-        {
-          error: derivedFromAnalysis
-            ? "Job description is missing for this tailored resume. Please re-run the analysis to regenerate a cover letter."
-            : "Please provide a job description or link to generate a cover letter.",
-        },
+        { error: "No job description found. Please re-adapt your resume to store job data." },
         { status: 400 },
       )
     }
