@@ -25,7 +25,11 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("rewritten_resumes")
-    .select("id, content, structured_data, resume_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name, job_title, job_company")
+    .select(`
+      id, content, structured_data, resume_id, created_at, updated_at, 
+      pdf_url, pdf_path, variant, theme, file_name, job_posting_id,
+      job_posting:job_postings(id, title, company)
+    `)
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
     .limit(MAX_SAVED)
@@ -34,7 +38,17 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to load saved resumes." }, { status: 500 })
   }
 
-  return NextResponse.json({ items: data || [] })
+  // Flatten job_posting data for backward compatibility
+  const items = (data || []).map((item) => {
+    const jobPosting = item.job_posting as { title?: string; company?: string } | null;
+    return {
+      ...item,
+      job_title: jobPosting?.title || null,
+      job_company: jobPosting?.company || null,
+    };
+  });
+
+  return NextResponse.json({ items })
 }
 
 export async function POST(req: NextRequest) {
@@ -72,14 +86,24 @@ export async function POST(req: NextRequest) {
   // If identical content already saved for this user, return it instead of creating a duplicate
   const { data: existing, error: existingError } = await supabase
     .from("rewritten_resumes")
-    .select("id, content, structured_data, resume_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name, job_title, job_company")
+    .select(`
+      id, content, structured_data, resume_id, created_at, updated_at, 
+      pdf_url, pdf_path, variant, theme, file_name, job_posting_id,
+      job_posting:job_postings(id, title, company)
+    `)
     .eq("user_id", user.id)
     .eq("content", content)
     .limit(1)
     .maybeSingle()
 
   if (existing && !existingError) {
-    return NextResponse.json({ item: existing })
+    const jobPosting = existing.job_posting as { title?: string; company?: string } | null;
+    const item = {
+      ...existing,
+      job_title: jobPosting?.title || null,
+      job_company: jobPosting?.company || null,
+    };
+    return NextResponse.json({ item })
   }
 
   const { count, error: countError } = await supabase.from("rewritten_resumes").select("id", { count: "exact", head: true }).eq("user_id", user.id)
@@ -104,12 +128,22 @@ export async function POST(req: NextRequest) {
       theme,
       file_name: parsedData.personalInfo.name || "resume",
     })
-    .select("id, content, structured_data, resume_id, created_at, updated_at, pdf_url, pdf_path, variant, theme, file_name, job_title, job_company")
+    .select(`
+      id, content, structured_data, resume_id, created_at, updated_at, 
+      pdf_url, pdf_path, variant, theme, file_name, job_posting_id
+    `)
     .single()
 
   if (insertError) {
     return NextResponse.json({ error: "Failed to save adapted resume." }, { status: 500 })
   }
 
-  return NextResponse.json({ item: data })
+  // Return with null job data (this endpoint doesn't handle job posting creation)
+  const item = {
+    ...data,
+    job_title: null,
+    job_company: null,
+  };
+
+  return NextResponse.json({ item })
 }

@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("cover_letters")
-    .select("id, content, job_title, job_company, rewritten_resume_id, created_at, updated_at")
+    .select(`
+      id, content, rewritten_resume_id, created_at, updated_at,
+      rewritten_resume:rewritten_resumes(
+        job_posting:job_postings(title, company)
+      )
+    `)
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
     .limit(DEFAULT_LIMIT)
@@ -38,15 +43,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to load cover letters" }, { status: 500 })
   }
 
-  const normalized = (data ?? []).map((item: any) => ({
-    id: item.id,
-    content: item.content,
-    jobTitle: item.job_title ?? null,
-    jobCompany: item.job_company ?? null,
-    rewrittenResumeId: item.rewritten_resume_id ?? null,
-    createdAt: item.created_at ?? null,
-    updatedAt: item.updated_at ?? null,
-  }))
+  const normalized = (data ?? []).map((item: any) => {
+    const jobPosting = item.rewritten_resume?.job_posting;
+    return {
+      id: item.id,
+      content: item.content,
+      jobTitle: jobPosting?.title ?? null,
+      jobCompany: jobPosting?.company ?? null,
+      rewrittenResumeId: item.rewritten_resume_id ?? null,
+      createdAt: item.created_at ?? null,
+      updatedAt: item.updated_at ?? null,
+    };
+  })
 
   return NextResponse.json({ items: normalized })
 }

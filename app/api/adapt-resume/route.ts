@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server";
@@ -10,6 +11,8 @@ import type { ResumeData } from "@/lib/resume-templates/types";
 
 const MAX_SAVED = 3;
 const LIMIT_ERROR_MESSAGE = "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.";
+const RATE_LIMIT_MINUTES = 5;
+const RATE_LIMIT_ERROR_MESSAGE = "Please wait a few minutes before re-adapting this resume.";
 
 export async function POST(req: NextRequest) {
     try {
@@ -24,20 +27,6 @@ export async function POST(req: NextRequest) {
 
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // Check limit first to save resources
-        const { count, error: countError } = await supabase
-            .from("rewritten_resumes")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id);
-
-        if (countError) {
-            return NextResponse.json({ error: "Failed to check saved resumes limit" }, { status: 500 });
-        }
-
-        if ((count ?? 0) >= MAX_SAVED) {
-            return NextResponse.json({ error: LIMIT_ERROR_MESSAGE }, { status: 400 });
         }
 
         const body = await req.json();
@@ -337,35 +326,184 @@ FINAL REMINDERS:
 
         const { data: existing } = await supabase
             .from("rewritten_resumes")
-            .select("id, content, structured_data, resume_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name, job_title, job_company")
+            .select(`
+                id, content, structured_data, resume_id, variant, theme, 
+                pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id,
+                job_posting:job_postings(id, title, company, description, link)
+            `)
             .eq("user_id", user.id)
             .eq("content", serializedContent)
             .limit(1)
             .maybeSingle();
 
         if (existing) {
-            return NextResponse.json({ item: existing, resumeData: parsedData });
+            // Flatten job_posting data for backward compatibility
+            const jobPosting = existing.job_posting as { title?: string; company?: string } | null;
+            const item = {
+                ...existing,
+                job_title: jobPosting?.title || null,
+                job_company: jobPosting?.company || null,
+            };
+            return NextResponse.json({ item, resumeData: parsedData });
         }
 
+        // Find or create job posting (deduplicate by link or description hash)
+        let jobPostingId: string;
+        const descriptionHash = createHash("md5").update(cleanedJobDescription).digest("hex");
 
+        if (jobLink) {
+            // Try to find existing job posting by link
+            const { data: existingJobPosting } = await supabase
+                .from("job_postings")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("link", jobLink)
+                .maybeSingle();
 
+            if (existingJobPosting) {
+                jobPostingId = existingJobPosting.id;
+            } else {
+                const { data: newJobPosting, error: jobPostingError } = await supabase
+                    .from("job_postings")
+                    .insert({
+                        user_id: user.id,
+                        title: derivedJobTitle,
+                        company: derivedJobCompany,
+                        description: cleanedJobDescription,
+                        description_hash: descriptionHash,
+                        link: jobLink,
+                    })
+                    .select("id")
+                    .single();
+
+                if (jobPostingError || !newJobPosting) {
+                    console.error("Failed to save job posting:", jobPostingError);
+                    return NextResponse.json({ error: "Failed to save job posting" }, { status: 500 });
+                }
+                jobPostingId = newJobPosting.id;
+            }
+        } else {
+            // No link - deduplicate by description hash
+            const { data: existingJobPosting } = await supabase
+                .from("job_postings")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("description_hash", descriptionHash)
+                .is("link", null)
+                .maybeSingle();
+
+            if (existingJobPosting) {
+                jobPostingId = existingJobPosting.id;
+            } else {
+                const { data: newJobPosting, error: jobPostingError } = await supabase
+                    .from("job_postings")
+                    .insert({
+                        user_id: user.id,
+                        title: derivedJobTitle,
+                        company: derivedJobCompany,
+                        description: cleanedJobDescription,
+                        description_hash: descriptionHash,
+                        link: null,
+                    })
+                    .select("id")
+                    .single();
+
+                if (jobPostingError || !newJobPosting) {
+                    console.error("Failed to save job posting:", jobPostingError);
+                    return NextResponse.json({ error: "Failed to save job posting" }, { status: 500 });
+                }
+                jobPostingId = newJobPosting.id;
+            }
+        }
+
+        // Check if this resume+job_posting combo already exists (for upsert logic)
+        let existingAdaptedResume = null;
+        if (resumeId && jobPostingId) {
+            const { data: existing } = await supabase
+                .from("rewritten_resumes")
+                .select("id, last_adapted_at")
+                .eq("resume_id", resumeId)
+                .eq("job_posting_id", jobPostingId)
+                .maybeSingle();
+            existingAdaptedResume = existing;
+        }
+
+        if (existingAdaptedResume) {
+            // Rate limiting for updates
+            if (existingAdaptedResume.last_adapted_at) {
+                const lastAdapted = new Date(existingAdaptedResume.last_adapted_at);
+                const now = new Date();
+                const diffMinutes = (now.getTime() - lastAdapted.getTime()) / (1000 * 60);
+                
+                if (diffMinutes < RATE_LIMIT_MINUTES) {
+                    return NextResponse.json({ error: RATE_LIMIT_ERROR_MESSAGE }, { status: 429 });
+                }
+            }
+
+            // UPDATE existing adapted resume
+            const { data: updated, error: updateError } = await supabase
+                .from("rewritten_resumes")
+                .update({
+                    content: serializedContent,
+                    structured_data: parsedData,
+                    file_name: parsedData.personalInfo.name || "resume",
+                    last_adapted_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", existingAdaptedResume.id)
+                .select(`
+                    id, content, structured_data, resume_id, variant, theme, 
+                    pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id
+                `)
+                .single();
+
+            if (updateError || !updated) {
+                console.error("Failed to update adapted resume:", updateError);
+                return NextResponse.json({ error: "Failed to update adapted resume" }, { status: 500 });
+            }
+
+            const item = {
+                ...updated,
+                job_title: derivedJobTitle,
+                job_company: derivedJobCompany,
+            };
+
+            return NextResponse.json({ item, resumeData: parsedData, updated: true });
+        }
+
+        // Check limit only for new inserts
+        const { count, error: countError } = await supabase
+            .from("rewritten_resumes")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id);
+
+        if (countError) {
+            return NextResponse.json({ error: "Failed to check saved resumes limit" }, { status: 500 });
+        }
+
+        if ((count ?? 0) >= MAX_SAVED) {
+            return NextResponse.json({ error: LIMIT_ERROR_MESSAGE }, { status: 400 });
+        }
+
+        // INSERT new adapted resume
         const { data: saved, error: insertError } = await supabase
             .from("rewritten_resumes")
             .insert({
                 user_id: user.id,
                 resume_id: resumeId || null,
+                job_posting_id: jobPostingId,
                 content: serializedContent,
                 structured_data: parsedData,
                 format: "json",
                 variant: defaultResumeVariant,
                 theme: "light",
                 file_name: parsedData.personalInfo.name || "resume",
-                job_description: cleanedJobDescription,
-                job_link: jobLink || null,
-                job_title: derivedJobTitle,
-                job_company: derivedJobCompany,
+                last_adapted_at: new Date().toISOString(),
             })
-            .select("id, content, structured_data, resume_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name, job_title, job_company")
+            .select(`
+                id, content, structured_data, resume_id, variant, theme, 
+                pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id
+            `)
             .single();
 
         if (insertError || !saved) {
@@ -373,7 +511,14 @@ FINAL REMINDERS:
             return NextResponse.json({ error: "Failed to save adapted resume" }, { status: 500 });
         }
 
-        return NextResponse.json({ item: saved, resumeData: parsedData });
+        // Return with flattened job data for backward compatibility
+        const item = {
+            ...saved,
+            job_title: derivedJobTitle,
+            job_company: derivedJobCompany,
+        };
+
+        return NextResponse.json({ item, resumeData: parsedData });
     } catch (error: any) {
         console.error("Error in adapt-resume:", error);
         return NextResponse.json(

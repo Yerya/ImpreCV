@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createHash } from "crypto"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { extractAndSanitizeResume, MAX_FILE_SIZE_BYTES, resolveResumeFileType } from "@/lib/resume-parser"
 import { isMeaningfulText } from "@/lib/text-utils"
@@ -8,6 +9,10 @@ const MAX_RESUMES_PER_USER = 3
 
 function safeName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_") || "resume"
+}
+
+function computeContentHash(text: string): string {
+  return createHash("md5").update(text).digest("hex")
 }
 
 export async function POST(req: NextRequest) {
@@ -96,6 +101,22 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Check for duplicate content using hash
+  const contentHash = computeContentHash(extractedText)
+  const { data: existingResume } = await supabase
+    .from("resumes")
+    .select("id, file_name")
+    .eq("user_id", user.id)
+    .eq("content_hash", contentHash)
+    .maybeSingle()
+
+  if (existingResume) {
+    return NextResponse.json(
+      { error: `You already uploaded this resume as "${existingResume.file_name}".` },
+      { status: 400 },
+    )
+  }
+
   const filePath = `${user.id}/${Date.now()}-${safeName(originalName)}`
   const { error: uploadError } = await supabase.storage.from("resumes").upload(filePath, buffer, {
     contentType: mimeType || undefined,
@@ -117,6 +138,7 @@ export async function POST(req: NextRequest) {
       file_url: publicUrl,
       file_size: fileSize,
       extracted_text: extractedText,
+      content_hash: contentHash,
     })
     .select()
     .single()

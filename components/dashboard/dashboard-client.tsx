@@ -294,6 +294,12 @@ export default function DashboardClient({
             onClick: () => router.push("/resume-editor"),
           },
         })
+      } else if (rawMessage.includes("wait a few minutes")) {
+        console.info("Rate limit for re-adaptation:", rawMessage)
+        setInputError(null)
+        toast.error("Please wait", {
+          description: "You can re-adapt the same resume for this job in a few minutes.",
+        })
       } else {
         console.error("Analysis error:", error)
         setInputError(rawMessage)

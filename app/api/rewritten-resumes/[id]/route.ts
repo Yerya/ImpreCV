@@ -93,7 +93,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     .eq("id", id)
     .eq("user_id", user.id)
-    .select("id, content, structured_data, resume_id, variant, theme, pdf_url, pdf_path, created_at, updated_at, file_name, job_title, job_company")
+    .select(`
+      id, content, structured_data, resume_id, variant, theme, 
+      pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id,
+      job_posting:job_postings(id, title, company)
+    `)
     .single()
 
   if (error) {
@@ -106,5 +110,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Failed to update adapted resume." }, { status: 500 })
   }
 
-  return NextResponse.json({ item: data })
+  // Flatten job_posting for backward compatibility
+  const jobPosting = data.job_posting as { title?: string; company?: string } | null;
+  const item = {
+    ...data,
+    job_title: jobPosting?.title || null,
+    job_company: jobPosting?.company || null,
+  };
+
+  return NextResponse.json({ item })
 }

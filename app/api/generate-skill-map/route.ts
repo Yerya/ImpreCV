@@ -209,7 +209,10 @@ export async function POST(request: NextRequest) {
     console.log("[SkillMap API] Fetching rewritten resume...")
     const { data: rewrittenResume, error: resumeError } = await supabase
       .from("rewritten_resumes")
-      .select("id, user_id, resume_id, structured_data, content, job_description, job_link, job_title, job_company")
+      .select(`
+        id, user_id, resume_id, structured_data, content, job_posting_id,
+        job_posting:job_postings(id, title, company, description, link)
+      `)
       .eq("id", rewrittenResumeId)
       .single()
 
@@ -221,21 +224,28 @@ export async function POST(request: NextRequest) {
       console.error("[SkillMap API] Resume not found for id:", rewrittenResumeId)
       return NextResponse.json({ error: "Rewritten resume not found" }, { status: 404 })
     }
-    console.log("[SkillMap API] Resume found, has job_description:", !!rewrittenResume.job_description)
+
+    // Extract job posting data
+    const jobPosting = rewrittenResume.job_posting as { 
+      id?: string; title?: string; company?: string; description?: string; link?: string 
+    } | null;
+
+    console.log("[SkillMap API] Resume found, has job_posting:", !!jobPosting)
 
     if (rewrittenResume.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Get job description
-    let jobDescription = rewrittenResume.job_description || ""
-    let jobTitle = rewrittenResume.job_title || ""
-    let jobCompany = rewrittenResume.job_company || ""
+    // Get job description from job_posting
+    let jobDescription = jobPosting?.description || ""
+    let jobTitle = jobPosting?.title || ""
+    let jobCompany = jobPosting?.company || ""
+    const jobLink = jobPosting?.link || ""
 
     // Fallback: fetch from link if no stored description
-    if (!jobDescription && rewrittenResume.job_link) {
+    if (!jobDescription && jobLink) {
       try {
-        const fetched = await fetchJobPostingFromUrl(rewrittenResume.job_link)
+        const fetched = await fetchJobPostingFromUrl(jobLink)
         jobDescription = sanitizePlainText(fetched)
       } catch (error) {
         console.error("[SkillMap API] Failed to fetch job from link:", error)
@@ -251,7 +261,7 @@ export async function POST(request: NextRequest) {
 
     // Derive job metadata if needed
     if (!jobTitle || !jobCompany) {
-      const derived = deriveJobMetadata(jobDescription, rewrittenResume.job_link || "")
+      const derived = deriveJobMetadata(jobDescription, jobLink || "")
       jobTitle = jobTitle || derived.title || "Job Opportunity"
       jobCompany = jobCompany || derived.company || ""
     }
@@ -352,8 +362,6 @@ export async function POST(request: NextRequest) {
         match_score: parsedData.matchScore,
         adaptation_score: parsedData.adaptationScore || null,
         data: parsedData,
-        job_title: jobTitle || null,
-        job_company: jobCompany || null,
       })
       .select()
       .single()
@@ -373,8 +381,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Return with job info for UI compatibility
+    const skillMapWithJobInfo = {
+      ...savedSkillMap,
+      job_title: jobTitle,
+      job_company: jobCompany,
+    };
+
     console.log("[SkillMap API] Skill map saved successfully")
-    return NextResponse.json({ skillMap: savedSkillMap, cached: false })
+    return NextResponse.json({ skillMap: skillMapWithJobInfo, cached: false })
 
   } catch (error: any) {
     console.error("[SkillMap API] Unhandled error:", error?.message, error?.stack)

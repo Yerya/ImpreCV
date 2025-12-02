@@ -91,7 +91,10 @@ export async function POST(request: NextRequest) {
     // Fetch rewritten resume with job data
     const { data: rewrittenResume, error: resumeError } = await supabase
       .from("rewritten_resumes")
-      .select("id, user_id, structured_data, content, file_name, job_description, job_title, job_company")
+      .select(`
+        id, user_id, structured_data, content, file_name, job_posting_id,
+        job_posting:job_postings(id, title, company, description, link)
+      `)
       .eq("id", rewrittenResumeId)
       .single()
 
@@ -102,6 +105,11 @@ export async function POST(request: NextRequest) {
     if (rewrittenResume.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
+
+    // Extract job posting data
+    const jobPostingData = rewrittenResume.job_posting as { 
+      id?: string; title?: string; company?: string; description?: string; link?: string 
+    } | null;
 
     const normalizedLink = typeof jobLink === "string" ? normalizeJobLink(jobLink) : ""
     let cleanedResume = ""
@@ -117,10 +125,10 @@ export async function POST(request: NextRequest) {
     )
 
     // 1. First try database stored job description (preferred)
-    if (rewrittenResume.job_description) {
-      cleanedJobDescription = rewrittenResume.job_description
-      jobTitle = rewrittenResume.job_title || ""
-      jobCompany = rewrittenResume.job_company || undefined
+    if (jobPostingData?.description) {
+      cleanedJobDescription = jobPostingData.description
+      jobTitle = jobPostingData.title || ""
+      jobCompany = jobPostingData.company || undefined
     }
 
     // 2. Fallback: client-provided job description (for older resumes)
@@ -128,10 +136,11 @@ export async function POST(request: NextRequest) {
       cleanedJobDescription = sanitizePlainText(jobDescription || "")
     }
 
-    // 3. Fallback: fetch from link
-    if (!cleanedJobDescription && normalizedLink) {
+    // 3. Fallback: fetch from link (either from job_posting or client-provided)
+    if (!cleanedJobDescription && (jobPostingData?.link || normalizedLink)) {
+      const linkToFetch = jobPostingData?.link || normalizedLink;
       try {
-        const fetched = await fetchJobPostingFromUrl(normalizedLink)
+        const fetched = await fetchJobPostingFromUrl(linkToFetch)
         cleanedJobDescription = sanitizePlainText(fetched)
       } catch (error) {
         console.error("Failed to fetch job posting for cover letter:", error)
@@ -220,24 +229,46 @@ export async function POST(request: NextRequest) {
     let coverLetterId: string | null = null
     let warning: string | null = null
 
-    // Save cover letter with new simplified structure
-    const { data: coverLetter, error: coverLetterError } = await supabase
+    // Check if cover letter already exists for this resume (one per resume policy)
+    const { data: existingCoverLetter } = await supabase
       .from("cover_letters")
-      .insert({
-        user_id: user.id,
-        content,
-        job_title: jobTitle || null,
-        job_company: jobCompany || null,
-        rewritten_resume_id: rewrittenResumeId,
-      })
       .select("id")
-      .single()
+      .eq("rewritten_resume_id", rewrittenResumeId)
+      .maybeSingle()
 
-    if (coverLetterError || !coverLetter) {
-      console.error("Failed to save cover letter:", coverLetterError)
-      warning = "Cover letter generated but could not be saved. Copy it now."
+    if (existingCoverLetter) {
+      // Update existing cover letter instead of creating new one
+      const { data: updatedCoverLetter, error: updateError } = await supabase
+        .from("cover_letters")
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq("id", existingCoverLetter.id)
+        .select("id")
+        .single()
+
+      if (updateError || !updatedCoverLetter) {
+        console.error("Failed to update cover letter:", updateError)
+        warning = "Cover letter generated but could not be saved. Copy it now."
+      } else {
+        coverLetterId = updatedCoverLetter.id
+      }
     } else {
-      coverLetterId = coverLetter.id
+      // Create new cover letter
+      const { data: newCoverLetter, error: insertError } = await supabase
+        .from("cover_letters")
+        .insert({
+          user_id: user.id,
+          content,
+          rewritten_resume_id: rewrittenResumeId,
+        })
+        .select("id")
+        .single()
+
+      if (insertError || !newCoverLetter) {
+        console.error("Failed to save cover letter:", insertError)
+        warning = "Cover letter generated but could not be saved. Copy it now."
+      } else {
+        coverLetterId = newCoverLetter.id
+      }
     }
 
     console.log("[Cover Letter API] Success - returning response with coverLetterId:", coverLetterId)

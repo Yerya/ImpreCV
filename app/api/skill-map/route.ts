@@ -21,7 +21,13 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("skill_maps")
-      .select("*")
+      .select(`
+        id, user_id, resume_id, rewritten_resume_id, match_score, 
+        adaptation_score, data, created_at, updated_at,
+        rewritten_resume:rewritten_resumes(
+          job_posting:job_postings(title, company)
+        )
+      `)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
 
@@ -36,7 +42,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to load skill maps" }, { status: 500 })
     }
 
-    return NextResponse.json({ items: skillMaps || [] })
+    // Flatten job info for backward compatibility
+    const items = (skillMaps || []).map((sm) => {
+      const rewrittenResume = sm.rewritten_resume as { 
+        job_posting?: { title?: string; company?: string } | null 
+      } | null;
+      const jobPosting = rewrittenResume?.job_posting;
+      return {
+        ...sm,
+        job_title: jobPosting?.title || null,
+        job_company: jobPosting?.company || null,
+      };
+    });
+
+    return NextResponse.json({ items })
   } catch (error: any) {
     console.error("[SkillMap GET List] Error:", error)
     return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })

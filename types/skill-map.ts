@@ -47,8 +47,9 @@ export interface SkillMapRecord {
   match_score: number
   adaptation_score?: number
   data: SkillMapData
-  job_title?: string
-  job_company?: string
   created_at: string
   updated_at: string
+  // Flattened from job_postings via rewritten_resumes for UI compatibility
+  job_title?: string
+  job_company?: string
 }

@@ -34,13 +34,25 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
 
-  // Fetch recent skill maps (replaces old analyses)
-  const { data: skillMaps } = await supabase
+  // Fetch recent skill maps
+  const { data: rawSkillMaps } = await supabase
     .from("skill_maps")
-    .select("id, match_score, adaptation_score, job_title, job_company, created_at")
+    .select(`
+      id, match_score, adaptation_score, created_at,
+      rewritten_resume:rewritten_resumes(
+        job_posting:job_postings(title, company)
+      )
+    `)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5)
+
+  // Flatten job info for components
+  const skillMaps = (rawSkillMaps || []).map((sm: any) => ({
+    ...sm,
+    job_title: sm.rewritten_resume?.job_posting?.title || null,
+    job_company: sm.rewritten_resume?.job_posting?.company || null,
+  }))
 
   // Fetch adapted resumes count to check limit
   const { count: adaptedResumesCount } = await supabase
