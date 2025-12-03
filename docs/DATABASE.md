@@ -501,6 +501,23 @@ supabase db push
 supabase migration up
 ```
 
+## Documentation Map
+
+The table below maps typical database documentation requirements to the corresponding sections and DDL files in this project:
+
+| Requirement | Location |
+|------------|----------|
+| DBMS choice and rationale | `Technology Choice: Why PostgreSQL?` |
+| Entity-relationship diagram | `Schema Design → Entity-Relationship Overview` and `docs/DBPHOTO.jpg` |
+| Data dictionary (tables and columns) | `Schema Design → Tables` |
+| Constraints (PK, FK, CHECK, UNIQUE, defaults) | `Tables`, `Constraints and Validation`, `supabase/migrations/20251202000001_create_tables.sql` |
+| Indexes (performance and business rules) | `Indexes`, `supabase/migrations/20251202000002_create_indexes.sql` |
+| Row-Level Security policies | `Access Control: Supabase Built-in Roles + RLS`, `Row-Level Security (RLS)`, `supabase/migrations/20251202000003_setup_rls.sql` |
+| Views | `Views`, `supabase/migrations/20251202000005_create_views.sql` |
+| Triggers and database functions | `Triggers`, `supabase/migrations/20251202000004_create_functions_triggers.sql` |
+| File storage and RLS policies | `Storage`, `supabase/migrations/20251202000006_create_storage.sql` |
+| Full DDL and migration history | `Migrations`, `supabase/migrations/*` |
+
 ## Future Considerations
 
 1. **Full-text search**: Add `tsvector` columns for resume content search
