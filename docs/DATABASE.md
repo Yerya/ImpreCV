@@ -157,61 +157,6 @@ The schema follows **3NF (Third Normal Form)**:
 ### Entity-Relationship Overview
 
 ![Database entity-relationship diagram](./DBPHOTO.jpg)
-
-```
-                              ┌─────────────────────┐
-                              │      profiles       │
-                              │─────────────────────│
-                              │ id (PK)             │
-                              │ email               │
-                              │ full_name           │
-                              │ avatar_url          │
-                              └─────────────────────┘
-                                        │
-          ┌─────────────────────────────┼─────────────────────────────┐
-          │                             │                             │
-          ▼                             ▼                             ▼
-┌──────────────────┐          ┌─────────────────┐          ┌──────────────────┐
-│     resumes      │          │  job_postings   │          │    chat_usage    │
-│──────────────────│          │─────────────────│          │──────────────────│
-│ id (PK)          │          │ id (PK)         │          │ id (PK)          │
-│ user_id (FK)     │          │ user_id (FK)    │          │ user_id (FK)     │
-│ file_name        │          │ title           │          │ resume_id (TEXT) │
-│ file_url         │          │ company         │          │ count            │
-│ extracted_text   │          │ description     │          │ reset_at         │
-│ content_hash     │          │ link            │          └──────────────────┘
-└──────────────────┘          └─────────────────┘             Rate Limiting
-          │                             │
-          │                             │
-          └──────────────┬──────────────┘
-                         ▼
-              ┌──────────────────────┐
-              │  rewritten_resumes   │
-              │──────────────────────│
-              │ id (PK)              │
-              │ user_id (FK)         │
-              │ resume_id (FK)       │─────────► resumes
-              │ job_posting_id (FK)  │─────────► job_postings
-              │ content              │
-              │ structured_data      │ (JSONB)
-              │ variant / theme      │
-              │ pdf_url              │
-              └──────────────────────┘
-                         │
-          ┌──────────────┴──────────────┐
-          ▼                             ▼
-┌───────────────────┐         ┌─────────────────┐
-│    skill_maps     │         │  cover_letters  │
-│───────────────────│         │─────────────────│
-│ id (PK)           │         │ id (PK)         │
-│ user_id (FK)      │         │ user_id (FK)    │
-│ rewritten_resume_id│        │ rewritten_resume_id│ (UNIQUE)
-│ match_score       │         │ content         │
-│ adaptation_score  │         └─────────────────┘
-│ data (JSONB)      │
-└───────────────────┘
-```
-
 ### Tables
 
 #### `profiles`
