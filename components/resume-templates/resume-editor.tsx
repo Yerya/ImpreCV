@@ -25,6 +25,7 @@ import {
     isCoverLetterPending,
 } from "@/lib/cover-letter-context"
 import type { SkillMapRecord } from "@/types/skill-map"
+import { ResumeChatPanel } from "@/components/chat/resume-chat-panel"
 
 const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 const EMPTY_RESUME: ResumeData = {
@@ -275,12 +276,23 @@ export function ResumeEditor({
             return
         }
 
+        // Show loading indicator only when on cover tab
         const hasLoaded = coverLettersByResume[activeResumeId] !== undefined
-        if (!hasLoaded) {
+        if (activeTab === 'cover' && !hasLoaded) {
             setCoverLetterLoading(true)
             loadCoverLetters(activeResumeId, { force: true })
         }
     }, [activeResumeId, activeTab, coverLettersByResume, loadCoverLetters])
+
+    // Load cover letters in background for chat panel (regardless of active tab)
+    useEffect(() => {
+        if (!activeResumeId) return
+        
+        const hasLoaded = coverLettersByResume[activeResumeId] !== undefined
+        if (!hasLoaded) {
+            loadCoverLetters(activeResumeId, { silent: true })
+        }
+    }, [activeResumeId, coverLettersByResume, loadCoverLetters])
 
     useEffect(() => {
         if (activeTab !== 'skills' || !activeResumeId) {
@@ -367,6 +379,20 @@ export function ResumeEditor({
         setResumeData(baselineData)
         toast.success('Reset to last saved version')
     }
+
+    const handleUpdateCoverLetter = useCallback((id: string, newContent: string) => {
+        if (!activeResumeId) return
+        setCoverLettersByResume((prev) => {
+            const existing = prev[activeResumeId] || []
+            return {
+                ...prev,
+                [activeResumeId]: existing.map((letter) =>
+                    letter.id === id ? { ...letter, content: newContent } : letter
+                )
+            }
+        })
+        toast.success('Cover letter updated')
+    }, [activeResumeId])
 
     const handleReloadCoverLetters = () => {
         if (activeResumeId) {
@@ -978,6 +1004,13 @@ export function ResumeEditor({
                     </div>
                 </div>
             </div>
+
+            <ResumeChatPanel
+                resumeData={resumeData}
+                resumeId={activeResumeId}
+                onApplyModifications={setResumeData}
+                onResetToBaseline={handleReset}
+            />
 
             <MobileBottomNav />
         </div>

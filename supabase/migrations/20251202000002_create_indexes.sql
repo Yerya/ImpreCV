@@ -32,3 +32,6 @@ CREATE INDEX IF NOT EXISTS idx_skill_maps_resume_id ON public.skill_maps(resume_
 CREATE INDEX IF NOT EXISTS idx_skill_maps_rewritten_resume_id ON public.skill_maps(rewritten_resume_id);
 CREATE INDEX IF NOT EXISTS idx_skill_maps_created_at ON public.skill_maps(created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_skill_maps_user_resume_unique ON public.skill_maps(user_id, rewritten_resume_id);
+
+-- Chat usage indexes
+CREATE INDEX IF NOT EXISTS idx_chat_usage_user_resume ON public.chat_usage(user_id, resume_id);

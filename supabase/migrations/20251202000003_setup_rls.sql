@@ -9,6 +9,7 @@ ALTER TABLE public.job_postings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rewritten_resumes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cover_letters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.skill_maps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_usage ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view their own profile"
@@ -111,3 +112,17 @@ CREATE POLICY "Users can update their own skill maps"
 CREATE POLICY "Users can delete their own skill maps"
   ON public.skill_maps FOR DELETE
   USING (auth.uid() = user_id);
+
+-- Chat usage policies
+CREATE POLICY "Users can view their own chat usage"
+  ON public.chat_usage FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own chat usage"
+  ON public.chat_usage FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own chat usage"
+  ON public.chat_usage FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

@@ -82,3 +82,17 @@ CREATE TABLE IF NOT EXISTS public.skill_maps (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Chat usage table (AI chat modification limits per user/resume)
+CREATE TABLE IF NOT EXISTS public.chat_usage (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  resume_id TEXT NOT NULL DEFAULT 'global',
+  count INTEGER NOT NULL DEFAULT 0 CONSTRAINT check_count_non_negative CHECK (count >= 0),
+  reset_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, resume_id)
+);
+
+COMMENT ON TABLE public.chat_usage IS 'Tracks AI chat modification limits per user and resume. Records auto-expire after reset period.';

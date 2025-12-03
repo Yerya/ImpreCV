@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { GoogleGenAI } from "@google/genai";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server";
 import { deriveJobMetadata } from "@/lib/job-posting";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
+import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm";
+import { createLogger } from "@/lib/api/logger";
 import type { ResumeData } from "@/lib/resume-templates/types";
 
 const MAX_SAVED = 3;
@@ -15,8 +16,11 @@ const RATE_LIMIT_MINUTES = 5;
 const RATE_LIMIT_ERROR_MESSAGE = "Please wait a few minutes before re-adapting this resume.";
 
 export async function POST(req: NextRequest) {
+    const logger = createLogger("adapt-resume");
+    
     try {
         if (!isSupabaseConfigured()) {
+            logger.error("supabase_not_configured");
             return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
         }
 
@@ -26,17 +30,23 @@ export async function POST(req: NextRequest) {
         } = await supabase.auth.getUser();
 
         if (!user) {
+            logger.warn("unauthorized_request");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const userLogger = createLogger("adapt-resume", user.id);
+        userLogger.requestStart("/api/adapt-resume");
 
         const body = await req.json();
         const { resumeText, resumeId, jobDescription, jobLink } = body;
 
         // 1. Validation
         if ((!resumeText || typeof resumeText !== "string" || resumeText.trim().length === 0) && !resumeId) {
+            userLogger.warn("validation_failed", { reason: "missing_resume" });
             return NextResponse.json({ error: "Resume text or resumeId is required" }, { status: 400 });
         }
         if ((!jobDescription || typeof jobDescription !== "string" || jobDescription.trim().length === 0) && !jobLink) {
+            userLogger.warn("validation_failed", { reason: "missing_job" });
             return NextResponse.json({ error: "Job description or link is required" }, { status: 400 });
         }
 
@@ -102,15 +112,6 @@ export async function POST(req: NextRequest) {
         const jobMetadata = deriveJobMetadata(cleanedJobDescription, jobLink || "");
         const derivedJobTitle = jobMetadata.title || "Job Opportunity";
         const derivedJobCompany = jobMetadata.company || null;
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            console.error("GEMINI_API_KEY is not set");
-            return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-        }
-
-        // 2. Initialize Gemini
-        const ai = new GoogleGenAI({ apiKey });
 
         // 3. Construct Prompt
         const prompt = `
@@ -286,39 +287,62 @@ FINAL REMINDERS:
 
 `;
 
-
-        // 4. Call Gemini API
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            config: {
-                maxOutputTokens: 8192,
-                temperature: 0.4,
-                responseMimeType: "application/json"
-            },
-        });
-
-        // 5. Extract Text
-        let rawResponseText = "";
-
+        // Initialize LLM client with automatic fallback support
+        let llmClient
         try {
-            if (typeof (response as any).text === 'function') {
-                rawResponseText = (response as any).text();
-            } else if (typeof (response as any).text === 'string') {
-                rawResponseText = (response as any).text;
-            } else if (response.candidates && response.candidates.length > 0) {
-                rawResponseText = response.candidates[0].content?.parts?.[0]?.text || "";
+            llmClient = createLLMClient("[Adapt]")
+        } catch (error) {
+            if (error instanceof LLMError && error.type === "API_KEY_MISSING") {
+                userLogger.error("api_key_missing")
+                return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
             }
-        } catch (e) {
-            console.error("Error extracting text from Gemini response:", e);
+            throw error
         }
 
-        // 6. Return JSON directly (frontend will handle parsing)
-        let adaptedResume = rawResponseText;
+        // Call LLM with automatic fallback (gemini-2.5-flash → gemini-2.0-flash)
+        let rawResponseText = ""
+        let modelUsed = LLM_MODELS.PRIMARY
         try {
-            JSON.parse(rawResponseText);
+            const response = await llmClient.generate(prompt, {
+                model: LLM_MODELS.PRIMARY,
+                configType: "adaptation",
+                enableFallback: true,
+                logPrefix: "[Adapt]"
+            })
+            rawResponseText = response.text
+            modelUsed = response.model
+            
+            userLogger.llmComplete({
+                model: modelUsed,
+                usedFallback: response.usedFallback,
+                success: true
+            })
+        } catch (error) {
+            userLogger.llmComplete({
+                model: modelUsed,
+                usedFallback: false,
+                success: false,
+                error: error instanceof Error ? error.message : "Unknown error"
+            })
+            
+            if (error instanceof LLMError) {
+                if (error.type === "RATE_LIMIT") {
+                    userLogger.requestComplete(429, { reason: "rate_limit" })
+                    return NextResponse.json({ 
+                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
+                    }, { status: 429 })
+                }
+            }
+            userLogger.requestComplete(500, { reason: "llm_failed" })
+            return NextResponse.json({ error: "Failed to adapt resume" }, { status: 500 })
+        }
+
+        // Parse and validate JSON response
+        let adaptedResume = cleanJsonResponse(rawResponseText);
+        try {
+            JSON.parse(adaptedResume);
         } catch (e) {
-            console.error("AI did not return valid JSON:", rawResponseText);
+            userLogger.warn("json_parse_failed", { responseLength: adaptedResume?.length })
         }
 
         const parsedData: ResumeData = parseMarkdownToResumeData(adaptedResume);
@@ -468,6 +492,7 @@ FINAL REMINDERS:
                 job_company: derivedJobCompany,
             };
 
+            userLogger.requestComplete(200, { action: "updated", resumeId: existingAdaptedResume.id });
             return NextResponse.json({ item, resumeData: parsedData, updated: true });
         }
 
@@ -518,9 +543,11 @@ FINAL REMINDERS:
             job_company: derivedJobCompany,
         };
 
+        userLogger.requestComplete(200, { action: "created", resumeId: saved.id });
         return NextResponse.json({ item, resumeData: parsedData });
     } catch (error: any) {
-        console.error("Error in adapt-resume:", error);
+        const logger = createLogger("adapt-resume");
+        logger.error("unhandled_error", { message: error.message, stack: error.stack });
         return NextResponse.json(
             { error: error.message || "Failed to adapt resume" },
             { status: 500 }

@@ -374,6 +374,8 @@
 
 .glass-chrome {
     background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px) saturate(1.25);
+    -webkit-backdrop-filter: blur(24px) saturate(1.25);
     border: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
@@ -401,6 +403,41 @@
 }
 
 /* ========================================
+   CHAT GLASSMORPHISM
+   ======================================== */
+
+.glass-chat-panel {
+    background: oklch(from var(--card) l c h / 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid oklch(from var(--border) l c h / 0.5);
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 0 0 1px oklch(from var(--border) l c h / 0.1);
+}
+
+.dark .glass-chat-panel {
+    background: rgba(20, 20, 25, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-chat-bubble {
+    background: oklch(from var(--muted) l c h / 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid oklch(from var(--border) l c h / 0.3);
+}
+
+.dark .glass-chat-bubble {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================
    ANIMATIONS & UTILITIES
    ======================================== */
 
@@ -412,6 +449,11 @@
 
     .no-scrollbar::-webkit-scrollbar {
         display: none;
+    }
+
+    .overflow-wrap-anywhere {
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     [data-animate] {

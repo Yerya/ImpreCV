@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { GoogleGenAI } from "@google/genai"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server"
 import { sanitizePlainText, isMeaningfulText } from "@/lib/text-utils"
 import { deriveJobMetadata } from "@/lib/job-posting"
+import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm"
+import { createLogger } from "@/lib/api/logger"
 import type { SkillMapData, Skill, RoadmapItem, AdaptationHighlight } from "@/types/skill-map"
-
-const extractText = (response: any): string => {
-  try {
-    if (typeof response?.text === "function") return response.text()
-    if (typeof response?.text === "string") return response.text
-    if (response?.candidates?.length) {
-      return response.candidates[0]?.content?.parts?.[0]?.text || ""
-    }
-  } catch (error) {
-    console.error("[SkillMap] Failed to extract text:", error)
-  }
-  return ""
-}
 
 // Prompt for analyzing ORIGINAL resume vs job description (skill gap analysis)
 const buildGapAnalysisPrompt = (originalResumeText: string, jobDescription: string) => {
@@ -164,11 +152,11 @@ const validateSkillMapData = (data: any): SkillMapData => {
 }
 
 export async function POST(request: NextRequest) {
+  const logger = createLogger("skill-map")
+  
   try {
-    console.log("[SkillMap API] ========== Request received ==========")
-
     if (!isSupabaseConfigured()) {
-      console.error("[SkillMap API] Supabase is not configured")
+      logger.error("supabase_not_configured")
       return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
     }
 
@@ -178,17 +166,20 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user) {
+      logger.warn("unauthorized_request")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const userLogger = createLogger("skill-map", user.id)
+    userLogger.requestStart("/api/generate-skill-map")
 
     const body = await request.json().catch(() => ({}))
     const { rewrittenResumeId } = body
 
     if (!rewrittenResumeId) {
-      console.error("[SkillMap API] Missing rewrittenResumeId")
+      userLogger.warn("validation_failed", { reason: "missing_resume_id" })
       return NextResponse.json({ error: "rewrittenResumeId is required" }, { status: 400 })
     }
-    console.log("[SkillMap API] Processing rewrittenResumeId:", rewrittenResumeId)
 
     // Check if skill map already exists for this resume
     const { data: existingSkillMap } = await supabase
@@ -199,6 +190,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingSkillMap) {
+      userLogger.requestComplete(200, { cached: true })
       return NextResponse.json({
         skillMap: existingSkillMap,
         cached: true,
@@ -206,7 +198,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch rewritten resume with job data AND resume_id (link to original)
-    console.log("[SkillMap API] Fetching rewritten resume...")
     const { data: rewrittenResume, error: resumeError } = await supabase
       .from("rewritten_resumes")
       .select(`
@@ -217,11 +208,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (resumeError) {
-      console.error("[SkillMap API] Supabase error fetching resume:", resumeError)
+      userLogger.warn("resume_not_found", { error: resumeError.message })
       return NextResponse.json({ error: "Rewritten resume not found", details: resumeError.message }, { status: 404 })
     }
     if (!rewrittenResume) {
-      console.error("[SkillMap API] Resume not found for id:", rewrittenResumeId)
+      userLogger.warn("resume_not_found", { rewrittenResumeId })
       return NextResponse.json({ error: "Rewritten resume not found" }, { status: 404 })
     }
 
@@ -229,8 +220,6 @@ export async function POST(request: NextRequest) {
     const jobPosting = rewrittenResume.job_posting as { 
       id?: string; title?: string; company?: string; description?: string; link?: string 
     } | null;
-
-    console.log("[SkillMap API] Resume found, has job_posting:", !!jobPosting)
 
     if (rewrittenResume.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -253,6 +242,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isMeaningfulText(jobDescription)) {
+      userLogger.warn("validation_failed", { reason: "no_job_description" })
       return NextResponse.json(
         { error: "No job description found. Please re-adapt your resume to store job data." },
         { status: 400 }
@@ -280,13 +270,11 @@ export async function POST(request: NextRequest) {
       if (originalResume?.extracted_text) {
         originalResumeText = originalResume.extracted_text
         originalResumeId = originalResume.id
-        console.log("[SkillMap API] Found original resume, text length:", originalResumeText.length)
       }
     }
 
     // If no original resume, use adapted one (backwards compatibility)
     if (!originalResumeText) {
-      console.log("[SkillMap API] No original resume, using adapted for analysis")
       originalResumeText = typeof rewrittenResume.structured_data === "object"
         ? JSON.stringify(rewrittenResume.structured_data, null, 2)
         : rewrittenResume.content || ""
@@ -296,55 +284,69 @@ export async function POST(request: NextRequest) {
       ? JSON.stringify(rewrittenResume.structured_data, null, 2)
       : rewrittenResume.content || ""
 
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
+    // Initialize LLM client with automatic fallback support
+    let llmClient
+    try {
+      llmClient = createLLMClient("[SkillMap]")
+    } catch (error) {
+      if (error instanceof LLMError && error.type === "API_KEY_MISSING") {
+        userLogger.error("api_key_missing")
+        return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
+      }
+      throw error
     }
 
-    const ai = new GoogleGenAI({ apiKey })
-
-    // Helper to call Gemini and parse JSON
-    const callGemini = async (prompt: string): Promise<any> => {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        config: {
-          maxOutputTokens: 8192,
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
+    // Helper to call LLM with fallback and parse JSON
+    const callLLM = async (prompt: string, analysisType: string): Promise<any> => {
+      const response = await llmClient.generate(prompt, {
+        model: LLM_MODELS.FALLBACK, // Use 2.0-flash for skill-map (more stable for analysis)
+        configType: "skillMap",
+        enableFallback: true,
+        logPrefix: "[SkillMap]"
       })
       
-      let text = extractText(response).trim()
-      if (text.startsWith("```json")) text = text.slice(7)
-      else if (text.startsWith("```")) text = text.slice(3)
-      if (text.endsWith("```")) text = text.slice(0, -3)
+      userLogger.llmComplete({
+        model: response.model,
+        usedFallback: response.usedFallback,
+        success: true
+      })
+      userLogger.info("llm_analysis_complete", { analysisType })
       
-      return JSON.parse(text.trim())
+      const cleanedText = cleanJsonResponse(response.text)
+      return JSON.parse(cleanedText)
     }
 
     // Step 1: Gap Analysis (original resume vs job)
-    console.log("[SkillMap API] Running gap analysis on original resume...")
     let gapData: any
     try {
       const gapPrompt = buildGapAnalysisPrompt(originalResumeText, jobDescription)
-      gapData = await callGemini(gapPrompt)
-      console.log("[SkillMap API] Gap analysis complete, matchScore:", gapData.matchScore)
+      gapData = await callLLM(gapPrompt, "gap_analysis")
     } catch (error: any) {
-      console.error("[SkillMap API] Gap analysis failed:", error?.message)
+      userLogger.llmComplete({
+        model: LLM_MODELS.FALLBACK,
+        usedFallback: false,
+        success: false,
+        error: error?.message
+      })
+      
+      if (error instanceof LLMError && error.type === "RATE_LIMIT") {
+        userLogger.requestComplete(429, { reason: "rate_limit" })
+        return NextResponse.json({ 
+          error: "AI service is temporarily overloaded. Please try again in a few moments." 
+        }, { status: 429 })
+      }
+      userLogger.requestComplete(500, { reason: "gap_analysis_failed" })
       return NextResponse.json({ error: "Failed to analyze skill gap" }, { status: 500 })
     }
 
     // Step 2: Adaptation Comparison (only if we have original resume)
     let adaptationData: any = {}
     if (originalResumeId && originalResumeText !== adaptedResumeData) {
-      console.log("[SkillMap API] Running adaptation comparison...")
       try {
         const adaptPrompt = buildAdaptationPrompt(originalResumeText, adaptedResumeData, jobDescription)
-        adaptationData = await callGemini(adaptPrompt)
-        console.log("[SkillMap API] Adaptation analysis complete, score:", adaptationData.adaptationScore)
+        adaptationData = await callLLM(adaptPrompt, "adaptation_comparison")
       } catch (error: any) {
-        console.warn("[SkillMap API] Adaptation comparison failed (non-critical):", error?.message)
+        userLogger.warn("adaptation_comparison_failed", { error: error?.message })
       }
     }
 
@@ -367,7 +369,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (saveError) {
-      console.error("[SkillMap API] Failed to save:", saveError)
+      userLogger.warn("db_save_failed", { error: saveError.message })
       return NextResponse.json({
         skillMap: {
           id: null,
@@ -388,11 +390,15 @@ export async function POST(request: NextRequest) {
       job_company: jobCompany,
     };
 
-    console.log("[SkillMap API] Skill map saved successfully")
+    userLogger.requestComplete(200, { 
+      skillMapId: savedSkillMap.id,
+      matchScore: parsedData.matchScore
+    })
     return NextResponse.json({ skillMap: skillMapWithJobInfo, cached: false })
 
   } catch (error: any) {
-    console.error("[SkillMap API] Unhandled error:", error?.message, error?.stack)
+    const logger = createLogger("skill-map")
+    logger.error("unhandled_error", error instanceof Error ? error : new Error(error?.message || "Unknown error"))
     return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
   }
 }
