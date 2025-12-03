@@ -156,6 +156,8 @@ The schema follows **3NF (Third Normal Form)**:
 
 ### Entity-Relationship Overview
 
+![Database entity-relationship diagram](./DBPHOTO.jpg)
+
 ```
                               ┌─────────────────────┐
                               │      profiles       │
