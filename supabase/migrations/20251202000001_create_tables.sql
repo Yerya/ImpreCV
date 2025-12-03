@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Users table (extends Supabase auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL CONSTRAINT check_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS public.job_postings (
   company TEXT,
   description TEXT,
   description_hash TEXT,
-  link TEXT CONSTRAINT check_link_format CHECK (link IS NULL OR link = '' OR link ~* '^https?://'),
+  link TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

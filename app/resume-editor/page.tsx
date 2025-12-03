@@ -71,16 +71,19 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
         .limit(3)
 
     const saved = (rows || []).map(mapRowToResume)
+    const activeResume = activeId ? saved.find((item) => item.id === activeId) : saved[0]
 
-    if (!saved.length) {
+    if (!saved.length || !activeResume) {
         return (
             <div className="min-h-screen relative pb-20">
                 <GlobalHeader variant="back" backHref="/dashboard" backLabel="Back to Dashboard" />
                 <div className="container mx-auto px-4 py-10 max-w-3xl">
                     <Card className="glass-card p-8 text-center space-y-4">
-                        <h1 className="text-3xl font-bold">No resumes yet</h1>
+                        <h1 className="text-3xl font-bold">{!saved.length ? "No resumes yet" : "Resume not found"}</h1>
                         <p className="text-muted-foreground">
-                            Upload a resume and run an analysis from the dashboard to start editing in the Resume Editor.
+                            {!saved.length 
+                                ? "Upload a resume and run an analysis from the dashboard to start editing in the Resume Editor."
+                                : "The requested resume may have been deleted. Please select another resume or create a new one."}
                         </p>
                         <div className="flex justify-center gap-3">
                             <Button asChild>
@@ -96,8 +99,6 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
             </div>
         )
     }
-
-    const activeResume = (activeId ? saved.find((item) => item.id === activeId) : saved[0])!
 
     return (
         <ResumeEditor
