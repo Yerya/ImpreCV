@@ -138,6 +138,7 @@ Supabase handles several infrastructure concerns automatically:
 | **Backups** | Daily automated backups with point-in-time recovery (on Pro plan). |
 | **SSL/TLS** | All database connections require SSL. Certificates are managed by Supabase. |
 | **Authentication tables** | `auth.users`, `auth.sessions`, `auth.refresh_tokens` are created and managed by Supabase Auth. |
+| **Password handling & sessions** | Passwords are never stored in plain text in our schema. Supabase Auth stores them securely (hashed) and manages sign-in, tokens, and session lifecycle inside the `auth` schema. |
 | **Storage tables** | `storage.buckets`, `storage.objects` are managed by Supabase Storage. RLS policies control access. |
 
 ## Schema Design
