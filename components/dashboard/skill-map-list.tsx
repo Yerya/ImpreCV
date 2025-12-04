@@ -34,13 +34,7 @@ export default function SkillMapList({ skillMaps }: SkillMapListProps) {
           <Card className="p-4 bg-background/50 hover:bg-background/80 border-border/50 hover:border-border transition-all cursor-pointer">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {skillMap.job_title || "Job Analysis"}
-                </p>
-                {skillMap.job_company && (
-                  <p className="text-xs text-muted-foreground">{skillMap.job_company}</p>
-                )}
-                <div className="flex items-center gap-3 mt-2">
+                <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
                     <Target className="h-3 w-3 text-primary" />
                     <span className={cn("text-xs font-medium", getScoreColor(skillMap.match_score))}>

@@ -152,13 +152,7 @@ export function SkillMapPanel({
                     <Card key={skillMap.id} className="border border-border/60 bg-background/60 p-4 space-y-4">
                         {/* Header */}
                         <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1">
-                                <p className="text-sm font-semibold">{skillMap.job_title || 'Skill Analysis'}</p>
-                                {skillMap.job_company && (
-                                    <p className="text-xs text-muted-foreground">{skillMap.job_company}</p>
-                                )}
-                                <p className="text-[11px] text-muted-foreground">{relativeTime}</p>
-                            </div>
+                            <p className="text-[11px] text-muted-foreground">{relativeTime}</p>
                             <div className="flex items-center gap-2">
                                 <Button variant="ghost" size="icon" asChild>
                                     <Link href={`/skill-map/${skillMap.id}`} aria-label="Open skill map detail">

@@ -155,47 +155,39 @@ export function CoverLetterPanel({
                 return (
                     <Card key={letter.id} className="border border-border/60 bg-background/60 p-4">
                         <div className="flex items-start justify-between gap-3 mb-3">
-                            <div className="space-y-1">
-                                <p className="text-sm font-semibold">{letter.jobTitle || 'Cover letter'}</p>
-                                {letter.jobCompany && (
-                                    <p className="text-xs text-muted-foreground">{letter.jobCompany}</p>
-                                )}
-                                <p className="text-[11px] text-muted-foreground">{relativeTime}</p>
-                            </div>
+                            <p className="text-[11px] text-muted-foreground">{relativeTime}</p>
                             <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={() => handleCopy(letter.content)}
-                                    >
-                                        <Copy className="h-4 w-4" />
-                                        Copy
-                                    </Button>
-                                    {letter.id && (
-                                        <>
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={`/cover-letter/${letter.id}`} aria-label="Open cover letter detail">
-                                                    <ExternalLink className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                aria-label="Delete cover letter"
-                                                onClick={() => onDelete(letter.id)}
-                                                disabled={deletingId === letter.id}
-                                            >
-                                                {deletingId === letter.id ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Trash2 className="h-4 w-4" />
-                                                )}
-                                            </Button>
-                                        </>
-                                    )}
-                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => handleCopy(letter.content)}
+                                >
+                                    <Copy className="h-4 w-4" />
+                                    Copy
+                                </Button>
+                                {letter.id && (
+                                    <>
+                                        <Button variant="ghost" size="icon" asChild>
+                                            <Link href={`/cover-letter/${letter.id}`} aria-label="Open cover letter detail">
+                                                <ExternalLink className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            aria-label="Delete cover letter"
+                                            onClick={() => onDelete(letter.id)}
+                                            disabled={deletingId === letter.id}
+                                        >
+                                            {deletingId === letter.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         </div>
                         <div className="whitespace-pre-wrap text-muted-foreground leading-relaxed text-sm">
