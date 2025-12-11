@@ -27,8 +27,8 @@ interface SavedResume {
     fileName?: string | null
 }
 
-const mapRowToResume = (row: any): SavedResume => {
-    const data = row?.structured_data || parseMarkdownToResumeData(row?.content || "")
+const mapRowToResume = (row: Record<string, unknown>): SavedResume => {
+    const data = (row?.structured_data as ResumeData) || parseMarkdownToResumeData((row?.content as string) || "")
 
     return {
         id: row?.id || null,

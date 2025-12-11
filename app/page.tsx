@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowRight, Sparkles, FileText, Target, Zap, Upload, Brain, Download, TextSelect } from "lucide-react"
+import { ArrowRight, Sparkles, FileText, Target, Zap, Brain, Download, TextSelect } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { AnimateIn } from "@/components/anim/animate-in"
@@ -171,7 +171,7 @@ export default function LandingPage() {
         threshold={0.35}
         durationMs={800}
         className="py-20 relative z-10"
-        style={{ ["--y" as any]: "24px" } as any}
+        style={{ "--y": "24px" } as React.CSSProperties}
       >
         <div className="container mx-auto px-4 relative z-10">
           <Card className="glass-card max-w-4xl mx-auto p-12 text-center relative z-10">
@@ -215,7 +215,7 @@ export default function LandingPage() {
         threshold={0.4}
         durationMs={900}
         className="py-12 relative z-10"
-        style={{ ["--y" as any]: "28px" } as any}
+        style={{ "--y": "28px" } as React.CSSProperties}
       >
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-4">

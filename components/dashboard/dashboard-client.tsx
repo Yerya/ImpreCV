@@ -20,9 +20,9 @@ import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
 
 interface DashboardClientProps {
-  user: any
-  resumes: any[]
-  recentSkillMaps: any[]
+  user: Record<string, unknown>
+  resumes: Record<string, unknown>[]
+  recentSkillMaps: Record<string, unknown>[]
   adaptedResumesCount: number
 }
 
@@ -30,7 +30,6 @@ export default function DashboardClient({
   user,
   resumes: initialResumes,
   recentSkillMaps,
-  adaptedResumesCount: initialAdaptedCount,
 }: DashboardClientProps) {
   const authUser = useAppSelector((s) => s.auth.user)
   const router = useRouter()
@@ -85,7 +84,7 @@ export default function DashboardClient({
   }
 
 
-  const handleResumeUploaded = (newResume: any) => {
+  const handleResumeUploaded = (newResume: Record<string, unknown>) => {
     setInputError(null)
     setResumes((prev) => [newResume, ...prev])
     setSelectedResumeId(newResume.id)
@@ -108,8 +107,9 @@ export default function DashboardClient({
         setSelectedResumeId(null)
       }
       toast.success("Resume deleted")
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to delete resume.")
+    } catch (error: unknown) {
+      const err = error as Error
+      toast.error(err?.message || "Failed to delete resume.")
     } finally {
       setDeletingId(null)
     }
@@ -262,7 +262,7 @@ export default function DashboardClient({
             clearCoverLetterPending(result.id)
             notifyCoverLetterResult(letter)
           })
-          .catch((error: any) => {
+          .catch((error: unknown) => {
             console.error("Cover letter generation error:", error)
             clearCoverLetterPending(result.id)
             toast.error("Cover letter request failed. Try again from the dashboard.")
@@ -278,10 +278,11 @@ export default function DashboardClient({
         shouldGenerateCoverLetter ? "Resume adapted. Drafting cover letter in the background..." : "Resume adapted. Opening editor...",
       )
       router.push(`/resume-editor?id=${result.id}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error
       const rawMessage =
-        error && typeof error.message === "string"
-          ? error.message
+        err && typeof err.message === "string"
+          ? err.message
           : "Failed to analyze. Please try again."
 
       if (rawMessage.includes("keep up to 3 adapted resumes")) {

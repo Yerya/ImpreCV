@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -46,10 +47,10 @@ export default function GlobalError({
                         </Button>
 
                         <Button variant="outline" asChild className="w-full sm:w-auto">
-                            <a href="/">
+                            <Link href="/">
                                 <Home className="mr-2 h-4 w-4" />
                                 Return Home
-                            </a>
+                            </Link>
                         </Button>
                     </div>
                 </Card>

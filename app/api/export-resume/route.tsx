@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
         })
 
         await page.evaluate(() => {
-            const fonts = (document as any).fonts
+            const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts
             return fonts ? fonts.ready : Promise.resolve()
         })
 

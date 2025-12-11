@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
                 jsonText = jsonText.slice(jsonStart, jsonEnd + 1)
             }
             parsed = JSON.parse(jsonText)
-        } catch (e) {
+        } catch {
             userLogger.warn("json_parse_failed", { responseLength: rawText?.length, preview: rawText?.slice(0, 100) })
             // AI returned invalid JSON - wrap as message
             const cleanText = rawText?.replace(/```json?|```/g, "").trim() || ""

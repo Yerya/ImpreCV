@@ -44,9 +44,7 @@ export function WebResumeRenderer({
     data,
     variant,
     onUpdate,
-    isEditing = true,
-    themeMode = 'light',
-    onThemeModeChange
+    isEditing = true
 }: WebResumeRendererProps) {
     // Determine styles based on variant
     const styles = React.useMemo(() => {
@@ -284,15 +282,15 @@ export function WebResumeRenderer({
             </div>
             <div className={styles.contactBlock}>
                 {(isEditing
-                    ? ['email', 'phone', 'location', 'linkedin', 'website']
-                    : ['email', 'phone', 'location', 'linkedin', 'website'].filter(
-                        (field) => ((data.personalInfo as any)[field] || '').trim().length > 0
+                    ? (['email', 'phone', 'location', 'linkedin', 'website'] as const)
+                    : (['email', 'phone', 'location', 'linkedin', 'website'] as const).filter(
+                        (field) => ((data.personalInfo[field] as string) || '').trim().length > 0
                       )
                 ).map((field) => (
                     <div key={field} className={styles.contactLine}>
                         <EditableText
-                            value={(data.personalInfo as any)[field] || ''}
-                            onChange={(val) => updatePersonalInfo(field as any, val)}
+                            value={(data.personalInfo[field] as string) || ''}
+                            onChange={(val) => updatePersonalInfo(field as keyof typeof data.personalInfo, val)}
                             placeholder={field}
                             tagName="span"
                             readOnly={!isEditing}

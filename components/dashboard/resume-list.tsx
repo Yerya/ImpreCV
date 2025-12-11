@@ -16,7 +16,7 @@ import { FileText, CheckCircle2, Trash2, Loader2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 interface ResumeListProps {
-  resumes: any[]
+  resumes: Record<string, unknown>[]
   selectedResumeId: string | null
   onSelectResume: (id: string) => void
   onDeleteResume?: (id: string) => void

@@ -33,9 +33,10 @@ export async function GET(
     }
 
     return NextResponse.json({ skillMap })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[SkillMap GET] Error:", error)
-    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
+    const err = error as Error
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 })
   }
 }
 
@@ -70,8 +71,9 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[SkillMap DELETE] Error:", error)
-    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
+    const err = error as Error
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 })
   }
 }

@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to load cover letters" }, { status: 500 })
   }
 
-  const normalized = (data ?? []).map((item: any) => {
-    const jobPosting = item.rewritten_resume?.job_posting;
+  const normalized = (data ?? []).map((item: Record<string, unknown>) => {
+    const jobPosting = (item.rewritten_resume as Record<string, unknown>)?.job_posting as Record<string, unknown> | undefined;
     return {
       id: item.id,
       content: item.content,

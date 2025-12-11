@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ExternalLink, Loader2, Trash2, Sparkles, CheckCircle2, ArrowRightLeft, AlertCircle } from "lucide-react"
-import { toast } from "sonner"
 import type { SkillMapRecord } from "@/types/skill-map"
 
 interface SkillMapPanelProps {

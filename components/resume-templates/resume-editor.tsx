@@ -148,7 +148,8 @@ export function ResumeEditor({
 
                 if (controller.signal.aborted) return
 
-                const items = Array.isArray((data as any).items) ? ((data as any).items as SkillMapRecord[]) : []
+                const dataObj = data as Record<string, unknown>
+                const items = Array.isArray(dataObj.items) ? (dataObj.items as SkillMapRecord[]) : []
                 setSkillMapsByResume((prev) => ({ ...prev, [resumeId]: items }))
             } catch (error) {
                 if (controller.signal.aborted) return
@@ -189,7 +190,8 @@ export function ResumeEditor({
 
                 if (controller.signal.aborted) return
 
-                const items = Array.isArray((data as any).items) ? ((data as any).items as CoverLetter[]) : []
+                const dataObj = data as Record<string, unknown>
+                const items = Array.isArray(dataObj.items) ? (dataObj.items as CoverLetter[]) : []
                 setCoverLettersByResume((prev) => ({ ...prev, [resumeId]: items }))
             } catch (error) {
                 if (controller.signal.aborted) return
@@ -629,7 +631,7 @@ export function ResumeEditor({
                 throw new Error(message)
             }
 
-            const item = (data.item || data) as any
+            const item = (data.item || data) as Record<string, unknown>
             const mapped: SavedResume = {
                 id: item.id || activeResumeId,
                 data: resumeData,

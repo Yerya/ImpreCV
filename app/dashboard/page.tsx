@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     .limit(5)
 
   // Flatten job info for components
-  const skillMaps = (rawSkillMaps || []).map((sm: any) => ({
+  const skillMaps = (rawSkillMaps || []).map((sm: Record<string, unknown>) => ({
     ...sm,
     job_title: sm.rewritten_resume?.job_posting?.title || null,
     job_company: sm.rewritten_resume?.job_posting?.company || null,

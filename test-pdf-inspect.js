@@ -1,5 +1,6 @@
 
-const pdfModule = require('pdf-parse');
+import pdfParse from 'pdf-parse';
+const pdfModule = pdfParse;
 console.log('Module keys:', Object.keys(pdfModule));
 
 try {

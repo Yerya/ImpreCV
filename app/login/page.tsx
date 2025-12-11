@@ -61,7 +61,8 @@ function LoginForm() {
         }
       } else if ('error' in res) {
         // Fallback, but should not happen since endpoint normalizes to data
-        const errMsg = (res.error as any)?.data?.message || (res.error as any)?.error || "Failed to log in"
+        const resError = res.error as Record<string, unknown>
+        const errMsg = (resError?.data as Record<string, unknown>)?.message as string || resError?.error as string || "Failed to log in"
         setError(errMsg)
       }
     } finally {
@@ -161,7 +162,7 @@ function LoginForm() {
             </Button>
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-foreground hover:underline font-medium">
               Sign up
             </Link>

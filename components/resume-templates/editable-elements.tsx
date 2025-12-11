@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 interface EditableTextProps {
     value: string
@@ -56,7 +56,7 @@ export function EditableText({
         const InputComponent = multiline ? 'textarea' : 'input'
         return (
             <InputComponent
-                ref={inputRef as any}
+                ref={inputRef as React.Ref<HTMLTextAreaElement & HTMLInputElement>}
                 value={localValue}
                 onChange={(e) => setLocalValue(e.target.value)}
                 onBlur={handleBlur}
@@ -74,7 +74,7 @@ export function EditableText({
         )
     }
 
-    const Tag = tagName as any
+    const Tag = tagName as React.ElementType
 
     return (
         <Tag

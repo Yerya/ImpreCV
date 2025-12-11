@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, memo } from "react"
-import Link from "next/link"
+import { useState, useMemo, memo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -22,13 +21,11 @@ import {
   AlertCircle,
   ArrowUpRight,
 } from "lucide-react"
-import { toast } from "sonner"
 import type { SkillMapRecord, Skill, RoadmapItem, SkillPriority, AdaptationHighlight } from "@/types/skill-map"
 import { cn } from "@/lib/utils"
 
 interface SkillMapClientProps {
   skillMap: SkillMapRecord
-  user: any
 }
 
 const priorityConfig: Record<SkillPriority, { label: string; color: string; bgColor: string }> = {
@@ -338,7 +335,7 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
               </div>
               <div>
                 <h2 className="text-xl font-bold">Skills to Develop</h2>
-                <p className="text-sm text-muted-foreground">Required skills you're missing</p>
+                <p className="text-sm text-muted-foreground">Required skills you&apos;re missing</p>
               </div>
             </div>
             <div className="space-y-3">

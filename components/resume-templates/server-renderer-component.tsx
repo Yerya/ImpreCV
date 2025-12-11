@@ -123,11 +123,11 @@ export function ServerResumeRenderer({
                 <p>{data.personalInfo.title || ''}</p>
             </div>
             <div className={styles.contactBlock}>
-                {['email', 'phone', 'location', 'linkedin', 'website']
-                    .filter((field) => ((data.personalInfo as any)[field] || '').trim().length > 0)
+                {(['email', 'phone', 'location', 'linkedin', 'website'] as const)
+                    .filter((field) => ((data.personalInfo[field as keyof typeof data.personalInfo] as string) || '').trim().length > 0)
                     .map((field) => (
                         <div key={field} className={styles.contactLine}>
-                            <span>{(data.personalInfo as any)[field] || ''}</span>
+                            <span>{(data.personalInfo[field as keyof typeof data.personalInfo] as string) || ''}</span>
                         </div>
                     ))}
             </div>

@@ -4,14 +4,12 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { GlobalHeader } from "@/components/global-header"
 import { Loader2 } from "lucide-react"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -23,8 +21,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner"
 
 interface SettingsClientProps {
-  user: any
-  profile: any
+  user: Record<string, unknown>
+  profile: Record<string, unknown>
 }
 
 export default function SettingsClient({ user, profile: initialProfile }: SettingsClientProps) {
@@ -57,7 +55,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
         router.refresh()
         toast.success("Profile updated")
       } else {
-        console.error("Profile update error:", (res as any))
+        console.error("Profile update error:", res)
         toast.error("Failed to update profile")
       }
     } finally {

@@ -20,8 +20,8 @@ export const authApi = createApi({
             return { error }
           }
           return { data: { user: (user as AuthUser | null) } }
-        } catch (e: any) {
-          return { error: e }
+        } catch (e: unknown) {
+          return { error: e as Error }
         }
       },
     }),
@@ -35,8 +35,9 @@ export const authApi = createApi({
           const { error } = await supabase.auth.signInWithPassword({ email, password })
           if (error) return { data: { ok: false, message: error.message } }
           return { data: { ok: true } }
-        } catch (e: any) {
-          return { data: { ok: false, message: e?.message || "Failed to sign in" } }
+        } catch (e: unknown) {
+          const err = e as Error
+          return { data: { ok: false, message: err?.message || "Failed to sign in" } }
         }
       },
     }),
@@ -57,13 +58,16 @@ export const authApi = createApi({
           })
           if (error) return { data: { ok: false, message: error.message } }
           // Supabase edge-case: sometimes returns user with no identities when already registered
-          const alreadyRegistered = (data as any)?.user?.identities && Array.isArray((data as any).user.identities) && (data as any).user.identities.length === 0
+          const userData = data?.user as Record<string, unknown> | undefined
+          const identities = userData?.identities as unknown[] | undefined
+          const alreadyRegistered = identities && Array.isArray(identities) && identities.length === 0
           if (alreadyRegistered) {
             return { data: { ok: false, message: "User already registered" } }
           }
           return { data: { ok: true } }
-        } catch (e: any) {
-          return { data: { ok: false, message: e?.message || "Failed to sign up" } }
+        } catch (e: unknown) {
+          const err = e as Error
+          return { data: { ok: false, message: err?.message || "Failed to sign up" } }
         }
       },
     }),
@@ -77,8 +81,9 @@ export const authApi = createApi({
           const { error } = await supabase.auth.signOut()
           if (error) return { data: { ok: false, message: error.message } }
           return { data: { ok: true } }
-        } catch (e: any) {
-          return { data: { ok: false, message: e?.message || "Failed to sign out" } }
+        } catch (e: unknown) {
+          const err = e as Error
+          return { data: { ok: false, message: err?.message || "Failed to sign out" } }
         }
       },
     }),
@@ -101,8 +106,9 @@ export const authApi = createApi({
           if (authError) return { data: { ok: false, message: authError.message } }
           
           return { data: { ok: true } }
-        } catch (e: any) {
-          return { data: { ok: false, message: e?.message || "Failed to update profile" } }
+        } catch (e: unknown) {
+          const err = e as Error
+          return { data: { ok: false, message: err?.message || "Failed to update profile" } }
         }
       },
     }),
@@ -115,8 +121,9 @@ export const authApi = createApi({
             return { data: { ok: false, message: json?.message || "Failed to delete account" } }
           }
           return { data: { ok: true } }
-        } catch (e: any) {
-          return { data: { ok: false, message: e?.message || "Failed to delete account" } }
+        } catch (e: unknown) {
+          const err = e as Error
+          return { data: { ok: false, message: err?.message || "Failed to delete account" } }
         }
       },
     }),

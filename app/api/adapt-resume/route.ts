@@ -338,10 +338,10 @@ FINAL REMINDERS:
         }
 
         // Parse and validate JSON response
-        let adaptedResume = cleanJsonResponse(rawResponseText);
+        const adaptedResume = cleanJsonResponse(rawResponseText);
         try {
             JSON.parse(adaptedResume);
-        } catch (e) {
+        } catch {
             userLogger.warn("json_parse_failed", { responseLength: adaptedResume?.length })
         }
 
@@ -545,9 +545,10 @@ FINAL REMINDERS:
 
         userLogger.requestComplete(200, { action: "created", resumeId: saved.id });
         return NextResponse.json({ item, resumeData: parsedData });
-    } catch (error: any) {
+    } catch (error: unknown) {
         const logger = createLogger("adapt-resume");
-        logger.error("unhandled_error", { message: error.message, stack: error.stack });
+        const err = error as Error
+        logger.error("unhandled_error", { message: err.message, stack: err.stack });
         return NextResponse.json(
             { error: error.message || "Failed to adapt resume" },
             { status: 500 }

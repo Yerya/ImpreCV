@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
 interface ResumeUploadProps {
-  onResumeUploaded: (resume: any) => void
+  onResumeUploaded: (resume: Record<string, unknown>) => void
   onTextChange?: (text: string) => void
   textValue?: string
   currentCount?: number
@@ -117,9 +117,10 @@ export default function ResumeUpload({
           fileInputRef.current.value = ""
         }
       }, 2000)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error
       console.error("Upload error:", error)
-      const message = error?.message || "Failed to upload resume. Please try again."
+      const message = err?.message || "Failed to upload resume. Please try again."
 
       if (message.includes("upload up to 3 resumes") || message.includes("limit")) {
         setUploadError("limit_reached")
@@ -240,7 +241,7 @@ export default function ResumeUpload({
             onChange={handleTextChange}
           />
           <p className="text-xs text-muted-foreground">
-            Paste the full text of your resume. We'll analyze it directly.
+            Paste the full text of your resume. We&apos;ll analyze it directly.
           </p>
         </div>
       )}

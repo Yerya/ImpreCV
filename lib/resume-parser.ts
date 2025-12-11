@@ -38,11 +38,12 @@ export function resolveResumeFileType(mimeType?: string, fileName?: string): Res
 
 async function extractPdf(buffer: Buffer) {
   try {
-    const pdfModule = require("pdf-parse")
-    const result = await pdfModule(buffer)
+    const pdfParse = (await import("pdf-parse")).default
+    const result = await pdfParse(buffer)
     return result.text || ""
-  } catch (error: any) {
-    throw new Error(`PDF parse failed: ${error.message}`)
+  } catch (error: unknown) {
+    const err = error as Error
+    throw new Error(`PDF parse failed: ${err.message}`)
   }
 }
 
@@ -73,8 +74,9 @@ export async function extractAndSanitizeResume(buffer: Buffer, opts: { mimeType?
     } else {
       raw = extractTxt(buffer)
     }
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to extract text from the uploaded file.")
+  } catch (error: unknown) {
+    const err = error as Error
+    throw new Error(err.message || "Failed to extract text from the uploaded file.")
   }
 
   const cleaned = sanitizePlainText(raw)

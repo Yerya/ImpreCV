@@ -39,9 +39,13 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run linter
-        run: pnpm lint
+        run: pnpm lint 
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run tests
         run: pnpm test

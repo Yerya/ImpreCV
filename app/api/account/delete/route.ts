@@ -27,8 +27,9 @@ export async function POST() {
     }
 
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e?.message || "Failed to delete account" }, { status: 500 })
+  } catch (e: unknown) {
+    const error = e as Error
+    return NextResponse.json({ ok: false, message: error?.message || "Failed to delete account" }, { status: 500 })
   }
 }
 

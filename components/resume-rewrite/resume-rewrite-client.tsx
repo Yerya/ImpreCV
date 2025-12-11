@@ -18,10 +18,9 @@ interface RewrittenResume {
 
 interface ResumeRewriteClientProps {
   rewrittenResume: RewrittenResume
-  user: any
 }
 
-export default function ResumeRewriteClient({ rewrittenResume, user }: ResumeRewriteClientProps) {
+export default function ResumeRewriteClient({ rewrittenResume }: ResumeRewriteClientProps) {
   const [content, setContent] = useState(rewrittenResume.content)
   const [isEditing, setIsEditing] = useState(false)
   const [copied, setCopied] = useState(false)

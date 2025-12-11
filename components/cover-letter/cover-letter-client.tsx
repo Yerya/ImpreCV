@@ -1,21 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { GlobalHeader } from "@/components/global-header"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
-import { Download, Copy, CheckCircle2, Edit3, Eye, Mail } from "lucide-react"
+import { Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import { toast } from "sonner"
 
 interface CoverLetterClientProps {
-  coverLetter: any
-  user: any
+  coverLetter: Record<string, unknown>
 }
 
-export default function CoverLetterClient({ coverLetter, user }: CoverLetterClientProps) {
+export default function CoverLetterClient({ coverLetter }: CoverLetterClientProps) {
   const [content, setContent] = useState(coverLetter.content)
   const [isEditing, setIsEditing] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -54,9 +52,10 @@ export default function CoverLetterClient({ coverLetter, user }: CoverLetterClie
 
       setIsEditing(false)
       toast.success("Cover letter saved successfully")
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error
       console.error("Save error:", error)
-      toast.error(error?.message || "Failed to save changes. Please try again.")
+      toast.error(err?.message || "Failed to save changes. Please try again.")
     } finally {
       setSaving(false)
     }

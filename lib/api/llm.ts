@@ -97,7 +97,7 @@ interface LLMResponse {
  * Extract text from Gemini API response
  * Handles multiple response formats for compatibility
  */
-export function extractResponseText(response: GenerateContentResponse | any): string {
+export function extractResponseText(response: GenerateContentResponse | Record<string, unknown>): string {
     try {
         // Method 1: response.text() function (SDK v1+)
         if (typeof response?.text === "function") {

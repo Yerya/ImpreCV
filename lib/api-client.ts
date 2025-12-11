@@ -33,15 +33,15 @@ export async function analyzeResume(payload: AnalyzeResumePayload): Promise<Anal
             }),
         });
 
-        const data = await response.json().catch(() => ({}));
+        const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
         if (!response.ok) {
-            const message = typeof (data as any).error === "string" ? (data as any).error : `Analysis failed with status ${response.status}`;
+            const message = typeof data.error === "string" ? data.error : `Analysis failed with status ${response.status}`;
             throw new Error(message);
         }
 
-        const parsedData = (data as any).resumeData as ResumeData | undefined;
-        const item = (data as any).item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; pdf_url?: string | null };
+        const parsedData = data.resumeData as ResumeData | undefined;
+        const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; pdf_url?: string | null };
 
         if (!item?.id || !parsedData) {
             throw new Error("Failed to prepare adapted resume");
@@ -93,26 +93,26 @@ export async function generateCoverLetter(payload: GenerateCoverLetterPayload): 
     });
 
     console.log("[Cover Letter] Response status:", response.status);
-    const data = await response.json().catch(() => ({}));
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
     console.log("[Cover Letter] Response data:", data);
 
     if (!response.ok) {
-        const message = typeof (data as any).error === "string" ? (data as any).error : `Cover letter failed with status ${response.status}`;
+        const message = typeof data.error === "string" ? data.error : `Cover letter failed with status ${response.status}`;
         console.error("[Cover Letter] Error:", message);
         throw new Error(message);
     }
 
-    const content = (data as any).content;
+    const content = data.content;
     if (!content || typeof content !== "string") {
         throw new Error("Failed to generate cover letter");
     }
 
     return {
-        id: ((data as any).coverLetterId ?? null) as string | null,
+        id: (data.coverLetterId ?? null) as string | null,
         content,
         analysisId: null, // No longer using analysisId
-        warning: (data as any).warning || null,
-        metadata: (data as any).metadata,
+        warning: (data.warning as string) || null,
+        metadata: data.metadata as Record<string, unknown>,
     };
 }
 

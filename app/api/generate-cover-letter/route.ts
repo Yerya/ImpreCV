@@ -284,9 +284,10 @@ export async function POST(request: NextRequest) {
       warning,
       metadata: { title: jobTitle, company: jobCompany },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error
     const logger = createLogger("cover-letter")
-    logger.error("unhandled_error", { message: error?.message, stack: error?.stack })
+    logger.error("unhandled_error", { message: err?.message, stack: err?.stack })
     return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
   }
 }

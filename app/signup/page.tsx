@@ -68,7 +68,8 @@ export default function SignupPage() {
           setError(res.data?.message || "Failed to sign up")
         }
       } else if ('error' in res) {
-        const errMsg = (res.error as any)?.data?.message || (res.error as any)?.error || "Failed to sign up"
+        const resError = res.error as Record<string, unknown>
+        const errMsg = (resError?.data as Record<string, unknown>)?.message as string || resError?.error as string || "Failed to sign up"
         setError(errMsg)
       }
     } finally {

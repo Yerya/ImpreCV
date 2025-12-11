@@ -13,10 +13,10 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
             // Validate basic structure
             if (jsonData.personalInfo && Array.isArray(jsonData.sections)) {
                 // NORMALIZE: Fix invalid content formats from AI
-                jsonData.sections = jsonData.sections.map((section: any) => {
+                jsonData.sections = jsonData.sections.map((section: Record<string, unknown>) => {
                     if (Array.isArray(section.content)) {
                         // Check if it's an array of plain strings (INVALID format)
-                        const allStrings = section.content.every((item: any) => typeof item === 'string')
+                        const allStrings = section.content.every((item: unknown) => typeof item === 'string')
                         if (allStrings && section.content.length > 0) {
                             // Convert string array to structured format
                             console.warn(`Converting invalid string[] to structured format for section: ${section.title}`)
@@ -60,7 +60,7 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
                 return jsonData as ResumeData
             }
         }
-    } catch (e) {
+    } catch {
         // Not valid JSON, fall back to markdown parsing
     }
 

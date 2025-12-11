@@ -56,8 +56,9 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ items })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[SkillMap GET List] Error:", error)
-    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
+    const err = error as Error
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 })
   }
 }

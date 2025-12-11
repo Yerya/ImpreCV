@@ -12,7 +12,7 @@ interface JobPostingFormProps {
     jobLink: string
     inputType: "paste" | "link"
   }
-  onChange: (jobPosting: any) => void
+  onChange: (jobPosting: { description: string; jobLink: string; inputType: "paste" | "link" }) => void
 }
 
 export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormProps) {
@@ -65,7 +65,7 @@ export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormP
               className="bg-background/50"
             />
             <p className="text-xs text-muted-foreground">
-              We'll automatically fetch and parse the job posting from the link
+              We&apos;ll automatically fetch and parse the job posting from the link
             </p>
           </div>
         )}

@@ -21,17 +21,17 @@ export const defaultDurationMs = 700
 
 export const variantVars: Record<InViewVariant, CSSVars> = {
   fadeUp: {
-    ['--y' as any]: '16px',
+    '--y': '16px',
   },
   fadeIn: {},
   slideInLeft: {
-    ['--x' as any]: '-20px',
+    '--x': '-20px',
   },
   slideInRight: {
-    ['--x' as any]: '20px',
+    '--x': '20px',
   },
   zoomIn: {
-    ['--scale' as any]: 0.96,
+    '--scale': 0.96,
   },
 }
 
@@ -46,8 +46,8 @@ export function buildStyle(
   const base = variantVars[variant] || {}
   return {
     ...base,
-    ['--anim-delay' as any]: `${options?.delayMs ?? 0}ms`,
-    ['--anim-duration' as any]: `${options?.durationMs ?? defaultDurationMs}ms`,
-    ['--ease' as any]: options?.ease ?? easings.springOut,
+    '--anim-delay': `${options?.delayMs ?? 0}ms`,
+    '--anim-duration': `${options?.durationMs ?? defaultDurationMs}ms`,
+    '--ease': options?.ease ?? easings.springOut,
   }
 }

@@ -40,7 +40,7 @@ export function AnimateIn<T extends ElementTag = "div">(props: AnimateInProps<T>
     ...rest
   } = props as AnimateInProps
 
-  const Tag = (as || "div") as any
+  const Tag = (as || "div") as React.ElementType
   const ref = React.useRef<HTMLElement | null>(null)
   const [inView, setInView] = React.useState(false)
   const mounted = React.useRef(false)
@@ -97,9 +97,10 @@ export function AnimateIn<T extends ElementTag = "div">(props: AnimateInProps<T>
   }, [observerOptions, once, onInViewChange])
 
   // Merge external style if provided
-  const externalStyle = (rest as any)?.style as React.CSSProperties | undefined
+  const restWithStyle = rest as Record<string, unknown> & { style?: React.CSSProperties }
+  const externalStyle = restWithStyle?.style
   if (externalStyle) {
-    delete (rest as any).style
+    delete restWithStyle.style
   }
   const style = { ...computedStyle, ...externalStyle } as React.CSSProperties
 
@@ -117,7 +118,7 @@ export function AnimateIn<T extends ElementTag = "div">(props: AnimateInProps<T>
         className,
       )}
       style={style}
-      {...(rest as any)}
+      {...restWithStyle}
     >
       {children}
     </Tag>

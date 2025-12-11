@@ -7,7 +7,7 @@ import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface SkillMapListProps {
-  skillMaps: any[]
+  skillMaps: Record<string, unknown>[]
 }
 
 const getScoreColor = (score: number) => {

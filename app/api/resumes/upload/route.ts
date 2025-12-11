@@ -83,8 +83,9 @@ export async function POST(req: NextRequest) {
   let extractedText = ""
   try {
     extractedText = await extractAndSanitizeResume(buffer, { mimeType, fileName: originalName })
-  } catch (error: any) {
-    const reason = error?.message || error
+  } catch (error: unknown) {
+    const err = error as Error
+    const reason = err?.message || String(error)
     return NextResponse.json(
       {
         error:

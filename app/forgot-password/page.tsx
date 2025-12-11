@@ -52,8 +52,9 @@ export default function ForgotPasswordPage() {
       if (error) throw error
 
       setSuccess(true)
-    } catch (err: any) {
-      setError(err.message || "Failed to send reset email")
+    } catch (err: unknown) {
+      const error = err as Error
+      setError(error.message || "Failed to send reset email")
     } finally {
       setLoading(false)
     }
@@ -71,7 +72,7 @@ export default function ForgotPasswordPage() {
           </div>
           <h2 className="text-3xl font-bold mb-2">Check your email</h2>
           <p className="text-muted-foreground mb-6">
-            We've sent a password reset link to <strong>{email}</strong>
+            We&apos;ve sent a password reset link to <strong>{email}</strong>
           </p>
           <Link href="/login">
             <Button variant="outline" className="bg-transparent">
@@ -111,7 +112,7 @@ export default function ForgotPasswordPage() {
           </div>
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Reset your password</h1>
-            <p className="text-muted-foreground">Enter your email and we'll send you a reset link</p>
+            <p className="text-muted-foreground">Enter your email and we&apos;ll send you a reset link</p>
           </div>
           <form onSubmit={handleResetPassword} className="space-y-6">
             <div className="space-y-2">
