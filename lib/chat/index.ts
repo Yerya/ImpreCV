@@ -232,7 +232,11 @@ export const CHAT_EXAMPLES = [
     "What is ImpreCV?",
 ]
 
-export const MAX_CHAT_MESSAGES = 20
-export const MAX_MODIFICATIONS_PER_DAY = 50
-export const MAX_MESSAGE_CHARS = 500
-export const CHAT_STORAGE_KEY = "cvify:chat-history"
+// Re-export constants from centralized file for backward compatibility
+export {
+    MAX_CHAT_MESSAGES_STORED as MAX_CHAT_MESSAGES,
+    MAX_CHAT_MODIFICATIONS_PER_DAY as MAX_MODIFICATIONS_PER_DAY,
+    CHAT_USAGE_RESET_HOURS as USAGE_RESET_HOURS,
+    MAX_CHAT_MESSAGE_CHARS as MAX_MESSAGE_CHARS,
+    CHAT_STORAGE_KEY
+} from "@/lib/constants"

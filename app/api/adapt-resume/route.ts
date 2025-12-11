@@ -9,15 +9,17 @@ import { defaultResumeVariant } from "@/lib/resume-templates/variants";
 import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm";
 import { createLogger } from "@/lib/api/logger";
 import type { ResumeData } from "@/lib/resume-templates/types";
-
-const MAX_SAVED = 3;
-const LIMIT_ERROR_MESSAGE = "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.";
-const RATE_LIMIT_MINUTES = 5;
-const RATE_LIMIT_ERROR_MESSAGE = "Please wait a few minutes before re-adapting this resume.";
+import {
+    MAX_ADAPTED_RESUMES,
+    ADAPTED_RESUME_LIMIT_ERROR,
+    RESUME_ADAPT_COOLDOWN_MINUTES,
+    ADAPT_RATE_LIMIT_ERROR,
+    MAX_CONTENT_LENGTH
+} from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("adapt-resume");
-    
+
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured");
@@ -101,10 +103,10 @@ export async function POST(req: NextRequest) {
         }
 
         // Simple length checks to prevent abuse/token limits
-        if (cleanedResume.length > 50000) {
+        if (cleanedResume.length > MAX_CONTENT_LENGTH) {
             return NextResponse.json({ error: "Resume text is too long" }, { status: 400 });
         }
-        if (cleanedJobDescription.length > 50000) {
+        if (cleanedJobDescription.length > MAX_CONTENT_LENGTH) {
             return NextResponse.json({ error: "Job description is too long" }, { status: 400 });
         }
 
@@ -311,7 +313,7 @@ FINAL REMINDERS:
             })
             rawResponseText = response.text
             modelUsed = response.model
-            
+
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback: response.usedFallback,
@@ -324,12 +326,12 @@ FINAL REMINDERS:
                 success: false,
                 error: error instanceof Error ? error.message : "Unknown error"
             })
-            
+
             if (error instanceof LLMError) {
                 if (error.type === "RATE_LIMIT") {
                     userLogger.requestComplete(429, { reason: "rate_limit" })
-                    return NextResponse.json({ 
-                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
+                    return NextResponse.json({
+                        error: "AI service is temporarily overloaded. Please try again in a few moments."
                     }, { status: 429 })
                 }
             }
@@ -458,9 +460,9 @@ FINAL REMINDERS:
                 const lastAdapted = new Date(existingAdaptedResume.last_adapted_at);
                 const now = new Date();
                 const diffMinutes = (now.getTime() - lastAdapted.getTime()) / (1000 * 60);
-                
-                if (diffMinutes < RATE_LIMIT_MINUTES) {
-                    return NextResponse.json({ error: RATE_LIMIT_ERROR_MESSAGE }, { status: 429 });
+
+                if (diffMinutes < RESUME_ADAPT_COOLDOWN_MINUTES) {
+                    return NextResponse.json({ error: ADAPT_RATE_LIMIT_ERROR }, { status: 429 });
                 }
             }
 
@@ -506,8 +508,8 @@ FINAL REMINDERS:
             return NextResponse.json({ error: "Failed to check saved resumes limit" }, { status: 500 });
         }
 
-        if ((count ?? 0) >= MAX_SAVED) {
-            return NextResponse.json({ error: LIMIT_ERROR_MESSAGE }, { status: 400 });
+        if ((count ?? 0) >= MAX_ADAPTED_RESUMES) {
+            return NextResponse.json({ error: ADAPTED_RESUME_LIMIT_ERROR }, { status: 400 });
         }
 
         // INSERT new adapted resume

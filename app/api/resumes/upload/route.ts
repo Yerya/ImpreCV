@@ -4,9 +4,9 @@ import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/se
 import { extractAndSanitizeResume, MAX_FILE_SIZE_BYTES, resolveResumeFileType } from "@/lib/resume-parser"
 import { isMeaningfulText } from "@/lib/text-utils"
 import { uploadFileWithRecord } from "@/lib/supabase/transaction"
+import { MAX_RESUMES_PER_USER } from "@/lib/constants"
 
 export const runtime = "nodejs"
-const MAX_RESUMES_PER_USER = 3
 
 function safeName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_") || "resume"

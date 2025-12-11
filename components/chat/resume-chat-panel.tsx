@@ -226,11 +226,26 @@ export function ResumeChatPanel({
         })
     }, [messages])
 
-    // Focus input when panel opens
+    // Fetch usage when panel opens
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus()
+        if (!isOpen) return
+
+        const fetchUsage = async () => {
+            try {
+                const response = await fetch("/api/chat-resume/usage")
+                if (response.ok) {
+                    const data = await response.json()
+                    if (data.usage) {
+                        setUsage(data.usage)
+                    }
+                }
+            } catch {
+                // Ignore errors fetching usage
+            }
         }
+
+        fetchUsage()
+        inputRef.current?.focus()
     }, [isOpen])
 
     // Cleanup on unmount

@@ -3,9 +3,9 @@ import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/se
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
 import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
+import { MAX_CONTENT_LENGTH } from "@/lib/constants"
 
 export const runtime = "nodejs"
-const MAX_LENGTH = 50000
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSupabaseConfigured()) {
@@ -75,7 +75,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const content = JSON.stringify(parsedData)
   const fileName = typeof body?.fileName === "string" && body.fileName.trim() ? body.fileName.trim() : parsedData.personalInfo.name || "resume"
 
-  if (content.length > MAX_LENGTH) {
+  if (content.length > MAX_CONTENT_LENGTH) {
     return NextResponse.json({ error: "Content is too long." }, { status: 400 })
   }
 

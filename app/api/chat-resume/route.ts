@@ -4,11 +4,8 @@ import { createLLMClient, LLMError, LLM_MODELS } from "@/lib/api/llm"
 import { createLogger } from "@/lib/api/logger"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeModification, ChatUsage } from "@/lib/chat"
-
-const MAX_MODIFICATIONS_PER_DAY = 50
-const USAGE_RESET_HOURS = 24
-const MAX_MESSAGE_LENGTH = 500
-const MAX_HISTORY_MESSAGES = 6 // Keep last 3 exchanges (6 messages)
+import { MAX_MODIFICATIONS_PER_DAY, USAGE_RESET_HOURS, MAX_MESSAGE_CHARS } from "@/lib/chat"
+import { MAX_CHAT_HISTORY_MESSAGES } from "@/lib/constants"
 
 interface ChatHistoryMessage {
     role: "user" | "assistant"
@@ -17,7 +14,7 @@ interface ChatHistoryMessage {
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("chat-resume")
-    
+
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured")
@@ -37,9 +34,9 @@ export async function POST(req: NextRequest) {
         userLogger.requestStart("/api/chat-resume")
 
         const body = await req.json()
-        const { 
-            message, 
-            resumeData, 
+        const {
+            message,
+            resumeData,
             rewrittenResumeId,
             history = []
         } = body as {
@@ -53,9 +50,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Message is required" }, { status: 400 })
         }
 
-        if (message.length > MAX_MESSAGE_LENGTH) {
-            return NextResponse.json({ 
-                error: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters allowed.` 
+        if (message.length > MAX_MESSAGE_CHARS) {
+            return NextResponse.json({
+                error: `Message too long. Maximum ${MAX_MESSAGE_CHARS} characters allowed.`
             }, { status: 400 })
         }
 
@@ -63,12 +60,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Resume data is required" }, { status: 400 })
         }
 
-        // Check usage limits
+        // Check usage limits (global per user, not per resume)
         const { data: usageData } = await supabase
             .from("chat_usage")
             .select("count, reset_at")
             .eq("user_id", user.id)
-            .eq("resume_id", rewrittenResumeId || "global")
+            .eq("resume_id", "global")
             .maybeSingle()
 
         const now = new Date()
@@ -113,9 +110,9 @@ export async function POST(req: NextRequest) {
                 idx: i,
                 type: s.type,
                 title: s.title,
-                contentPreview: typeof s.content === "string" 
+                contentPreview: typeof s.content === "string"
                     ? s.content.slice(0, 200) + (s.content.length > 200 ? "..." : "")
-                    : Array.isArray(s.content) 
+                    : Array.isArray(s.content)
                         ? `[${s.content.length} items]`
                         : s.content
             }))
@@ -133,12 +130,12 @@ export async function POST(req: NextRequest) {
 
         // Add context message (resume data)
         const contextMessage = `[RESUME]\n${JSON.stringify(compactResume, null, 1)}\n\n[SECTIONS]\n${JSON.stringify(resumeData.sections, null, 1)}`
-        
+
         contents.push({ role: "user", parts: [{ text: contextMessage }] })
         contents.push({ role: "model", parts: [{ text: '{"message": "Ready to help you edit. What would you like to change?"}' }] })
 
         // Add conversation history as native multi-turn messages (limit to save tokens)
-        const recentHistory = history.slice(-MAX_HISTORY_MESSAGES)
+        const recentHistory = history.slice(-MAX_CHAT_HISTORY_MESSAGES)
         for (const msg of recentHistory) {
             contents.push({
                 role: msg.role === "user" ? "user" : "model",
@@ -163,7 +160,7 @@ export async function POST(req: NextRequest) {
             rawText = response.text
             usedFallback = response.usedFallback
             modelUsed = response.model
-            
+
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback,
@@ -176,12 +173,12 @@ export async function POST(req: NextRequest) {
                 success: false,
                 error: error instanceof Error ? error.message : "Unknown error"
             })
-            
+
             if (error instanceof LLMError) {
                 if (error.type === "RATE_LIMIT") {
                     userLogger.requestComplete(429, { reason: "rate_limit" })
-                    return NextResponse.json({ 
-                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
+                    return NextResponse.json({
+                        error: "AI service is temporarily overloaded. Please try again in a few moments."
                     }, { status: 429 })
                 }
             }
@@ -227,7 +224,7 @@ export async function POST(req: NextRequest) {
                 .from("chat_usage")
                 .upsert({
                     user_id: user.id,
-                    resume_id: rewrittenResumeId || "global",
+                    resume_id: "global",
                     count: newCount,
                     reset_at: resetAt.toISOString(),
                     updated_at: now.toISOString()
@@ -246,7 +243,7 @@ export async function POST(req: NextRequest) {
             resetAt: resetAt.getTime()
         }
 
-        userLogger.requestComplete(200, { 
+        userLogger.requestComplete(200, {
             modificationsCount: modifications.length,
             hasAction: !!parsed.action,
             usageCount: newCount

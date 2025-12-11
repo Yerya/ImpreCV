@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
-
-const DEFAULT_LIMIT = 10
+import { DEFAULT_LIST_LIMIT } from "@/lib/constants"
 
 export async function GET(request: NextRequest) {
   if (!isSupabaseConfigured()) {
@@ -30,7 +29,7 @@ export async function GET(request: NextRequest) {
     `)
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
-    .limit(DEFAULT_LIMIT)
+    .limit(DEFAULT_LIST_LIMIT)
 
   if (rewrittenResumeId) {
     query = query.eq("rewritten_resume_id", rewrittenResumeId)

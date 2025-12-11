@@ -3,11 +3,9 @@ import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/se
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
 import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
+import { MAX_ADAPTED_RESUMES, ADAPTED_RESUME_LIMIT_ERROR, MAX_CONTENT_LENGTH } from "@/lib/constants"
 
 export const runtime = "nodejs"
-const MAX_SAVED = 3
-const LIMIT_ERROR_MESSAGE = "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor."
-const MAX_LENGTH = 50000
 
 export async function GET() {
   if (!isSupabaseConfigured()) {
@@ -32,7 +30,7 @@ export async function GET() {
     `)
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
-    .limit(MAX_SAVED)
+    .limit(MAX_ADAPTED_RESUMES)
 
   if (error) {
     return NextResponse.json({ error: "Failed to load saved resumes." }, { status: 500 })
@@ -79,7 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Content is required." }, { status: 400 })
   }
 
-  if (content.length > MAX_LENGTH) {
+  if (content.length > MAX_CONTENT_LENGTH) {
     return NextResponse.json({ error: "Content is too long." }, { status: 400 })
   }
 
@@ -112,8 +110,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to check saved resumes." }, { status: 500 })
   }
 
-  if ((count ?? 0) >= MAX_SAVED) {
-    return NextResponse.json({ error: LIMIT_ERROR_MESSAGE }, { status: 400 })
+  if ((count ?? 0) >= MAX_ADAPTED_RESUMES) {
+    return NextResponse.json({ error: ADAPTED_RESUME_LIMIT_ERROR }, { status: 400 })
   }
 
   const { data, error: insertError } = await supabase
