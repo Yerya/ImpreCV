@@ -12,6 +12,8 @@ import { SupabaseBanner } from "@/components/supabase-banner"
 import { GlobalHeader } from "@/components/global-header"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
     searchParams?: Promise<{ id?: string }> | { id?: string }
 }

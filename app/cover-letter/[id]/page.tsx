@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import CoverLetterClient from "@/components/cover-letter/cover-letter-client"
 
+export const dynamic = 'force-dynamic'
+
 export default async function CoverLetterPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await getSupabaseServerClient()

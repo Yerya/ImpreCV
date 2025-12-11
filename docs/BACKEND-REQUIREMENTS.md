@@ -48,11 +48,12 @@ graph TD
 
 | Requirement | Status | Architectural Decision / Implementation |
 | :--- | :--- | :--- |
-| **CI/CD** | **Implemented** | **GitHub Actions** pipeline (`.github/workflows/ci.yml`) automatically runs Linting and Tests on every push, acting as a Quality Gate. |
+| **CI/CD** | **Implemented** | **GitHub Actions** pipeline (`.github/workflows/ci.yml`) automatically runs Linting, Tests, and **Docker build validation** on every push, acting as a Quality Gate. |
+| **Containerization** | **Implemented** | Full **Docker** support with multi-stage builds, Puppeteer/Chromium for PDF export, non-root user, health checks, and resource limits. See [`docs/DOCKER-CONTAINERIZATION.md`](./DOCKER-CONTAINERIZATION.md). |
 | **Microservices** | **Alternative** | A **Modular Monolith** was chosen. <br>**Reasoning**: For a single-team project, Microservices introduce "over-engineering" (network latency, distributed consistency issues). Our modular folder structure provides the necessary isolation without the infrastructure overhead. |
 | **Async Interaction** | **Implemented** | Asynchronous operations (AI generation, DB writes) are handled via **Next.js Server Actions** and Node.js `Promise` patterns. This is the native, efficient way to handle concurrency in modern JS, removing the need for external queues like RabbitMQ for this scale. |
 | **Security** | **Implemented** | **"Don't Roll Your Own Crypto"**. We delegate authentication and sensitive data encryption to **Supabase Auth** (bcrypt/argon2) and PostgreSQL RLS (Row Level Security) policies, ensuring industrial-grade security. |
-| **Quality Gates** | **Implemented** | The CI pipeline enforces that no code with linting errors or failing tests can be merged. |
+| **Quality Gates** | **Implemented** | The CI pipeline enforces that no code with linting errors or failing tests can be merged. Docker build is validated on every push. |
 
 ---
 
@@ -62,6 +63,7 @@ graph TD
 *   **CI Configuration**: `.github/workflows/ci.yml`
 *   **Global Error Handler**: `app/global-error.tsx`
 *   **API Documentation**: `docs/API-DOCUMENTATION.md`
+*   **Docker Documentation**: `docs/DOCKER-CONTAINERIZATION.md`
 *   **Business Logic**: `lib/`
 *   **API Routes**: `app/api/`
 
@@ -69,4 +71,4 @@ graph TD
 
 ## 5. Conclusion
 
-The project successfully implements a modern, secure, and scalable web application. It meets all critical thesis backend requirements while making pragmatic architectural choices (Supabase Client, Modular Monolith) that align with modern industry best practices for efficiency and maintainability.
+The project successfully implements a modern, secure, and scalable web application. It meets all critical thesis backend requirements while making pragmatic architectural choices (Supabase Client, Modular Monolith, Docker containerization) that align with modern industry best practices for efficiency and maintainability.

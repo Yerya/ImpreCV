@@ -189,16 +189,19 @@ export async function POST(req: NextRequest) {
         `
         console.log('=== PDF Export: HTML document constructed, total length:', html.length, 'chars ===')
 
-        // Launch Puppeteer
+        // Launch Puppeteer (use system Chromium in Docker via PUPPETEER_EXECUTABLE_PATH)
         try {
             browser = await puppeteer.launch({
                 headless: true,
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
                     '--disable-accelerated-2d-canvas',
-                    '--disable-gpu'
+                    '--disable-gpu',
+                    '--single-process',
+                    '--no-zygote'
                 ]
             })
         } catch (launchError) {

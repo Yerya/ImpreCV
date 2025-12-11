@@ -28,7 +28,7 @@ GUIDELINES:
 
 export async function POST(request: NextRequest) {
   const logger = createLogger("cover-letter")
-
+  
   try {
     if (!isSupabaseConfigured()) {
       logger.error("supabase_not_configured")
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract job posting data
-    const jobPostingData = rewrittenResume.job_posting as {
-      id?: string; title?: string; company?: string; description?: string; link?: string
+    const jobPostingData = rewrittenResume.job_posting as { 
+      id?: string; title?: string; company?: string; description?: string; link?: string 
     } | null;
 
     const normalizedLink = typeof jobLink === "string" ? normalizeJobLink(jobLink) : ""
@@ -135,10 +135,10 @@ export async function POST(request: NextRequest) {
 
     const looksValid = isMeaningfulText(cleanedResume) && isMeaningfulText(cleanedJobDescription)
     if (!looksValid) {
-      userLogger.warn("validation_failed", {
+      userLogger.warn("validation_failed", { 
         reason: "invalid_text",
-        resumeValid: isMeaningfulText(cleanedResume),
-        jobValid: isMeaningfulText(cleanedJobDescription)
+        resumeValid: isMeaningfulText(cleanedResume), 
+        jobValid: isMeaningfulText(cleanedJobDescription) 
       })
       return NextResponse.json(
         {
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
       })
       content = response.text.trim()
       modelUsed = response.model
-
+      
       userLogger.llmComplete({
         model: modelUsed,
         usedFallback: response.usedFallback,
@@ -207,12 +207,12 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error"
       })
-
+      
       if (error instanceof LLMError) {
         if (error.type === "RATE_LIMIT") {
           userLogger.requestComplete(429, { reason: "rate_limit" })
-          return NextResponse.json({
-            error: "AI service is temporarily overloaded. Please try again in a few moments."
+          return NextResponse.json({ 
+            error: "AI service is temporarily overloaded. Please try again in a few moments." 
           }, { status: 429 })
         }
       }
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    userLogger.requestComplete(200, {
+    userLogger.requestComplete(200, { 
       coverLetterId,
       action: existingCoverLetter ? "updated" : "created"
     })

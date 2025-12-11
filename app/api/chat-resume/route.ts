@@ -14,7 +14,7 @@ interface ChatHistoryMessage {
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("chat-resume")
-
+    
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured")
@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
         userLogger.requestStart("/api/chat-resume")
 
         const body = await req.json()
-        const {
-            message,
-            resumeData,
+        const { 
+            message, 
+            resumeData, 
             rewrittenResumeId,
             history = []
         } = body as {
@@ -110,9 +110,9 @@ export async function POST(req: NextRequest) {
                 idx: i,
                 type: s.type,
                 title: s.title,
-                contentPreview: typeof s.content === "string"
+                contentPreview: typeof s.content === "string" 
                     ? s.content.slice(0, 200) + (s.content.length > 200 ? "..." : "")
-                    : Array.isArray(s.content)
+                    : Array.isArray(s.content) 
                         ? `[${s.content.length} items]`
                         : s.content
             }))
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
 
         // Add context message (resume data)
         const contextMessage = `[RESUME]\n${JSON.stringify(compactResume, null, 1)}\n\n[SECTIONS]\n${JSON.stringify(resumeData.sections, null, 1)}`
-
+        
         contents.push({ role: "user", parts: [{ text: contextMessage }] })
         contents.push({ role: "model", parts: [{ text: '{"message": "Ready to help you edit. What would you like to change?"}' }] })
 
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
             rawText = response.text
             usedFallback = response.usedFallback
             modelUsed = response.model
-
+            
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback,
@@ -173,12 +173,12 @@ export async function POST(req: NextRequest) {
                 success: false,
                 error: error instanceof Error ? error.message : "Unknown error"
             })
-
+            
             if (error instanceof LLMError) {
                 if (error.type === "RATE_LIMIT") {
                     userLogger.requestComplete(429, { reason: "rate_limit" })
-                    return NextResponse.json({
-                        error: "AI service is temporarily overloaded. Please try again in a few moments."
+                    return NextResponse.json({ 
+                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
                     }, { status: 429 })
                 }
             }
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
             resetAt: resetAt.getTime()
         }
 
-        userLogger.requestComplete(200, {
+        userLogger.requestComplete(200, { 
             modificationsCount: modifications.length,
             hasAction: !!parsed.action,
             usageCount: newCount

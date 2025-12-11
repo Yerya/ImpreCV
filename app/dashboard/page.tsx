@@ -3,6 +3,8 @@ import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/se
 import DashboardClient from "@/components/dashboard/dashboard-client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   if (!isSupabaseConfigured()) {
     return (

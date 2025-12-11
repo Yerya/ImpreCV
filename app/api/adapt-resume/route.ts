@@ -15,11 +15,11 @@ import {
     RESUME_ADAPT_COOLDOWN_MINUTES,
     ADAPT_RATE_LIMIT_ERROR,
     MAX_CONTENT_LENGTH
-} from "@/lib/constants";
+} from "@/lib/constants"
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("adapt-resume");
-
+    
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured");
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
         // Simple length checks to prevent abuse/token limits
         if (cleanedResume.length > MAX_CONTENT_LENGTH) {
-            return NextResponse.json({ error: "Resume text is too long" }, { status: 400 });
+            return NextResponse.json({ error: "Resume text is too long" }, { status: 400 })
         }
         if (cleanedJobDescription.length > MAX_CONTENT_LENGTH) {
             return NextResponse.json({ error: "Job description is too long" }, { status: 400 });
@@ -313,7 +313,7 @@ FINAL REMINDERS:
             })
             rawResponseText = response.text
             modelUsed = response.model
-
+            
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback: response.usedFallback,
@@ -326,12 +326,12 @@ FINAL REMINDERS:
                 success: false,
                 error: error instanceof Error ? error.message : "Unknown error"
             })
-
+            
             if (error instanceof LLMError) {
                 if (error.type === "RATE_LIMIT") {
                     userLogger.requestComplete(429, { reason: "rate_limit" })
-                    return NextResponse.json({
-                        error: "AI service is temporarily overloaded. Please try again in a few moments."
+                    return NextResponse.json({ 
+                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
                     }, { status: 429 })
                 }
             }
