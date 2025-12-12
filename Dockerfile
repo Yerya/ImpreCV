@@ -91,6 +91,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# Copy @sparticuz/chromium binaries (required for PDF export in serverless)
+COPY --from=builder /app/node_modules/@sparticuz/chromium ./node_modules/@sparticuz/chromium
+
 # Copy styles directory (needed for PDF export to read globals.css)
 COPY --from=builder /app/styles ./styles
 
