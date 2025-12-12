@@ -66,6 +66,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: cvify-app:${{ github.sha }}
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -77,8 +78,6 @@ jobs:
         run: |
           docker run -d --name test-cvify -p 3000:3000 \
             -e GEMINI_API_KEY=test-key \
-            -e PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-            -e PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
             --cap-add=SYS_ADMIN \
             cvify-app:${{ github.sha }}
           
