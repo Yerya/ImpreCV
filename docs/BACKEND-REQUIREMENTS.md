@@ -36,7 +36,7 @@ graph TD
 | **3. ORM Usage** | **Alternative** | Instead of a heavy ORM (like Prisma/Hibernate), we use the **Supabase Typed Client**. It provides the same benefits: **type safety**, **SQL injection protection**, and **structured data access**, but with better performance for serverless environments. |
 | **4. Multi-layer Arch** | **Implemented** | Separation of concerns: <br>- **Presentation**: `components/` <br>- **Business Logic**: `lib/` <br>- **API/Controllers**: `app/api/` |
 | **5. SOLID Principles** | **Implemented** | Codebase adheres to SOLID. Example: `ResumeParser` is a single-responsibility module; UI components are composed via dependency injection patterns. |
-| **6. API Description** | **Implemented** | Full API documentation available in [`docs/API-DOCUMENTATION.md`](./API-DOCUMENTATION.md). |
+| **6. API Description** | **Implemented** | Full API documentation available in [`docs/api/API-REFERENCE.md`](./api/API-REFERENCE.md). |
 | **7. Global Error Handling** | **Implemented** | Implemented via `app/global-error.tsx` and `app/error.tsx` to catch and gracefully display unhandled exceptions. |
 | **8. Logging** | **Implemented** | Custom structured logger implemented in `lib/api/logger.ts` for tracking request lifecycles and errors. |
 | **9. Deployment** | **Implemented** | Application is cloud-native and ready for deployment on Vercel/Docker. |

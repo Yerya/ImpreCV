@@ -126,10 +126,10 @@ These must be provided during `docker build`:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | ✅ Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Yes | Supabase anonymous key |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
 
-> ⚠️ **Important**: `NEXT_PUBLIC_*` variables are inlined into client JavaScript at build time. They cannot be set only at runtime.
+> **Important**: `NEXT_PUBLIC_*` variables are inlined into client JavaScript at build time. They cannot be set only at runtime.
 
 ### 4.2 Runtime Variables (ENV)
 
@@ -473,7 +473,7 @@ GEMINI_API_KEY=your-gemini-api-key
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ```
 
-> ⚠️ **Note**: `NEXT_PUBLIC_*` variables must be set as **build-time variables** in Railway settings, not just runtime variables.
+> **Note**: `NEXT_PUBLIC_*` variables must be set as **build-time variables** in Railway settings, not just runtime variables.
 
 ### 13.2 Railway Build Settings
 
