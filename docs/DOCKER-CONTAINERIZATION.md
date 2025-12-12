@@ -6,14 +6,14 @@ This document provides comprehensive documentation for the Docker containerizati
 
 ## 1. Architecture Overview
 
-The CVify application is containerized as a single **Next.js application** with integrated Puppeteer for PDF export functionality. External services (Supabase PostgreSQL, Google Gemini AI) are consumed as managed cloud services.
+The CVify application is containerized as a single **Next.js application** with integrated Puppeteer for PDF export functionality. External services (Supabase PostgreSQL, Google Gemini AI) are consumed as managed cloud services. **Deployment target: Railway** (container-based PaaS).
 
 ```mermaid
 graph TB
     subgraph Docker["Docker Container (node:20-slim)"]
         subgraph App["CVify Next.js Application"]
             API["API Routes<br/>/api/*<br/>- Resume CRUD<br/>- AI Generation<br/>- Cover Letters"]
-            PDF["PDF Export Service<br/>Puppeteer + Chromium<br/>- HTML to PDF<br/>- A4 format<br/>- Font rendering"]
+            PDF["PDF Export Service<br/>Puppeteer + @sparticuz/chromium<br/>- HTML to PDF<br/>- A4 format<br/>- Font rendering"]
             Health["/api/health<br/>Health Check"]
             Static["Static Assets<br/>.next/static<br/>public/"]
         end
@@ -132,14 +132,13 @@ These must be provided during `docker build`:
 > ⚠️ **Important**: `NEXT_PUBLIC_*` variables are inlined into client JavaScript at build time. They cannot be set only at runtime.
 
 ### 4.2 Runtime Variables (ENV)
-Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
 
->ODE_ENV` | No | `production` | Node environment |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NODE_ENV` | No | `production` | Node environment |
 | `GEMINI_API_KEY` | Yes | - | Google Gemini API key |
-| `PUPPETEER_EXECUTABLE_PATH` | No | `/usr/bin/chromium` | Path to Chromium binary |
-| `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` | No | `true` | Use system Chromium |
-| `PORT` | No | `3000` | Application port |
+| `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` | No | `true` | Use bundled @sparticuz/chromium |
+| `PORT` | No | `3000` | Application port (Railway sets this automatically) |
 | `HOSTNAME` | No | `0.0.0.0` | Bind address |
 
 ### 4.3 Example .env File
@@ -162,10 +161,10 @@ GEMINI_API_KEY=your-gemini-api-key
 cvify-app/
 ├── Dockerfile              # Multi-stage build configuration
 ├── .dockerignore           # Excludes unnecessary files from build
-├── docker-compose.yml      # Development/production orchestration
-├── docker-compose.dev.yml  # Development overrides (optional)
+├── docker-compose.yml      # Local development/testing orchestration
 ├── .env.example            # Environment template
-└── .env                    # Local environment (gitignored)
+├── .env                    # Local environment (gitignored)
+└── styles/                 # Copied to container for PDF export
 ```
 
 ### 5.1 .dockerignore Contents
@@ -343,13 +342,13 @@ docker rmi cvify-app-app
 ### PDF Export Fails
 
 ```bash
-# Check Chromium is installed
-docker exec cvify-app which chromium
+# Check @sparticuz/chromium is bundled
+docker exec cvify-app ls -la node_modules/@sparticuz/chromium
 
-# Check Chromium can run
-docker exec cvify-app chromium --version
+# Check required libraries are present
+docker exec cvify-app ldd /app/node_modules/@sparticuz/chromium/bin/chromium 2>/dev/null || echo "Check chromium binary path"
 
-# Verify SYS_ADMIN capability
+# Verify container has necessary capabilities
 docker inspect cvify-app | grep -A 10 CapAdd
 ```
 
@@ -458,14 +457,51 @@ Docker build and validation is integrated into GitHub Actions:
 
 ---
 
-## 13. Summary
+## 13. Railway Deployment
+
+The application is deployed to **Railway** (container-based PaaS).
+
+### 13.1 Railway Configuration
+
+Railway automatically detects the Dockerfile and builds the image. Configure the following:
+
+**Environment Variables (Railway Dashboard):**
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+GEMINI_API_KEY=your-gemini-api-key
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+```
+
+> ⚠️ **Note**: `NEXT_PUBLIC_*` variables must be set as **build-time variables** in Railway settings, not just runtime variables.
+
+### 13.2 Railway Build Settings
+
+| Setting | Value |
+|---------|-------|
+| **Builder** | Dockerfile |
+| **Dockerfile Path** | `Dockerfile` |
+| **Watch Paths** | `/` |
+| **Restart Policy** | On Failure |
+
+### 13.3 Railway Features Used
+
+- **Automatic HTTPS** with Railway-provided domain
+- **Auto-scaling** based on container metrics
+- **Health checks** via `/api/health` endpoint
+- **Environment variable management** for secrets
+- **Automatic deploys** on git push
+
+---
+
+## 14. Summary
 
 The CVify Docker implementation provides:
 
 - **Reproducible builds** via multi-stage Dockerfile
-- **Optimized image size** (~850MB with Chromium)
+- **Optimized image size** (~850MB with bundled Chromium)
 - **Security best practices** (non-root, minimal capabilities)
 - **Production-ready features** (health checks, resource limits)
-- **Easy deployment** via docker-compose
-- **PDF export capability** with Puppeteer + system Chromium
+- **Railway deployment** for easy cloud hosting
+- **PDF export capability** with Puppeteer + @sparticuz/chromium
 - **Full documentation** with commands and troubleshooting
