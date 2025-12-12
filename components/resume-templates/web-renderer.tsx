@@ -24,7 +24,7 @@ const isItemEmpty = (item: ResumeItem) => {
         (item.title && item.title.trim()) ||
         (item.subtitle && item.subtitle.trim()) ||
         (item.date && item.date.trim()) ||
-        (item.description && item.description.trim()) ||
+        (item.description && (typeof item.description === 'string' ? item.description.trim() : String(item.description).trim())) ||
         hasBullets
     )
 }

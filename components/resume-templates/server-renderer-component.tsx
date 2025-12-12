@@ -80,11 +80,12 @@ export function ServerResumeRenderer({
 
     const isItemEmpty = (item: ResumeItem) => {
         const hasBullets = Array.isArray(item.bullets) && item.bullets.some((b) => b && b.trim().length > 0)
+        const hasDescription = item.description && (typeof item.description === 'string' ? item.description.trim() : String(item.description).trim())
         return !(
             (item.title && item.title.trim()) ||
             (item.subtitle && item.subtitle.trim()) ||
             (item.date && item.date.trim()) ||
-            (item.description && item.description.trim()) ||
+            hasDescription ||
             hasBullets
         )
     }

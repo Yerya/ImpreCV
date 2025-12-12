@@ -55,6 +55,7 @@ WORKDIR /app
 
 # Install Chromium dependencies and Chromium for Puppeteer
 # Using Debian packages for node:20-slim (Debian Bookworm based)
+# Version marker to bust cache when needed: v2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     fonts-liberation \
@@ -77,7 +78,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && apt-get clean \
+    && chromium --version
 
 # Set Puppeteer to use system Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true

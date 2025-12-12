@@ -9,7 +9,10 @@ const formatItem = (item: ResumeItem): string[] => {
     }
 
     if (item.description) {
-        lines.push(item.description.trim())
+        const desc = typeof item.description === 'string' ? item.description : String(item.description)
+        if (desc.trim()) {
+            lines.push(desc.trim())
+        }
     }
 
     if (item.bullets?.length) {
