@@ -1,0 +1,19 @@
+[build]
+# Use our custom Dockerfile with Chromium for PDF export
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+# Pass build arguments for Next.js public variables
+[build.args]
+NEXT_PUBLIC_SUPABASE_URL = "${{NEXT_PUBLIC_SUPABASE_URL}}"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "${{NEXT_PUBLIC_SUPABASE_ANON_KEY}}"
+
+[deploy]
+# Number of instances
+numReplicas = 1
+# Health check path
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+# Restart policy
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

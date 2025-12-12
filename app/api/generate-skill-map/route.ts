@@ -77,7 +77,7 @@ Focus on:
 `
 }
 
-const validateSkillMapData = (data: any): SkillMapData => {
+const validateSkillMapData = (data: unknown): SkillMapData => {
   const defaultData: SkillMapData = {
     matchScore: 0,
     matchedSkills: [],
@@ -90,63 +90,71 @@ const validateSkillMapData = (data: any): SkillMapData => {
 
   if (!data || typeof data !== "object") return defaultData
 
-  const validateSkill = (skill: any, category: Skill["category"]): Skill | null => {
-    if (!skill || typeof skill.name !== "string") return null
+  const record = data as Record<string, unknown>
+
+  const validateSkill = (skill: unknown, category: Skill["category"]): Skill | null => {
+    if (!skill || typeof skill !== "object") return null
+    const s = skill as Record<string, unknown>
+    if (typeof s.name !== "string") return null
     return {
-      name: skill.name,
-      priority: ["high", "medium", "low"].includes(skill.priority) ? skill.priority : "medium",
+      name: s.name,
+      priority: ["high", "medium", "low"].includes(s.priority as string) ? s.priority as Skill["priority"] : "medium",
       category,
-      resumeEvidence: skill.resumeEvidence || undefined,
-      jobRequirement: skill.jobRequirement || undefined,
-      matchPercentage: typeof skill.matchPercentage === "number" ? skill.matchPercentage : undefined,
-      potentialScoreIncrease: typeof skill.potentialScoreIncrease === "number" ? skill.potentialScoreIncrease : undefined,
+      resumeEvidence: typeof s.resumeEvidence === "string" ? s.resumeEvidence : undefined,
+      jobRequirement: typeof s.jobRequirement === "string" ? s.jobRequirement : undefined,
+      matchPercentage: typeof s.matchPercentage === "number" ? s.matchPercentage : undefined,
+      potentialScoreIncrease: typeof s.potentialScoreIncrease === "number" ? s.potentialScoreIncrease : undefined,
     }
   }
 
-  const validateRoadmapItem = (item: any): RoadmapItem | null => {
-    if (!item || typeof item.skill !== "string") return null
+  const validateRoadmapItem = (item: unknown): RoadmapItem | null => {
+    if (!item || typeof item !== "object") return null
+    const i = item as Record<string, unknown>
+    if (typeof i.skill !== "string") return null
     return {
-      skill: item.skill,
-      importance: item.importance || "",
-      firstStep: item.firstStep || "",
-      potentialScoreIncrease: typeof item.potentialScoreIncrease === "number" ? item.potentialScoreIncrease : 0,
+      skill: i.skill,
+      importance: typeof i.importance === "string" ? i.importance : "",
+      firstStep: typeof i.firstStep === "string" ? i.firstStep : "",
+      potentialScoreIncrease: typeof i.potentialScoreIncrease === "number" ? i.potentialScoreIncrease : 0,
     }
   }
 
-  const validateAdaptationHighlight = (item: any): AdaptationHighlight | null => {
-    if (!item || typeof item.skill !== "string") return null
+  const validateAdaptationHighlight = (item: unknown): AdaptationHighlight | null => {
+    if (!item || typeof item !== "object") return null
+    const i = item as Record<string, unknown>
+    if (typeof i.skill !== "string") return null
     return {
-      skill: item.skill,
-      originalPresentation: item.originalPresentation || "",
-      adaptedPresentation: item.adaptedPresentation || "",
-      improvement: item.improvement || "",
+      skill: i.skill,
+      originalPresentation: typeof i.originalPresentation === "string" ? i.originalPresentation : "",
+      adaptedPresentation: typeof i.adaptedPresentation === "string" ? i.adaptedPresentation : "",
+      improvement: typeof i.improvement === "string" ? i.improvement : "",
     }
   }
 
   return {
-    matchScore: typeof data.matchScore === "number" ? Math.min(100, Math.max(0, data.matchScore)) : 0,
-    matchedSkills: Array.isArray(data.matchedSkills)
-      ? data.matchedSkills.map((s: any) => validateSkill(s, "matched")).filter(Boolean)
+    matchScore: typeof record.matchScore === "number" ? Math.min(100, Math.max(0, record.matchScore)) : 0,
+    matchedSkills: Array.isArray(record.matchedSkills)
+      ? (record.matchedSkills as unknown[]).map((s) => validateSkill(s, "matched")).filter((s): s is Skill => s !== null)
       : [],
-    transferableSkills: Array.isArray(data.transferableSkills)
-      ? data.transferableSkills.map((s: any) => validateSkill(s, "transferable")).filter(Boolean)
+    transferableSkills: Array.isArray(record.transferableSkills)
+      ? (record.transferableSkills as unknown[]).map((s) => validateSkill(s, "transferable")).filter((s): s is Skill => s !== null)
       : [],
-    missingSkills: Array.isArray(data.missingSkills)
-      ? data.missingSkills.map((s: any) => validateSkill(s, "missing")).filter(Boolean)
+    missingSkills: Array.isArray(record.missingSkills)
+      ? (record.missingSkills as unknown[]).map((s) => validateSkill(s, "missing")).filter((s): s is Skill => s !== null)
       : [],
-    learningRoadmap: Array.isArray(data.learningRoadmap)
-      ? data.learningRoadmap.map(validateRoadmapItem).filter(Boolean)
+    learningRoadmap: Array.isArray(record.learningRoadmap)
+      ? (record.learningRoadmap as unknown[]).map(validateRoadmapItem).filter((i): i is RoadmapItem => i !== null)
       : [],
-    summary: typeof data.summary === "string" ? data.summary : "",
-    interviewTips: Array.isArray(data.interviewTips)
-      ? data.interviewTips.filter((t: any) => typeof t === "string")
+    summary: typeof record.summary === "string" ? record.summary : "",
+    interviewTips: Array.isArray(record.interviewTips)
+      ? (record.interviewTips as unknown[]).filter((t): t is string => typeof t === "string")
       : [],
-    adaptationScore: typeof data.adaptationScore === "number" 
-      ? Math.min(100, Math.max(0, data.adaptationScore)) 
+    adaptationScore: typeof record.adaptationScore === "number" 
+      ? Math.min(100, Math.max(0, record.adaptationScore)) 
       : undefined,
-    adaptationSummary: typeof data.adaptationSummary === "string" ? data.adaptationSummary : undefined,
-    adaptationHighlights: Array.isArray(data.adaptationHighlights)
-      ? data.adaptationHighlights.map(validateAdaptationHighlight).filter(Boolean)
+    adaptationSummary: typeof record.adaptationSummary === "string" ? record.adaptationSummary : undefined,
+    adaptationHighlights: Array.isArray(record.adaptationHighlights)
+      ? (record.adaptationHighlights as unknown[]).map(validateAdaptationHighlight).filter((h): h is AdaptationHighlight => h !== null)
       : undefined,
   }
 }
@@ -297,7 +305,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Helper to call LLM with fallback and parse JSON
-    const callLLM = async (prompt: string, analysisType: string): Promise<any> => {
+    const callLLM = async (prompt: string, analysisType: string): Promise<unknown> => {
       const response = await llmClient.generate(prompt, {
         model: LLM_MODELS.FALLBACK, // Use 2.0-flash for skill-map (more stable for analysis)
         configType: "skillMap",
@@ -317,16 +325,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Gap Analysis (original resume vs job)
-    let gapData: any
+    let gapData: unknown
     try {
       const gapPrompt = buildGapAnalysisPrompt(originalResumeText, jobDescription)
       gapData = await callLLM(gapPrompt, "gap_analysis")
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error"
       userLogger.llmComplete({
         model: LLM_MODELS.FALLBACK,
         usedFallback: false,
         success: false,
-        error: error?.message
+        error: message
       })
       
       if (error instanceof LLMError && error.type === "RATE_LIMIT") {
@@ -340,18 +349,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Adaptation Comparison (only if we have original resume)
-    let adaptationData: any = {}
+    let adaptationData: unknown = {}
     if (originalResumeId && originalResumeText !== adaptedResumeData) {
       try {
         const adaptPrompt = buildAdaptationPrompt(originalResumeText, adaptedResumeData, jobDescription)
         adaptationData = await callLLM(adaptPrompt, "adaptation_comparison")
-      } catch (error: any) {
-        userLogger.warn("adaptation_comparison_failed", { error: error?.message })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error"
+        userLogger.warn("adaptation_comparison_failed", { error: message })
       }
     }
 
     // Merge and validate
-    const combinedData = { ...gapData, ...adaptationData }
+    const gapObj = (gapData && typeof gapData === "object") ? gapData as Record<string, unknown> : {}
+    const adaptObj = (adaptationData && typeof adaptationData === "object") ? adaptationData as Record<string, unknown> : {}
+    const combinedData = { ...gapObj, ...adaptObj }
     const parsedData = validateSkillMapData(combinedData)
 
     // Save to database
@@ -396,9 +408,10 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json({ skillMap: skillMapWithJobInfo, cached: false })
 
-  } catch (error: any) {
+  } catch (error) {
     const logger = createLogger("skill-map")
-    logger.error("unhandled_error", error instanceof Error ? error : new Error(error?.message || "Unknown error"))
-    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
+    const err = error instanceof Error ? error : new Error("Unknown error")
+    logger.error("unhandled_error", err)
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 })
   }
 }
