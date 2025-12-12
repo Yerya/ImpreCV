@@ -53,14 +53,12 @@ FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Install Chromium dependencies and Chromium for Puppeteer
-# Using Debian packages for node:20-slim (Debian Bookworm based)
-# Version marker to bust cache when needed: v2
+# Install minimal dependencies for @sparticuz/chromium
+# (it bundles its own Chromium, we just need basic libs)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium \
+    ca-certificates \
     fonts-liberation \
     fonts-noto-color-emoji \
-    fonts-noto-cjk \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libcups2 \
@@ -75,15 +73,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxdamage1 \
     libxfixes3 \
     libxrandr2 \
-    xdg-utils \
-    ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean \
-    && chromium --version
-
-# Set Puppeteer to use system Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+    && apt-get clean
 
 # Set production environment
 ENV NODE_ENV=production

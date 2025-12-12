@@ -1,9 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 import { A4_DIMENSIONS } from '@/lib/resume-templates/server-renderer'
 import fs from 'fs'
 import path from 'path'
 import { getSupabaseServerClient, isSupabaseConfigured } from '@/lib/supabase/server'
+
+// Configure chromium for serverless
+chromium.setHeadlessMode = 'shell'
+chromium.setGraphicsMode = false
+
+async function getBrowser() {
+    // In development, use local Chrome/Chromium
+    if (process.env.NODE_ENV === 'development') {
+        const puppeteerFull = await import('puppeteer-core')
+        // Try common local browser paths
+        const possiblePaths = [
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        ]
+        
+        let executablePath: string | undefined
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                executablePath = p
+                break
+            }
+        }
+        
+        if (!executablePath) {
+            throw new Error('No local Chrome/Chromium found. Install Chrome or set PUPPETEER_EXECUTABLE_PATH')
+        }
+        
+        return puppeteerFull.default.launch({
+            headless: true,
+            executablePath,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
+    }
+    
+    // In production (Railway, Vercel, etc.), use @sparticuz/chromium
+    return puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: true,
+    })
+}
 
 export async function POST(req: NextRequest) {
     let browser: puppeteer.Browser | null = null
@@ -189,22 +236,11 @@ export async function POST(req: NextRequest) {
         `
         console.log('=== PDF Export: HTML document constructed, total length:', html.length, 'chars ===')
 
-        // Launch Puppeteer (use system Chromium in Docker via PUPPETEER_EXECUTABLE_PATH)
+        // Launch browser (uses @sparticuz/chromium in production, local Chrome in dev)
         try {
-            browser = await puppeteer.launch({
-                headless: true,
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-gpu',
-                    '--single-process',
-                    '--no-zygote'
-                ]
-            })
+            browser = await getBrowser()
         } catch (launchError) {
+            console.error('Browser launch error:', launchError)
             throw new Error(`Puppeteer launch failed: ${launchError instanceof Error ? launchError.message : String(launchError)}`)
         }
 
