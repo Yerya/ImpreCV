@@ -148,11 +148,16 @@ export async function POST(req: NextRequest) {
                     /* Injected globals.css */
                     ${cssContent}
 
-                    /* Font fallbacks to mirror editor */
+                    /* Font fallbacks to mirror editor - Inter installed locally in Docker */
                     :root {
-                        --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-                        --font-display: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+                        --font-sans: 'Inter', 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+                        --font-display: 'Inter', 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
                         --font-mono: 'Roboto Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+                    }
+                    
+                    /* Apply Inter font to all text elements */
+                    body, * {
+                        font-family: var(--font-sans);
                     }
 
                     /* Print optimizations for single-page output */
@@ -258,10 +263,14 @@ export async function POST(req: NextRequest) {
             timeout: 30000
         })
 
+        // Wait for fonts to load
         await page.evaluate(() => {
             const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts
             return fonts ? fonts.ready : Promise.resolve()
         })
+
+        // Additional delay for font rendering stabilization (important for Docker/serverless)
+        await new Promise(resolve => setTimeout(resolve, 300))
 
         // Generate PDF with optimized settings
         const pdfBuffer = await page.pdf({

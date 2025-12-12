@@ -55,10 +55,14 @@ WORKDIR /app
 
 # Install minimal dependencies for @sparticuz/chromium
 # (it bundles its own Chromium, we just need basic libs)
+# Also install fonts for consistent PDF rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    unzip \
     fonts-liberation \
     fonts-noto-color-emoji \
+    fontconfig \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libcups2 \
@@ -75,6 +79,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrandr2 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# Install Inter font for consistent PDF rendering
+RUN mkdir -p /usr/share/fonts/truetype/inter \
+    && curl -sL https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip -o /tmp/inter.zip \
+    && unzip -q /tmp/inter.zip -d /tmp/inter \
+    && cp /tmp/inter/Inter*.ttf /usr/share/fonts/truetype/inter/ 2>/dev/null || cp /tmp/inter/InterVariable*.ttf /usr/share/fonts/truetype/inter/ 2>/dev/null || true \
+    && fc-cache -fv \
+    && rm -rf /tmp/inter.zip /tmp/inter
 
 # Set production environment
 ENV NODE_ENV=production
