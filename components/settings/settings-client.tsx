@@ -15,6 +15,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/appSlice"
+import { signOutThunk } from "@/features/auth/authSlice"
 import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
 import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
@@ -68,6 +69,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
     try {
       const res = await deleteAccount()
       if ('data' in res && res.data?.ok) {
+        await dispatch(signOutThunk())
         router.push("/login")
         router.refresh()
       }
