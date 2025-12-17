@@ -26,5 +26,5 @@ export default async function ResumeRewritePage({ params }: { params: Promise<{ 
     redirect("/dashboard")
   }
 
-  return <ResumeRewriteClient rewrittenResume={rewrittenResume} user={user} />
+  return <ResumeRewriteClient rewrittenResume={rewrittenResume} />
 }

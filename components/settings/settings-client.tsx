@@ -21,9 +21,23 @@ import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/a
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
+interface UserData {
+  id: string
+  email?: string
+  user_metadata?: {
+    full_name?: string
+  }
+}
+
+interface ProfileData {
+  id: string
+  full_name?: string
+  email?: string
+}
+
 interface SettingsClientProps {
-  user: Record<string, unknown>
-  profile: Record<string, unknown>
+  user: UserData
+  profile: ProfileData | null
 }
 
 export default function SettingsClient({ user, profile: initialProfile }: SettingsClientProps) {

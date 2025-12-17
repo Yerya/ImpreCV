@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
 
     // Call LLM with automatic fallback (gemini-2.5-flash → gemini-2.0-flash)
     let content = ""
-    let modelUsed = LLM_MODELS.PRIMARY
+    let modelUsed: string = LLM_MODELS.PRIMARY
     try {
       const response = await llmClient.generate(prompt, {
         model: LLM_MODELS.PRIMARY,
@@ -284,9 +284,9 @@ export async function POST(request: NextRequest) {
       metadata: { title: jobTitle, company: jobCompany },
     })
   } catch (error: unknown) {
-    const err = error as Error
+    const err = error instanceof Error ? error : new Error(String(error));
     const logger = createLogger("cover-letter")
-    logger.error("unhandled_error", { message: err?.message, stack: err?.stack })
-    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 })
+    logger.error("unhandled_error", err)
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 })
   }
 }

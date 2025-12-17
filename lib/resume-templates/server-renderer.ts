@@ -21,7 +21,9 @@ export const SIDEBAR_RATIO_LIMITS = {
 const DEFAULT_SIDEBAR_RATIO: Record<ResumeVariantId, number> = {
     tailored: 40,
     modern: 38,
-    bold: 42
+    bold: 42,
+    spotlight: 40,
+    classic: 40
 }
 
 export const variantStyles: Record<ResumeVariantId, {
@@ -106,6 +108,48 @@ export const variantStyles: Record<ResumeVariantId, {
         sidebar: 'w-[42%] border-r-4 border-black pr-4',
         main: 'flex-1',
         card: 'p-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white',
+        pageCard: 'w-full h-full flex flex-col'
+    },
+    spotlight: {
+        page: 'bg-[#fffaf0] text-[#111827] font-sans p-6',
+        header: 'mb-4',
+        name: 'text-2xl font-bold text-[#111827] mb-1',
+        title: 'text-xs text-[#7c2d12] mb-1',
+        contactBlock: 'mt-1 flex flex-col gap-0.5',
+        contactLine: 'text-[10px] text-[#7c2d12] break-words',
+        section: 'mb-4',
+        sectionTitle: 'text-[10px] font-bold tracking-widest text-[#c2410c] uppercase mb-2',
+        paragraph: 'text-[10px] leading-relaxed text-[#111827]',
+        itemTitle: 'text-xs font-bold text-[#111827]',
+        subtitle: 'text-[10px] text-[#7c2d12] mt-0.5',
+        date: 'text-[9px] text-[#7c2d12] italic',
+        bullet: 'text-[9px] text-[#111827] ml-2 mb-0.5',
+        bulletMarker: 'text-[#fb923c] font-bold mr-1',
+        columns: 'flex flex-row gap-4',
+        sidebar: 'w-[40%]',
+        main: 'w-[60%]',
+        card: 'py-2 px-2.5 rounded-lg border border-[#fde68a] bg-[#fff7e6]',
+        pageCard: 'w-full h-full flex flex-col'
+    },
+    classic: {
+        page: 'bg-white text-[#334155] font-serif p-6',
+        header: 'mb-4 text-center',
+        name: 'text-2xl font-bold text-[#0f172a] mb-1',
+        title: 'text-xs text-[#64748b] mb-1',
+        contactBlock: 'mt-1 flex flex-col gap-0.5 items-center',
+        contactLine: 'text-[10px] text-[#64748b] break-words',
+        section: 'mb-4',
+        sectionTitle: 'text-[10px] font-bold tracking-widest text-[#0f172a] uppercase mb-2 border-b border-[#e2e8f0] pb-1',
+        paragraph: 'text-[10px] leading-relaxed text-[#334155]',
+        itemTitle: 'text-xs font-bold text-[#334155]',
+        subtitle: 'text-[10px] text-[#64748b] mt-0.5',
+        date: 'text-[9px] text-[#64748b] italic',
+        bullet: 'text-[9px] text-[#334155] ml-2 mb-0.5',
+        bulletMarker: 'text-[#94a3b8] font-bold mr-1',
+        columns: 'flex flex-row gap-4',
+        sidebar: 'w-[40%]',
+        main: 'w-[60%]',
+        card: 'py-2 px-2.5',
         pageCard: 'w-full h-full flex flex-col'
     }
 }

@@ -110,8 +110,9 @@ export function extractResponseText(response: GenerateContentResponse | Record<s
         }
 
         // Method 3: candidates array (raw API response)
-        if (response?.candidates?.length > 0) {
-            return response.candidates[0]?.content?.parts?.[0]?.text || ""
+        const candidates = response?.candidates as Array<{ content?: { parts?: Array<{ text?: string }> } }> | undefined
+        if (candidates && candidates.length > 0) {
+            return candidates[0]?.content?.parts?.[0]?.text || ""
         }
 
         console.warn("[LLM] Could not extract text from response")

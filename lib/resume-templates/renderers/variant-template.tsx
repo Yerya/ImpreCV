@@ -29,17 +29,6 @@ const variantThemes: Record<ResumeVariantId, VariantTheme> = {
         layout: 'single',
         headerAccent: '#e2e8f0'
     },
-    minimal: {
-        accent: '#fafafa',
-        text: '#f4f4f5',
-        muted: '#d4d4d8',
-        background: '#0b0b0f',
-        border: '#27272a',
-        surface: '#0f0f13',
-        badge: '#a1a1aa',
-        layout: 'single',
-        headerAccent: '#f4f4f5'
-    },
     spotlight: {
         accent: '#c2410c',
         text: '#111827',
@@ -128,7 +117,7 @@ const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSh
     badge: {
         fontSize: 9,
         color: theme.text,
-        backgroundColor: variantId === 'minimal' ? '#18181b' : theme.border,
+        backgroundColor: theme.border,
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: 6,

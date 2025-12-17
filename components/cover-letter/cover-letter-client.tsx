@@ -10,8 +10,15 @@ import { Download, Copy, CheckCircle2, Edit3, Eye, X, Save } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
 
+interface CoverLetterData {
+  id: string
+  content: string
+  job_title?: string
+  job_company?: string
+}
+
 interface CoverLetterClientProps {
-  coverLetter: Record<string, unknown>
+  coverLetter: CoverLetterData
 }
 
 export default function CoverLetterClient({ coverLetter }: CoverLetterClientProps) {

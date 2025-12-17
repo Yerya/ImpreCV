@@ -19,10 +19,34 @@ import { toast } from "sonner"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
 
+interface UserData {
+  id: string
+  email?: string
+  user_metadata?: {
+    full_name?: string
+  }
+}
+
+interface ResumeRecord {
+  id: string
+  file_name: string
+  created_at: string
+  [key: string]: unknown
+}
+
+interface SkillMapRecord {
+  id: string
+  match_score: number
+  adaptation_score?: number
+  created_at: string
+  job_title?: string | null
+  job_company?: string | null
+}
+
 interface DashboardClientProps {
-  user: Record<string, unknown>
-  resumes: Record<string, unknown>[]
-  recentSkillMaps: Record<string, unknown>[]
+  user: UserData
+  resumes: ResumeRecord[]
+  recentSkillMaps: SkillMapRecord[]
   adaptedResumesCount: number
 }
 
@@ -48,7 +72,7 @@ export default function DashboardClient({
   const [shouldGenerateCoverLetter, setShouldGenerateCoverLetter] = useState(true)
 
   // Use Redux user name if available, fallback to props
-  const displayName = authUser?.user_metadata?.full_name || user?.user_metadata?.full_name || "there"
+  const displayName = authUser?.user_metadata?.full_name || user.user_metadata?.full_name || "there"
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -84,7 +108,7 @@ export default function DashboardClient({
   }
 
 
-  const handleResumeUploaded = (newResume: Record<string, unknown>) => {
+  const handleResumeUploaded = (newResume: ResumeRecord) => {
     setInputError(null)
     setResumes((prev) => [newResume, ...prev])
     setSelectedResumeId(newResume.id)

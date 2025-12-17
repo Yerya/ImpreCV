@@ -1,12 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Copy, ExternalLink, Loader2, Trash2 } from "lucide-react"
+import { Copy, ExternalLink, Loader2, Trash2, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 
 export interface CoverLetter {
@@ -46,10 +47,14 @@ export function CoverLetterPanel({
     generating,
     onGenerate
 }: CoverLetterPanelProps) {
-    const handleCopy = async (content: string) => {
+    const [copiedId, setCopiedId] = useState<string | null>(null)
+
+    const handleCopy = async (id: string, content: string) => {
         try {
             await navigator.clipboard.writeText(content)
+            setCopiedId(id)
             toast.success('Cover letter copied')
+            setTimeout(() => setCopiedId(null), 2000)
         } catch (copyError) {
             console.error('Cover letter copy failed:', copyError)
             toast.error('Failed to copy cover letter')
@@ -156,10 +161,19 @@ export function CoverLetterPanel({
                                     variant="outline"
                                     size="sm"
                                     className="gap-2"
-                                    onClick={() => handleCopy(letter.content)}
+                                    onClick={() => handleCopy(letter.id, letter.content)}
                                 >
-                                    <Copy className="h-4 w-4" />
-                                    Copy
+                                    {copiedId === letter.id ? (
+                                        <>
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            Copied!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="h-4 w-4" />
+                                            Copy
+                                        </>
+                                    )}
                                 </Button>
                                 {letter.id && (
                                     <>

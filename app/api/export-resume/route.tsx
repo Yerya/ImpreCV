@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer-core'
+import puppeteer, { type Browser } from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
 import { A4_DIMENSIONS } from '@/lib/resume-templates/server-renderer'
 import fs from 'fs'
 import path from 'path'
 import { getSupabaseServerClient, isSupabaseConfigured } from '@/lib/supabase/server'
 
-// Configure chromium for serverless
-chromium.setHeadlessMode = 'shell'
+// Configure chromium for serverless (disable WebGL for performance)
 chromium.setGraphicsMode = false
 
-async function getBrowser() {
+// Default viewport for PDF generation
+const PDF_VIEWPORT = {
+    width: 1920,
+    height: 1080,
+    deviceScaleFactor: 1,
+}
+
+async function getBrowser(): Promise<Browser> {
     // In development, use local Chrome/Chromium
     if (process.env.NODE_ENV === 'development') {
         const puppeteerFull = await import('puppeteer-core')
@@ -39,6 +45,7 @@ async function getBrowser() {
         return puppeteerFull.default.launch({
             headless: true,
             executablePath,
+            defaultViewport: PDF_VIEWPORT,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         })
     }
@@ -46,14 +53,14 @@ async function getBrowser() {
     // In production (Railway, Vercel, etc.), use @sparticuz/chromium
     return puppeteer.launch({
         args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
+        defaultViewport: PDF_VIEWPORT,
         executablePath: await chromium.executablePath(),
-        headless: true,
+        headless: 'shell',
     })
 }
 
 export async function POST(req: NextRequest) {
-    let browser: puppeteer.Browser | null = null
+    let browser: Browser | null = null
     try {
         const { data, templateId, themeConfig, resumeId, fileName } = await req.json()
 

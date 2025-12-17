@@ -26,5 +26,5 @@ export default async function SkillMapPage({ params }: { params: Promise<{ id: s
     redirect("/resume-editor")
   }
 
-  return <SkillMapClient skillMap={skillMap} user={user} />
+  return <SkillMapClient skillMap={skillMap} />
 }

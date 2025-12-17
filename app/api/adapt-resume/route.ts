@@ -303,7 +303,7 @@ FINAL REMINDERS:
 
         // Call LLM with automatic fallback (gemini-2.5-flash → gemini-2.0-flash)
         let rawResponseText = ""
-        let modelUsed = LLM_MODELS.PRIMARY
+        let modelUsed: string = LLM_MODELS.PRIMARY
         try {
             const response = await llmClient.generate(prompt, {
                 model: LLM_MODELS.PRIMARY,
@@ -549,10 +549,10 @@ FINAL REMINDERS:
         return NextResponse.json({ item, resumeData: parsedData });
     } catch (error: unknown) {
         const logger = createLogger("adapt-resume");
-        const err = error as Error
-        logger.error("unhandled_error", { message: err.message, stack: err.stack });
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error("unhandled_error", err);
         return NextResponse.json(
-            { error: error.message || "Failed to adapt resume" },
+            { error: err.message || "Failed to adapt resume" },
             { status: 500 }
         );
     }

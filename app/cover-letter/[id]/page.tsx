@@ -26,5 +26,5 @@ export default async function CoverLetterPage({ params }: { params: Promise<{ id
     redirect("/dashboard")
   }
 
-  return <CoverLetterClient coverLetter={coverLetter} user={user} />
+  return <CoverLetterClient coverLetter={coverLetter} />
 }

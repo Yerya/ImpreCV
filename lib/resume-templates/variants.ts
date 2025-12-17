@@ -1,4 +1,4 @@
-export type ResumeVariantId = 'tailored' | 'modern' | 'bold'
+export type ResumeVariantId = 'tailored' | 'modern' | 'bold' | 'spotlight' | 'classic'
 
 export interface ResumeVariant {
     id: ResumeVariantId
@@ -33,6 +33,22 @@ export const resumeVariants: ResumeVariant[] = [
         accentFrom: 'from-yellow-500',
         accentTo: 'to-amber-600',
         badge: 'Impact'
+    },
+    {
+        id: 'spotlight',
+        name: 'Spotlight',
+        tagline: 'Warm tones with orange accents',
+        accentFrom: 'from-orange-600',
+        accentTo: 'to-amber-500',
+        badge: 'Warm'
+    },
+    {
+        id: 'classic',
+        name: 'Classic',
+        tagline: 'Traditional serif style for formal applications',
+        accentFrom: 'from-slate-700',
+        accentTo: 'to-slate-500',
+        badge: 'Traditional'
     }
 ]
 

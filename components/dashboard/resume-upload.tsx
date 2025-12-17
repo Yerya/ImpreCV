@@ -8,8 +8,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
+interface ResumeRecord {
+  id: string
+  file_name: string
+  created_at: string
+  [key: string]: unknown
+}
+
 interface ResumeUploadProps {
-  onResumeUploaded: (resume: Record<string, unknown>) => void
+  onResumeUploaded: (resume: ResumeRecord) => void
   onTextChange?: (text: string) => void
   textValue?: string
   currentCount?: number

@@ -50,11 +50,14 @@ export default async function DashboardPage() {
     .limit(5)
 
   // Flatten job info for components
-  const skillMaps = (rawSkillMaps || []).map((sm: Record<string, unknown>) => ({
-    ...sm,
-    job_title: sm.rewritten_resume?.job_posting?.title || null,
-    job_company: sm.rewritten_resume?.job_posting?.company || null,
-  }))
+  const skillMaps = (rawSkillMaps || []).map((sm) => {
+    const resumeData = sm.rewritten_resume as { job_posting?: { title?: string; company?: string } } | null
+    return {
+      ...sm,
+      job_title: resumeData?.job_posting?.title || null,
+      job_company: resumeData?.job_posting?.company || null,
+    }
+  })
 
   // Fetch adapted resumes count to check limit
   const { count: adaptedResumesCount } = await supabase

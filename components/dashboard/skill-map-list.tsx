@@ -6,8 +6,17 @@ import { ArrowRight, Target, Sparkles } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
+interface SkillMapRecord {
+  id: string
+  match_score: number
+  adaptation_score?: number
+  created_at: string
+  job_title?: string | null
+  job_company?: string | null
+}
+
 interface SkillMapListProps {
-  skillMaps: Record<string, unknown>[]
+  skillMaps: SkillMapRecord[]
 }
 
 const getScoreColor = (score: number) => {

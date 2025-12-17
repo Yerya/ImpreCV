@@ -9,12 +9,14 @@ interface AppState {
   paletteLight: PaletteName
   paletteDark: PaletteName
   uiScale: UiScale
+  isInitialLoading: boolean
 }
 
 const initialState: AppState = {
   paletteLight: "blue",
   paletteDark: "emerald",
   uiScale: "medium",
+  isInitialLoading: false,
 }
 
 const appSlice = createSlice({
@@ -44,10 +46,13 @@ const appSlice = createSlice({
         state.uiScale = action.payload
       }
     },
+    setInitialLoading(state, action: PayloadAction<boolean>) {
+      state.isInitialLoading = action.payload
+    },
   },
 })
 
-export const { setPaletteForTheme, hydratePalettes, setUiScale, hydrateUiScale } =
+export const { setPaletteForTheme, hydratePalettes, setUiScale, hydrateUiScale, setInitialLoading } =
   appSlice.actions
 export default appSlice.reducer
 
