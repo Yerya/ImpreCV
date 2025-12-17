@@ -31,7 +31,7 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
             const fitScale = containerWidth / resumeWidth
             setScale(Math.max(MIN_SCALE, Math.min(fitScale, 0.5)))
         }
-        
+
         calculateFitScale()
         window.addEventListener('resize', calculateFitScale)
         return () => window.removeEventListener('resize', calculateFitScale)
@@ -64,9 +64,9 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
         setIsDragging(true)
         setStartPos({ x: e.clientX, y: e.clientY })
         if (containerRef.current) {
-            setStartScroll({ 
-                x: containerRef.current.scrollLeft, 
-                y: containerRef.current.scrollTop 
+            setStartScroll({
+                x: containerRef.current.scrollLeft,
+                y: containerRef.current.scrollTop
             })
         }
         e.preventDefault()
@@ -84,11 +84,18 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
         setIsDragging(false)
     }, [])
 
-    // Handle pinch-to-zoom
+    // Handle pinch-to-zoom with proper focus point
     const lastTouchDistance = useRef<number | null>(null)
+    const pinchCenter = useRef<{ x: number; y: number } | null>(null)
+    const lastScale = useRef<number>(scale)
+
+    // Update lastScale ref when scale changes
+    useEffect(() => {
+        lastScale.current = scale
+    }, [scale])
 
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        if (e.touches.length === 2) {
+        if (e.touches.length === 2 && containerRef.current) {
             e.preventDefault()
             const touch1 = e.touches[0]
             const touch2 = e.touches[1]
@@ -96,27 +103,68 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
                 touch2.clientX - touch1.clientX,
                 touch2.clientY - touch1.clientY
             )
+
+            // Calculate midpoint of pinch in container coordinates
+            const container = containerRef.current
+            const rect = container.getBoundingClientRect()
+            const midX = (touch1.clientX + touch2.clientX) / 2 - rect.left
+            const midY = (touch1.clientY + touch2.clientY) / 2 - rect.top
+
+            // Store the point in content coordinates (accounting for current scroll)
+            pinchCenter.current = {
+                x: midX + container.scrollLeft,
+                y: midY + container.scrollTop
+            }
         }
     }, [])
 
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        if (e.touches.length === 2 && lastTouchDistance.current !== null) {
+        if (e.touches.length === 2 && lastTouchDistance.current !== null && containerRef.current && pinchCenter.current) {
             e.preventDefault()
+            const container = containerRef.current
             const touch1 = e.touches[0]
             const touch2 = e.touches[1]
             const currentDistance = Math.hypot(
                 touch2.clientX - touch1.clientX,
                 touch2.clientY - touch1.clientY
             )
-            const delta = currentDistance - lastTouchDistance.current
-            const scaleChange = delta * 0.003
-            setScale((prev) => Math.max(MIN_SCALE, Math.min(prev + scaleChange, MAX_SCALE)))
+
+            const scaleFactor = currentDistance / lastTouchDistance.current
+            const oldScale = lastScale.current
+            const newScale = Math.max(MIN_SCALE, Math.min(oldScale * scaleFactor, MAX_SCALE))
+
+            if (newScale !== oldScale) {
+                // Calculate how scroll should change to keep pinch point stationary
+                const rect = container.getBoundingClientRect()
+                const midX = (touch1.clientX + touch2.clientX) / 2 - rect.left
+                const midY = (touch1.clientY + touch2.clientY) / 2 - rect.top
+
+                // The pinch center in content space, scaled from old to new
+                const scaleRatio = newScale / oldScale
+                const newScrollX = pinchCenter.current.x * scaleRatio - midX
+                const newScrollY = pinchCenter.current.y * scaleRatio - midY
+
+                // Update pinch center for continuous zooming
+                pinchCenter.current = {
+                    x: newScrollX + midX,
+                    y: newScrollY + midY
+                }
+
+                setScale(newScale)
+                lastScale.current = newScale
+
+                // Apply new scroll position
+                container.scrollLeft = Math.max(0, newScrollX)
+                container.scrollTop = Math.max(0, newScrollY)
+            }
+
             lastTouchDistance.current = currentDistance
         }
     }, [])
 
     const handleTouchEnd = useCallback(() => {
         lastTouchDistance.current = null
+        pinchCenter.current = null
     }, [])
 
     // Calculate scaled dimensions
@@ -177,13 +225,14 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
                 style={{ touchAction: 'none' }}
             >
                 {/* Wrapper for centering */}
-                <div 
+                <div
                     className="flex justify-center items-start p-2"
-                    style={{ 
+                    style={{
                         minWidth: scaledWidth + 16,
+                        minHeight: scaledHeight + 16,
                     }}
                 >
-                    <div 
+                    <div
                         ref={contentRef}
                         style={{
                             transform: `scale(${scale})`,

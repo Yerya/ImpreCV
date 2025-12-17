@@ -23,7 +23,7 @@ export const ResumeActionBar = memo(function ResumeActionBar({
 }: ResumeActionBarProps) {
     if (variant === 'mobile') {
         return (
-            <div className="fixed bottom-16 left-0 right-0 z-30 px-3 py-2 bg-background border-t border-border/50">
+            <div className="fixed bottom-16 left-0 right-0 z-30 px-3 py-2">
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
