@@ -55,24 +55,24 @@ const SkillCard = memo(function SkillCard({ skill }: { skill: Skill }) {
   return (
     <div
       className={cn(
-        "p-4 rounded-lg border border-border/50 bg-background/50 transition-all",
+        "p-3 md:p-4 rounded-lg border border-border/50 bg-background/50 transition-all overflow-hidden",
         hasDetails && "cursor-pointer hover:bg-muted/50"
       )}
       onClick={() => hasDetails && setExpanded(!expanded)}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="font-medium truncate">{skill.name}</span>
-          <Badge variant="outline" className={cn("shrink-0", config.bgColor, config.color)}>
+      <div className="flex items-start md:items-center justify-between gap-2 md:gap-3">
+        <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3 min-w-0 flex-1">
+          <span className="font-medium text-sm md:text-base break-words">{skill.name}</span>
+          <Badge variant="outline" className={cn("shrink-0 w-fit text-xs", config.bgColor, config.color)}>
             {config.label}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {skill.matchPercentage !== undefined && (
-            <span className="text-sm text-muted-foreground">{skill.matchPercentage}%</span>
+            <span className="text-xs md:text-sm text-muted-foreground tabular-nums">{skill.matchPercentage}%</span>
           )}
           {skill.potentialScoreIncrease !== undefined && skill.potentialScoreIncrease > 0 && (
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="secondary" className="gap-1 text-xs hidden md:flex">
               <TrendingUp className="h-3 w-3" />
               +{skill.potentialScoreIncrease}%
             </Badge>
@@ -83,15 +83,15 @@ const SkillCard = memo(function SkillCard({ skill }: { skill: Skill }) {
         </div>
       </div>
       {expanded && hasDetails && (
-        <div className="mt-3 pt-3 border-t border-border/50 space-y-2 text-sm">
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-2 text-xs md:text-sm">
           {skill.resumeEvidence && (
-            <div>
+            <div className="break-words">
               <span className="text-muted-foreground">Your experience: </span>
               <span>{skill.resumeEvidence}</span>
             </div>
           )}
           {skill.jobRequirement && (
-            <div>
+            <div className="break-words">
               <span className="text-muted-foreground">Job requirement: </span>
               <span>{skill.jobRequirement}</span>
             </div>
@@ -107,21 +107,21 @@ const RoadmapCard = memo(function RoadmapCard({ item }: { item: RoadmapItem }) {
 
   return (
     <div
-      className="p-4 rounded-lg border border-border/50 bg-background/50 cursor-pointer hover:bg-muted/50 transition-all"
+      className="p-3 md:p-4 rounded-lg border border-border/50 bg-background/50 cursor-pointer hover:bg-muted/50 transition-all overflow-hidden"
       onClick={() => setExpanded(!expanded)}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <GraduationCap className="h-5 w-5 text-primary" />
+      <div className="flex items-start justify-between gap-2 md:gap-3">
+        <div className="flex items-start gap-2 md:gap-3 min-w-0 flex-1">
+          <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-primary" />
           </div>
-          <div>
-            <h4 className="font-medium">{item.skill}</h4>
-            <p className="text-sm text-muted-foreground line-clamp-1">{item.importance}</p>
+          <div className="min-w-0 flex-1">
+            <h4 className="font-medium text-sm md:text-base break-words">{item.skill}</h4>
+            <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{item.importance}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge variant="secondary" className="gap-1">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          <Badge variant="secondary" className="gap-1 text-xs hidden md:flex">
             <TrendingUp className="h-3 w-3" />
             +{item.potentialScoreIncrease}%
           </Badge>
@@ -129,15 +129,15 @@ const RoadmapCard = memo(function RoadmapCard({ item }: { item: RoadmapItem }) {
         </div>
       </div>
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-border/50">
+        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-border/50">
           <div className="space-y-3">
             <div>
-              <h5 className="text-sm font-medium text-muted-foreground mb-1">Why it matters</h5>
-              <p className="text-sm">{item.importance}</p>
+              <h5 className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Why it matters</h5>
+              <p className="text-xs md:text-sm break-words">{item.importance}</p>
             </div>
             <div>
-              <h5 className="text-sm font-medium text-muted-foreground mb-1">First step</h5>
-              <p className="text-sm">{item.firstStep}</p>
+              <h5 className="text-xs md:text-sm font-medium text-muted-foreground mb-1">First step</h5>
+              <p className="text-xs md:text-sm break-words">{item.firstStep}</p>
             </div>
           </div>
         </div>
@@ -151,30 +151,32 @@ const AdaptationHighlightCard = memo(function AdaptationHighlightCard({ item }: 
 
   return (
     <div
-      className="p-4 rounded-lg border border-border/50 bg-background/50 cursor-pointer hover:bg-muted/50 transition-all"
+      className="p-3 md:p-4 rounded-lg border border-border/50 bg-background/50 cursor-pointer hover:bg-muted/50 transition-all overflow-hidden"
       onClick={() => setExpanded(!expanded)}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      <div className="flex items-start justify-between gap-2 md:gap-3">
+        <div className="flex items-start gap-2 md:gap-3 min-w-0 flex-1">
+          <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <div>
-            <h4 className="font-medium">{item.skill}</h4>
-            <p className="text-sm text-muted-foreground line-clamp-1">{item.improvement}</p>
+          <div className="min-w-0 flex-1">
+            <h4 className="font-medium text-sm md:text-base break-words">{item.skill}</h4>
+            <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{item.improvement}</p>
           </div>
         </div>
-        {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        <div className="shrink-0">
+          {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </div>
       </div>
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-border/50 space-y-3">
+        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-border/50 space-y-3">
           <div>
-            <h5 className="text-sm font-medium text-muted-foreground mb-1">Original presentation</h5>
-            <p className="text-sm bg-muted/50 p-2 rounded">{item.originalPresentation || "Not explicitly mentioned"}</p>
+            <h5 className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Original presentation</h5>
+            <p className="text-xs md:text-sm bg-muted/50 p-2 rounded break-words">{item.originalPresentation || "Not explicitly mentioned"}</p>
           </div>
           <div>
-            <h5 className="text-sm font-medium text-muted-foreground mb-1">Adapted presentation</h5>
-            <p className="text-sm bg-green-500/10 p-2 rounded">{item.adaptedPresentation}</p>
+            <h5 className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Adapted presentation</h5>
+            <p className="text-xs md:text-sm bg-green-500/10 p-2 rounded break-words">{item.adaptedPresentation}</p>
           </div>
         </div>
       )}
@@ -182,7 +184,7 @@ const AdaptationHighlightCard = memo(function AdaptationHighlightCard({ item }: 
   )
 })
 
-export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) {
+export default function SkillMapClient({ skillMap }: SkillMapClientProps) {
   const router = useRouter()
   const data = skillMap.data
 
@@ -199,99 +201,101 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
   }, [data])
 
   return (
-    <div className="min-h-screen relative pb-20">
+    <div className="min-h-screen relative pb-24 md:pb-20">
       <GlobalHeader variant="back" backHref="/resume-editor" backLabel="Back to Editor" />
 
-      <div className="container mx-auto px-4 py-8 relative z-10 max-w-5xl">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 relative z-10 max-w-5xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">
             <span className="gradient-text">Skill Map</span>
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             {skillMap.job_title && `Analysis for ${skillMap.job_title}`}
             {skillMap.job_company && ` at ${skillMap.job_company}`}
           </p>
         </div>
 
         {/* Match Score Card */}
-        <Card className="glass-card p-8 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-4 flex-1">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Target className="h-8 w-8 text-primary" />
+        <Card className="glass-card p-4 md:p-8 mb-4 md:mb-6">
+          <div className="flex flex-col gap-4 md:gap-6">
+            <div className="space-y-3 md:space-y-4 flex-1">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="h-12 w-12 md:h-16 md:w-16 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Target className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <span className={cn("text-5xl font-bold", getScoreColor(data.matchScore))}>
+                    <span className={cn("text-3xl md:text-5xl font-bold", getScoreColor(data.matchScore))}>
                       {data.matchScore}%
                     </span>
-                    <span className="text-lg text-muted-foreground">Match Score</span>
+                    <span className="text-sm md:text-lg text-muted-foreground">Match</span>
                   </div>
-                  <p className={cn("text-sm font-medium", getScoreColor(data.matchScore))}>
+                  <p className={cn("text-xs md:text-sm font-medium", getScoreColor(data.matchScore))}>
                     {getScoreLabel(data.matchScore)}
                   </p>
                 </div>
               </div>
-              <Progress value={data.matchScore} className="h-3" />
-              <p className="text-muted-foreground">{data.summary}</p>
+              <Progress value={data.matchScore} className="h-2 md:h-3" />
+              <p className="text-sm text-muted-foreground">{data.summary}</p>
               
-              {/* Adaptation Score - shows how well the adapted resume presents skills */}
+              {/* Adaptation Score */}
               {data.adaptationScore !== undefined && (
-                <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-border/50">
                   <div className="flex items-center gap-3">
-                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">Adaptation Quality</span>
-                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{data.adaptationScore}%</span>
+                        <span className="text-xs md:text-sm font-medium">Adaptation Quality</span>
+                        <span className="text-xs md:text-sm font-bold text-blue-600 dark:text-blue-400">{data.adaptationScore}%</span>
                       </div>
-                      <Progress value={data.adaptationScore} className="h-2" />
+                      <Progress value={data.adaptationScore} className="h-1.5 md:h-2" />
                     </div>
                   </div>
                   {data.adaptationSummary && (
-                    <p className="text-sm text-muted-foreground mt-2">{data.adaptationSummary}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-2">{data.adaptationSummary}</p>
                   )}
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-3 md:min-w-[200px]">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+            
+            {/* Stats Row - horizontal on mobile, vertical on desktop */}
+            <div className="flex flex-row md:flex-col gap-2 md:gap-3 md:min-w-[200px]">
+              <div className="flex-1 flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 shrink-0" />
                 <div>
-                  <div className="font-semibold text-green-600 dark:text-green-400">{stats.matched}</div>
-                  <div className="text-xs text-muted-foreground">Matched Skills</div>
+                  <div className="font-semibold text-sm md:text-base text-green-600 dark:text-green-400">{stats.matched}</div>
+                  <div className="text-[10px] md:text-xs text-muted-foreground">Matched</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/10">
-                <ArrowRight className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              <div className="flex-1 flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-yellow-500/10">
+                <ArrowRight className="h-4 w-4 md:h-5 md:w-5 text-yellow-600 dark:text-yellow-400 shrink-0" />
                 <div>
-                  <div className="font-semibold text-yellow-600 dark:text-yellow-400">{stats.transferable}</div>
-                  <div className="text-xs text-muted-foreground">Transferable</div>
+                  <div className="font-semibold text-sm md:text-base text-yellow-600 dark:text-yellow-400">{stats.transferable}</div>
+                  <div className="text-[10px] md:text-xs text-muted-foreground">Transfer</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/10">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <div className="flex-1 flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-red-500/10">
+                <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600 dark:text-red-400 shrink-0" />
                 <div>
-                  <div className="font-semibold text-red-600 dark:text-red-400">{stats.missing}</div>
-                  <div className="text-xs text-muted-foreground">Missing Skills</div>
+                  <div className="font-semibold text-sm md:text-base text-red-600 dark:text-red-400">{stats.missing}</div>
+                  <div className="text-[10px] md:text-xs text-muted-foreground">Missing</div>
                 </div>
               </div>
             </div>
           </div>
         </Card>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid gap-4 md:gap-6 md:grid-cols-2">
           {/* Matched Skills */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <Card className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-green-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Matched Skills</h2>
-                <p className="text-sm text-muted-foreground">Skills you already have</p>
+                <h2 className="text-lg md:text-xl font-bold">Matched Skills</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">Skills you already have</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -306,14 +310,14 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
           </Card>
 
           {/* Transferable Skills */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                <ArrowUpRight className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          <Card className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Transferable Skills</h2>
-                <p className="text-sm text-muted-foreground">Related skills you can leverage</p>
+                <h2 className="text-lg md:text-xl font-bold">Transferable Skills</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">Related skills you can leverage</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -328,14 +332,14 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
           </Card>
 
           {/* Missing Skills */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <Card className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-red-500/10 flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Skills to Develop</h2>
-                <p className="text-sm text-muted-foreground">Required skills you&apos;re missing</p>
+                <h2 className="text-lg md:text-xl font-bold">Skills to Develop</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">Required skills you&apos;re missing</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -350,14 +354,14 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
           </Card>
 
           {/* Interview Tips */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Lightbulb className="h-5 w-5 text-primary" />
+          <Card className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-primary/10 flex items-center justify-center">
+                <Lightbulb className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Interview Tips</h2>
-                <p className="text-sm text-muted-foreground">How to present yourself</p>
+                <h2 className="text-lg md:text-xl font-bold">Interview Tips</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">How to present yourself</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -377,29 +381,29 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
 
         {/* Learning Roadmap */}
         {data.learningRoadmap.length > 0 && (
-          <Card className="glass-card p-6 mt-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <GraduationCap className="h-5 w-5 text-primary" />
+          <Card className="glass-card p-4 md:p-6 mt-4 md:mt-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-0 mb-4 md:mb-6">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-primary/10 flex items-center justify-center">
+                  <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Learning Roadmap</h2>
-                  <p className="text-sm text-muted-foreground">Your path to improvement</p>
+                  <h2 className="text-lg md:text-xl font-bold">Learning Roadmap</h2>
+                  <p className="text-xs md:text-sm text-muted-foreground">Your path to improvement</p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Potential score</div>
+              <div className="text-left md:text-right">
+                <div className="text-xs md:text-sm text-muted-foreground">Potential score</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-primary">{potentialMaxScore}%</span>
-                  <Badge variant="secondary" className="gap-1">
+                  <span className="text-xl md:text-2xl font-bold text-primary">{potentialMaxScore}%</span>
+                  <Badge variant="secondary" className="gap-1 text-xs">
                     <TrendingUp className="h-3 w-3" />
                     +{potentialMaxScore - data.matchScore}%
                   </Badge>
                 </div>
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid gap-3 md:gap-4 md:grid-cols-2">
               {data.learningRoadmap.map((item, idx) => (
                 <RoadmapCard key={idx} item={item} />
               ))}
@@ -407,19 +411,19 @@ export default function SkillMapClient({ skillMap, user }: SkillMapClientProps) 
           </Card>
         )}
 
-        {/* Adaptation Highlights - shows how skills were improved in adapted resume */}
+        {/* Adaptation Highlights */}
         {data.adaptationHighlights && data.adaptationHighlights.length > 0 && (
-          <Card className="glass-card p-6 mt-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <Card className="glass-card p-4 md:p-6 mt-4 md:mt-6">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Adaptation Highlights</h2>
-                <p className="text-sm text-muted-foreground">How your resume was improved for this role</p>
+                <h2 className="text-lg md:text-xl font-bold">Adaptation Highlights</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">How your resume was improved</p>
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid gap-3 md:gap-4 md:grid-cols-2">
               {data.adaptationHighlights.map((item, idx) => (
                 <AdaptationHighlightCard key={idx} item={item} />
               ))}

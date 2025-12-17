@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Sparkles, FileText, Settings as SettingsIcon } from "lucide-react"
+import { LayoutDashboard, FileText, Settings as SettingsIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface NavItem {
@@ -14,8 +14,7 @@ interface NavItem {
 
 const ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard, exact: true },
-  { href: "/analysis", label: "Analysis", icon: Sparkles },
-  { href: "/resume-rewrite", label: "Resumes", icon: FileText },
+  { href: "/resume-editor", label: "Editor", icon: FileText },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ]
 

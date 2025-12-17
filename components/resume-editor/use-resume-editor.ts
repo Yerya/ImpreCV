@@ -2,30 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
-import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Download, RefreshCw, Save, Loader2, Trash2 } from "lucide-react"
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
-import { defaultResumeVariant, getVariantById, resumeVariants } from "@/lib/resume-templates/variants"
+import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"
-import { CoverLetterPanel, type CoverLetter } from "./cover-letter-panel"
-import { SkillMapPanel } from "./skill-map-panel"
+import type { CoverLetter } from "@/components/resume-templates/cover-letter-panel"
+import type { SkillMapRecord } from "@/types/skill-map"
 import { generateCoverLetter, generateSkillMap } from "@/lib/api-client"
-import { WebResumeRenderer } from "./web-renderer"
 import {
     clearCoverLetterPending,
     isCoverLetterPending,
 } from "@/lib/cover-letter-context"
-import type { SkillMapRecord } from "@/types/skill-map"
-import { ResumeChatPanel } from "@/components/chat/resume-chat-panel"
+import type { SavedResume, ResumeEditorProps, UseResumeEditorReturn } from "./types"
 
 const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 const EMPTY_RESUME: ResumeData = {
@@ -41,34 +30,13 @@ const EMPTY_RESUME: ResumeData = {
     sections: []
 }
 
-interface SavedResume {
-    id: string | null
-    data: ResumeData
-    variant: ResumeVariantId
-    theme: 'light' | 'dark'
-    pdfUrl?: string | null
-    createdAt?: string | null
-    updatedAt?: string | null
-    fileName?: string | null
-}
-
-interface ResumeEditorProps {
-    initialData: ResumeData
-    initialVariant?: ResumeVariantId
-    initialTheme?: 'light' | 'dark'
-    resumeId?: string | null
-    recentResumes?: SavedResume[]
-    backHref?: string
-}
-
-export function ResumeEditor({
+export function useResumeEditor({
     initialData,
     initialVariant = defaultResumeVariant,
     initialTheme = 'light',
     resumeId = null,
     recentResumes = [],
-    backHref = '/dashboard'
-}: ResumeEditorProps) {
+}: ResumeEditorProps): UseResumeEditorReturn {
     const router = useRouter()
     const [resumeData, setResumeData] = useState<ResumeData>(initialData)
     const [baselineData, setBaselineData] = useState<ResumeData>(initialData)
@@ -110,7 +78,6 @@ export function ResumeEditor({
         })
     }, [])
 
-    const variantMeta = getVariantById(selectedVariant)
     const activeCoverLetters = activeResumeId ? coverLettersByResume[activeResumeId] || [] : []
     const activeSkillMaps = activeResumeId ? skillMapsByResume[activeResumeId] || [] : []
     const activeResumeLabel = useMemo(() => {
@@ -208,6 +175,7 @@ export function ResumeEditor({
         [coverLettersByResume]
     )
 
+    // Load initial state from localStorage
     useEffect(() => {
         if (typeof window === 'undefined') return
 
@@ -251,6 +219,7 @@ export function ResumeEditor({
         }
     }, [])
 
+    // Persist state to localStorage
     useEffect(() => {
         if (typeof window === 'undefined') return
         window.localStorage.setItem(
@@ -259,6 +228,7 @@ export function ResumeEditor({
         )
     }, [resumeData, selectedVariant, themeMode, activeResumeId])
 
+    // Update available resumes when active resume changes
     useEffect(() => {
         if (!activeResumeId) return
         if (availableResumes.some((resume) => resume.id === activeResumeId)) return
@@ -272,13 +242,13 @@ export function ResumeEditor({
         })
     }, [activeResumeId, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
 
+    // Load cover letters when tab changes
     useEffect(() => {
         if (activeTab !== 'cover' || !activeResumeId) {
             setCoverLetterLoading(false)
             return
         }
 
-        // Show loading indicator only when on cover tab
         const hasLoaded = coverLettersByResume[activeResumeId] !== undefined
         if (activeTab === 'cover' && !hasLoaded) {
             setCoverLetterLoading(true)
@@ -286,7 +256,7 @@ export function ResumeEditor({
         }
     }, [activeResumeId, activeTab, coverLettersByResume, loadCoverLetters])
 
-    // Load cover letters in background for chat panel (regardless of active tab)
+    // Load cover letters in background for chat panel
     useEffect(() => {
         if (!activeResumeId) return
         
@@ -296,6 +266,7 @@ export function ResumeEditor({
         }
     }, [activeResumeId, coverLettersByResume, loadCoverLetters])
 
+    // Load skill maps when tab changes
     useEffect(() => {
         if (activeTab !== 'skills' || !activeResumeId) {
             setSkillMapLoading(false)
@@ -309,6 +280,7 @@ export function ResumeEditor({
         }
     }, [activeResumeId, activeTab, skillMapsByResume, loadSkillMaps])
 
+    // Clear errors when resume changes
     useEffect(() => {
         if (!activeResumeId) {
             setCoverLetterError(null)
@@ -345,6 +317,7 @@ export function ResumeEditor({
         [loadCoverLetters, stopCoverLetterPoll]
     )
 
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
             coverLetterRequestRef.current?.abort()
@@ -353,6 +326,7 @@ export function ResumeEditor({
         }
     }, [stopCoverLetterPoll])
 
+    // Handle pending cover letter
     useEffect(() => {
         if (!activeResumeId) {
             stopCoverLetterPoll()
@@ -368,6 +342,7 @@ export function ResumeEditor({
         }
     }, [activeResumeId, loadCoverLetters, startCoverLetterPoll, stopCoverLetterPoll])
 
+    // Clear pending state when cover letters load
     useEffect(() => {
         if (!activeResumeId) return
         if (!activeCoverLetters.length) return
@@ -377,10 +352,11 @@ export function ResumeEditor({
         setGeneratingCoverLetter(false)
         setCoverLetterLoading(false)
     }, [activeCoverLetters.length, activeResumeId, stopCoverLetterPoll])
-    const handleReset = () => {
+
+    const handleReset = useCallback(() => {
         setResumeData(baselineData)
         toast.success('Reset to last saved version')
-    }
+    }, [baselineData])
 
     const handleUpdateCoverLetter = useCallback((id: string, newContent: string) => {
         if (!activeResumeId) return
@@ -396,19 +372,19 @@ export function ResumeEditor({
         toast.success('Cover letter updated')
     }, [activeResumeId])
 
-    const handleReloadCoverLetters = () => {
+    const handleReloadCoverLetters = useCallback(() => {
         if (activeResumeId) {
             loadCoverLetters(activeResumeId, { force: true })
         }
-    }
+    }, [activeResumeId, loadCoverLetters])
 
-    const handleReloadSkillMaps = () => {
+    const handleReloadSkillMaps = useCallback(() => {
         if (activeResumeId) {
             loadSkillMaps(activeResumeId, { force: true })
         }
-    }
+    }, [activeResumeId, loadSkillMaps])
 
-    const handleDeleteSkillMap = async (id: string) => {
+    const handleDeleteSkillMap = useCallback(async (id: string) => {
         if (!activeResumeId || !id) return
         setDeletingSkillMapId(id)
         setSkillMapError(null)
@@ -430,9 +406,9 @@ export function ResumeEditor({
         } finally {
             setDeletingSkillMapId(null)
         }
-    }
+    }, [activeResumeId])
 
-    const handleDeleteCoverLetter = async (id: string) => {
+    const handleDeleteCoverLetter = useCallback(async (id: string) => {
         if (!activeResumeId || !id) return
         setDeletingCoverLetterId(id)
         setCoverLetterError(null)
@@ -454,9 +430,9 @@ export function ResumeEditor({
         } finally {
             setDeletingCoverLetterId(null)
         }
-    }
+    }, [activeResumeId])
 
-    const handleGenerateCoverLetter = async () => {
+    const handleGenerateCoverLetter = useCallback(async () => {
         if (!activeResumeId) {
             toast.error('Save this resume first')
             return
@@ -466,7 +442,6 @@ export function ResumeEditor({
         setCoverLetterError(null)
         setCoverLetterLoading(true)
         try {
-            // Job data is now stored in database, no need to pass from client
             const result = await generateCoverLetter({
                 rewrittenResumeId: activeResumeId,
             })
@@ -498,9 +473,9 @@ export function ResumeEditor({
                 setCoverLetterLoading(false)
             }
         }
-    }
+    }, [activeResumeId, activeCoverLetters.length])
 
-    const handleGenerateSkillMap = async () => {
+    const handleGenerateSkillMap = useCallback(async () => {
         if (!activeResumeId) {
             toast.error('Save this resume first')
             return
@@ -553,17 +528,17 @@ export function ResumeEditor({
                 setSkillMapLoading(false)
             }
         }
-    }
+    }, [activeResumeId, activeSkillMaps.length])
 
-    const handleSelectSaved = (item: SavedResume) => {
+    const handleSelectSaved = useCallback((item: SavedResume) => {
         setActiveResumeId(item.id)
         setResumeData(item.data)
         setBaselineData(item.data)
         setSelectedVariant(item.variant || defaultResumeVariant)
         setThemeMode(item.theme || 'light')
-    }
+    }, [])
 
-    const handleDeleteSaved = async (id: string | null) => {
+    const handleDeleteSaved = useCallback(async (id: string | null) => {
         if (!id) return
         setDeletingId(id)
         try {
@@ -606,9 +581,9 @@ export function ResumeEditor({
         } finally {
             setDeletingId(null)
         }
-    }
+    }, [activeResumeId, availableResumes, router])
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         setSaving(true)
         try {
             const payload = {
@@ -633,14 +608,14 @@ export function ResumeEditor({
 
             const item = (data.item || data) as Record<string, unknown>
             const mapped: SavedResume = {
-                id: item.id || activeResumeId,
+                id: (item.id as string) || activeResumeId,
                 data: resumeData,
-                variant: item.variant || selectedVariant,
-                theme: item.theme || themeMode,
-                pdfUrl: item.pdf_url || item.pdfUrl || null,
-                createdAt: item.created_at || item.createdAt || null,
-                updatedAt: item.updated_at || item.updatedAt || null,
-                fileName: item.file_name || item.fileName || resumeData.personalInfo.name || 'resume'
+                variant: (item.variant as ResumeVariantId) || selectedVariant,
+                theme: (item.theme as 'light' | 'dark') || themeMode,
+                pdfUrl: (item.pdf_url || item.pdfUrl) as string | null || null,
+                createdAt: (item.created_at || item.createdAt) as string | null || null,
+                updatedAt: (item.updated_at || item.updatedAt) as string | null || null,
+                fileName: (item.file_name || item.fileName || resumeData.personalInfo.name || 'resume') as string
             }
 
             if (!mapped.id) {
@@ -657,9 +632,9 @@ export function ResumeEditor({
         } finally {
             setSaving(false)
         }
-    }
+    }, [activeResumeId, resumeData, router, selectedVariant, themeMode, upsertAvailableResume])
 
-    const handleExport = async () => {
+    const handleExport = useCallback(async () => {
         setExporting(true)
         try {
             const response = await fetch('/api/export-resume', {
@@ -740,281 +715,47 @@ export function ResumeEditor({
         } finally {
             setExporting(false)
         }
+    }, [activeResumeId, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
+
+    return {
+        resumeData,
+        setResumeData,
+        baselineData,
+        selectedVariant,
+        setSelectedVariant,
+        themeMode,
+        setThemeMode,
+        activeResumeId,
+        activeResumeLabel,
+        availableResumes,
+        saving,
+        exporting,
+        deletingId,
+        activeCoverLetters,
+        coverLetterLoading,
+        coverLetterError,
+        generatingCoverLetter,
+        deletingCoverLetterId,
+        waitingForCoverLetter,
+        activeSkillMaps,
+        skillMapLoading,
+        skillMapError,
+        generatingSkillMap,
+        deletingSkillMapId,
+        waitingForSkillMap,
+        activeTab,
+        setActiveTab,
+        handleReset,
+        handleSave,
+        handleExport,
+        handleSelectSaved,
+        handleDeleteSaved,
+        handleGenerateCoverLetter,
+        handleDeleteCoverLetter,
+        handleReloadCoverLetters,
+        handleUpdateCoverLetter,
+        handleGenerateSkillMap,
+        handleDeleteSkillMap,
+        handleReloadSkillMaps,
     }
-
-    return (
-        <div className="min-h-screen relative pb-20">
-            <GlobalHeader variant="back" backHref={backHref} backLabel="Back" />
-
-            <div className="container mx-auto px-4 py-8 relative z-10 max-w-7xl">
-                <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
-                    <div>
-                        <h1 className="text-4xl font-bold mb-2 gradient-text">Tailor Your Resume</h1>
-                        <p className="text-muted-foreground max-w-2xl">
-                            Click directly on the resume to edit. What you see is exactly what you export.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleReset}
-                            className="gap-2"
-                        >
-                            <RefreshCw className="h-4 w-4" />
-                            Reset
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="gap-2"
-                        >
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            {saving ? 'Saving...' : 'Save'}
-                        </Button>
-                        <Button size="sm" onClick={handleExport} disabled={exporting} className="gap-2">
-                            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                            {exporting ? 'Exporting...' : 'Export PDF'}
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start justify-items-center xl:justify-items-start">
-                    <div className="w-full">
-                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
-                            <div className="flex items-center justify-between mb-4">
-                                <TabsList>
-                                    <TabsTrigger value="resume">Resume</TabsTrigger>
-                                    <TabsTrigger value="cover" className="flex items-center gap-2">
-                                        Cover Letter
-                                        {activeTab === 'cover' && (coverLetterLoading || waitingForCoverLetter) && (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        )}
-                                    </TabsTrigger>
-                                    <TabsTrigger value="skills" className="flex items-center gap-2">
-                                        Skill Map
-                                        {activeTab === 'skills' && (skillMapLoading || waitingForSkillMap) && (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        )}
-                                    </TabsTrigger>
-                                </TabsList>
-                                {activeTab === 'cover' && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={handleReloadCoverLetters}
-                                        disabled={!activeResumeId || coverLetterLoading || waitingForCoverLetter}
-                                    >
-                                        {coverLetterLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <RefreshCw className="h-4 w-4" />
-                                        )}
-                                        Refresh
-                                    </Button>
-                                )}
-                                {activeTab === 'skills' && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={handleReloadSkillMaps}
-                                        disabled={!activeResumeId || skillMapLoading || waitingForSkillMap}
-                                    >
-                                        {skillMapLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <RefreshCw className="h-4 w-4" />
-                                        )}
-                                        Refresh
-                                    </Button>
-                                )}
-                            </div>
-
-                            <TabsContent value="resume">
-                                <Card
-                                    className="glass-card p-4 md:p-6 overflow-auto"
-                                    style={{ maxWidth: 'calc(210mm + 3rem)', minWidth: 'calc(210mm + 3rem)' }}
-                                >
-                                    <div className="w-full flex justify-center">
-                                        <WebResumeRenderer
-                                            data={resumeData}
-                                            variant={selectedVariant}
-                                            onUpdate={setResumeData}
-                                            themeMode={themeMode}
-                                            onThemeModeChange={setThemeMode}
-                                        />
-                                    </div>
-                                </Card>
-                            </TabsContent>
-
-                            <TabsContent value="cover">
-                                <CoverLetterPanel
-                                    activeResumeId={activeResumeId}
-                                    resumeName={activeResumeLabel}
-                                    coverLetters={activeCoverLetters}
-                                    loading={coverLetterLoading}
-                                    forceLoading={waitingForCoverLetter}
-                                    error={coverLetterError}
-                                    onReload={handleReloadCoverLetters}
-                                    onDelete={handleDeleteCoverLetter}
-                                    deletingId={deletingCoverLetterId}
-                                    generating={generatingCoverLetter}
-                                    onGenerate={handleGenerateCoverLetter}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="skills">
-                                <SkillMapPanel
-                                    activeResumeId={activeResumeId}
-                                    resumeName={activeResumeLabel}
-                                    skillMaps={activeSkillMaps}
-                                    loading={skillMapLoading}
-                                    forceLoading={waitingForSkillMap}
-                                    error={skillMapError}
-                                    onReload={handleReloadSkillMaps}
-                                    onDelete={handleDeleteSkillMap}
-                                    deletingId={deletingSkillMapId}
-                                    generating={generatingSkillMap}
-                                    onGenerate={handleGenerateSkillMap}
-                                />
-                            </TabsContent>
-                        </Tabs>
-                    </div>
-
-                    <div className="space-y-6">
-                        <Card className="glass-card p-5 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-semibold">Recent resumes</p>
-                                    <p className="text-sm text-muted-foreground">Pick a version to edit or export.</p>
-                                </div>
-                                <Badge className="bg-primary/10 text-primary border-primary/20" variant="outline">
-                                    {availableResumes.length}/3
-                                </Badge>
-                            </div>
-                            {availableResumes.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">Your generated resumes will appear here after analysis.</p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {availableResumes.map((resume) => {
-                                        const timestamp = resume.updatedAt || resume.createdAt
-                                        const isActive = resume.id === activeResumeId
-                                        const label = resume.fileName || resume.data.personalInfo.name || 'Resume'
-                                        const timestampDate = timestamp ? new Date(timestamp) : null
-                                        const relativeTime =
-                                            timestampDate && !Number.isNaN(timestampDate.getTime())
-                                                ? `Updated ${formatDistanceToNow(timestampDate, { addSuffix: true })}`
-                                                : 'Recently saved'
-
-                                        return (
-                                            <div
-                                                key={resume.id || label}
-                                                className={cn(
-                                                    'w-full rounded-xl border p-3 transition-all duration-200',
-                                                    isActive
-                                                        ? 'border-primary shadow-lg shadow-primary/10 bg-primary/5'
-                                                        : 'border-border/60 hover:border-primary/50'
-                                                )}
-                                            >
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSelectSaved(resume)}
-                                                        className="text-left flex-1 min-w-0"
-                                                    >
-                                                        <p className="text-sm font-semibold truncate">{label}</p>
-                                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                                            {relativeTime}
-                                                        </p>
-                                                    </button>
-                                                    <div className="flex items-center gap-2">
-                                                        {resume.pdfUrl && (
-                                                            <Badge variant="outline" className="text-[10px]">
-                                                                PDF
-                                                            </Badge>
-                                                        )}
-                                                        {resume.id && (
-                                                            <Button
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                className="h-8 w-8"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    handleDeleteSaved(resume.id)
-                                                                }}
-                                                                disabled={deletingId === resume.id}
-                                                            >
-                                                                {deletingId === resume.id ? (
-                                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                                ) : (
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                )}
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </Card>
-
-                        <Card className="glass-card p-5 space-y-4 sticky top-24">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-semibold">Choose a look</p>
-                                    <p className="text-sm text-muted-foreground">Switch styles instantly.</p>
-                                </div>
-                                <Badge className="bg-primary/10 text-primary border-primary/20" variant="outline">
-                                    {variantMeta.badge}
-                                </Badge>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3">
-                                {resumeVariants.map((variant) => (
-                                    <button
-                                        key={variant.id}
-                                        type="button"
-                                        onClick={() => setSelectedVariant(variant.id)}
-                                        className={cn(
-                                            'rounded-xl border text-left p-3 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-                                            'bg-gradient-to-br text-white shadow-sm',
-                                            variant.accentFrom,
-                                            variant.accentTo,
-                                            selectedVariant === variant.id
-                                                ? 'border-primary shadow-lg shadow-primary/20'
-                                                : 'border-border/40 hover:border-primary/50'
-                                        )}
-                                    >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-sm font-semibold">{variant.name}</span>
-                                            {selectedVariant === variant.id && (
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 text-white">
-                                                    Active
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs mt-1.5 opacity-80 leading-snug text-white/90">{variant.tagline}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </Card>
-                    </div>
-                </div>
-            </div>
-
-            <ResumeChatPanel
-                resumeData={resumeData}
-                resumeId={activeResumeId}
-                onApplyModifications={setResumeData}
-                onResetToBaseline={handleReset}
-            />
-
-            <MobileBottomNav />
-        </div>
-    )
 }

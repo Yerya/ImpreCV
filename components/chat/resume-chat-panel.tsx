@@ -393,14 +393,15 @@ export function ResumeChatPanel({
             <Button
                 onClick={() => setIsOpen(true)}
                 className={cn(
-                    "fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full shadow-lg",
+                    "fixed z-40 h-12 w-12 md:h-14 md:w-14 rounded-full shadow-lg",
+                    "bottom-32 right-4 md:bottom-24 md:right-6",
                     "bg-primary hover:bg-primary/90 text-primary-foreground",
                     "transition-transform hover:scale-105",
                     className
                 )}
                 size="icon"
             >
-                <MessageSquare className="h-6 w-6" />
+                <MessageSquare className="h-5 w-5 md:h-6 md:w-6" />
             </Button>
         )
     }
@@ -408,23 +409,25 @@ export function ResumeChatPanel({
     return (
         <div
             className={cn(
-                "fixed bottom-24 right-6 z-40 w-[380px] max-w-[calc(100vw-3rem)]",
-                "rounded-2xl shadow-2xl overflow-hidden",
-                "flex flex-col h-[500px] max-h-[70vh]",
-                "bg-background/80 backdrop-blur-xl backdrop-saturate-125",
+                "fixed z-40 rounded-2xl shadow-2xl overflow-hidden",
+                "flex flex-col bg-background/80 backdrop-blur-xl backdrop-saturate-125",
                 "border border-border/50",
+                // Mobile: full width, bottom sheet style
+                "inset-x-3 bottom-32 h-[60vh] max-h-[500px]",
+                // Desktop: fixed width, positioned right
+                "md:inset-x-auto md:bottom-24 md:right-6 md:w-[380px] md:h-[500px] md:max-h-[70vh]",
                 className
             )}
         >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border/30 bg-background/50">
+            <div className="flex items-center justify-between p-3 md:p-4 border-b border-border/30 bg-background/50">
                 <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-4 w-4 text-primary" />
+                    <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
                     </div>
                     <div>
                         <h3 className="text-sm font-semibold">AI Assistant</h3>
-                        <p className="text-xs text-muted-foreground">Edit with commands</p>
+                        <p className="text-[11px] md:text-xs text-muted-foreground">Edit with commands</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -511,7 +514,7 @@ export function ResumeChatPanel({
             {/* Input */}
             <form
                 onSubmit={handleSubmit}
-                className="p-3 border-t border-border/30 bg-background/50"
+                className="p-2 md:p-3 border-t border-border/30 bg-background/50"
             >
                 <div className="flex items-center gap-2">
                     <div className="flex-1 relative">
@@ -524,22 +527,22 @@ export function ResumeChatPanel({
                             rows={1}
                             maxLength={MAX_MESSAGE_CHARS + 50}
                             className={cn(
-                                "w-full resize-none rounded-xl border-0 bg-secondary/50 px-4 py-2.5 pr-16",
+                                "w-full resize-none rounded-xl border-0 bg-secondary/50 px-3 md:px-4 py-2 md:py-2.5 pr-12 md:pr-16",
                                 "text-sm placeholder:text-muted-foreground leading-5",
                                 "focus:outline-none focus:ring-2 focus:ring-primary/30",
-                                "h-10",
+                                "h-9 md:h-10",
                                 isOverLimit && "ring-2 ring-destructive/50"
                             )}
                             disabled={isLoading}
                         />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2">
                             <CharacterCounter current={charCount} max={MAX_MESSAGE_CHARS} />
                         </div>
                     </div>
                     <Button
                         type="submit"
                         size="icon"
-                        className="h-10 w-10 rounded-xl flex-shrink-0"
+                        className="h-9 w-9 md:h-10 md:w-10 rounded-xl flex-shrink-0"
                         disabled={!inputValue.trim() || isLoading || isOverLimit}
                     >
                         {isLoading ? (

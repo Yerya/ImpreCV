@@ -57,29 +57,24 @@ export function SkillMapPanel({
                     {activeResumeId ? `Analysis for ${resumeName}` : 'Save your adapted resume to view skill analysis.'}
                 </p>
             </div>
-            <div className="flex items-center gap-2">
-                {(forceLoading || loading) && activeResumeId && (
-                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Loading</span>
-                    </div>
-                )}
-                {skillMaps.length > 0 && (
-                    <Badge variant="outline" className="text-[11px]">
-                        {skillMaps.length} saved
-                    </Badge>
-                )}
-            </div>
+            {skillMaps.length > 0 && !forceLoading && !loading && (
+                <Badge variant="outline" className="text-[11px]">
+                    {skillMaps.length} saved
+                </Badge>
+            )}
         </div>
     )
 
     const renderLoader = () => (
-        <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading skill analysis...</span>
+        <div className="space-y-4 py-8">
+            <div className="flex flex-col items-center justify-center gap-3 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div>
+                    <p className="text-sm font-medium">Loading Skill Analysis</p>
+                    <p className="text-xs text-muted-foreground mt-1">Analyzing your skills and job requirements...</p>
+                </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3 mt-6">
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-4 w-2/3" />
                 <Skeleton className="h-3 w-full" />
@@ -253,8 +248,7 @@ export function SkillMapPanel({
 
     return (
         <Card
-            className="glass-card p-4 md:p-6 overflow-auto"
-            style={{ maxWidth: 'calc(210mm + 3rem)', minWidth: 'calc(210mm + 3rem)' }}
+            className="glass-card p-4 md:p-6 overflow-auto w-full md:max-w-[calc(210mm+3rem)] md:min-w-[calc(210mm+3rem)]"
         >
             {renderHeader()}
 

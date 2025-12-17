@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation"
-import { ResumeEditor } from "@/components/resume-templates/resume-editor"
+import { ResumeEditor, type SavedResume } from "@/components/resume-editor"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { defaultResumeVariant } from "@/lib/resume-templates/variants"
-import type { ResumeVariantId } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { GlobalHeader } from "@/components/global-header"
@@ -18,29 +17,18 @@ interface PageProps {
     searchParams?: Promise<{ id?: string }> | { id?: string }
 }
 
-interface SavedResume {
-    id: string | null
-    data: ResumeData
-    variant: ResumeVariantId
-    theme: 'light' | 'dark'
-    pdfUrl?: string | null
-    createdAt?: string | null
-    updatedAt?: string | null
-    fileName?: string | null
-}
-
 const mapRowToResume = (row: Record<string, unknown>): SavedResume => {
     const data = (row?.structured_data as ResumeData) || parseMarkdownToResumeData((row?.content as string) || "")
 
     return {
-        id: row?.id || null,
+        id: (row?.id as string) || null,
         data,
-        variant: row?.variant || defaultResumeVariant,
+        variant: (row?.variant as SavedResume['variant']) || defaultResumeVariant,
         theme: row?.theme === 'dark' ? 'dark' : 'light',
-        pdfUrl: row?.pdf_url || null,
-        createdAt: row?.created_at || null,
-        updatedAt: row?.updated_at || null,
-        fileName: row?.file_name || data?.personalInfo?.name || "resume"
+        pdfUrl: (row?.pdf_url as string) || null,
+        createdAt: (row?.created_at as string) || null,
+        updatedAt: (row?.updated_at as string) || null,
+        fileName: (row?.file_name as string) || data?.personalInfo?.name || "resume"
     }
 }
 

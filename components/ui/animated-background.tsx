@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { usePageLoading } from "@/hooks/use-page-loading"
 
 interface AnimatedBackgroundProps {
@@ -8,14 +8,24 @@ interface AnimatedBackgroundProps {
   intensity?: number
 }
 
+const MOBILE_BREAKPOINT = 768
+
 export function AnimatedBackground({ className = "", intensity = 0.15 }: AnimatedBackgroundProps) {
   const ref = useRef<HTMLDivElement | null>(null)
   const { isInitialLoading } = usePageLoading()
   const [mounted, setMounted] = useState(false)
   const [shouldRender, setShouldRender] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  const checkMobile = useCallback(() => {
+    return window.innerWidth < MOBILE_BREAKPOINT
+  }, [])
 
   useEffect(() => {
     setMounted(true)
+    const mobile = checkMobile()
+    setIsMobile(mobile)
+
     let rafId = 0
     let pending = false
     let lastX = 50
@@ -31,6 +41,7 @@ export function AnimatedBackground({ className = "", intensity = 0.15 }: Animate
     }
 
     const onPointerMove = (e: PointerEvent) => {
+      if (checkMobile()) return
       const x = (e.clientX / window.innerWidth) * 100
       const y = (e.clientY / window.innerHeight) * 100
       lastX = x
@@ -42,10 +53,23 @@ export function AnimatedBackground({ className = "", intensity = 0.15 }: Animate
       }
     }
 
-    window.addEventListener("pointermove", onPointerMove, { passive: true })
+    const onResize = () => {
+      const nowMobile = checkMobile()
+      setIsMobile(nowMobile)
+      if (nowMobile) {
+        lastX = 50
+        lastY = 50
+        apply()
+      }
+    }
+
+    if (!mobile) {
+      window.addEventListener("pointermove", onPointerMove, { passive: true })
+    }
+    window.addEventListener("resize", onResize, { passive: true })
 
     const delayTimer = window.setTimeout(() => {
-      if (!mouseMoved) {
+      if (!mouseMoved || mobile) {
         lastX = 50
         lastY = 50
         apply()
@@ -55,10 +79,11 @@ export function AnimatedBackground({ className = "", intensity = 0.15 }: Animate
 
     return () => {
       window.removeEventListener("pointermove", onPointerMove)
+      window.removeEventListener("resize", onResize)
       window.cancelAnimationFrame(rafId)
       window.clearTimeout(delayTimer)
     }
-  }, [])
+  }, [checkMobile])
 
   if (!mounted || isInitialLoading || !shouldRender) return null
 
