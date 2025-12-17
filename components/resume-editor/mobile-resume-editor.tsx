@@ -73,17 +73,17 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
     } = editor
 
     return (
-        <div className="fixed inset-0 flex flex-col">
+        <div className="min-h-screen flex flex-col pb-20">
             <GlobalHeader variant="back" backHref={backHref} backLabel="Back" />
 
-            <div className="px-4 pt-3 pb-2 flex-shrink-0">
+            <div className="px-4 pt-3 pb-2">
                 <h1 className="text-xl font-bold gradient-text">Edit Resume</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">
                     {mobileView === 'preview' ? 'Pinch to zoom, drag to pan' : 'Edit your resume sections'}
                 </p>
             </div>
 
-            <div className="px-4 pb-2 flex-shrink-0">
+            <div className="px-4 pb-2">
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
                     <TabsList className="w-full grid grid-cols-3">
                         <TabsTrigger value="resume" className="text-xs">Resume</TabsTrigger>
@@ -94,7 +94,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
             </div>
 
             {activeTab === 'resume' && (
-                <div className="px-4 pb-2 flex items-center gap-2 flex-shrink-0">
+                <div className="px-4 pb-2 flex items-center gap-2">
                     <div className="flex-1 flex rounded-lg border border-border/50 p-1 bg-muted/30">
                         <button
                             type="button"
@@ -142,10 +142,10 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 </div>
             )}
 
-            <div className="flex-1 min-h-0 overflow-hidden pb-28">
+            <div className="flex-1 px-4 pb-4">
                 {activeTab === 'resume' ? (
                     mobileView === 'preview' ? (
-                        <MobileResumeViewer className="h-full">
+                        <MobileResumeViewer className="min-h-[60vh]">
                             <WebResumeRenderer
                                 data={resumeData}
                                 variant={selectedVariant}
@@ -156,45 +156,39 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                             />
                         </MobileResumeViewer>
                     ) : (
-                        <div className="h-full overflow-auto px-4 pb-4">
-                            <MobileResumeForm
-                                data={resumeData}
-                                onUpdate={setResumeData}
-                            />
-                        </div>
+                        <MobileResumeForm
+                            data={resumeData}
+                            onUpdate={setResumeData}
+                        />
                     )
                 ) : activeTab === 'cover' ? (
-                    <div className="h-full overflow-auto px-4 pb-4">
-                        <CoverLetterPanel
-                            activeResumeId={activeResumeId}
-                            resumeName={activeResumeLabel}
-                            coverLetters={activeCoverLetters}
-                            loading={coverLetterLoading}
-                            forceLoading={waitingForCoverLetter}
-                            error={coverLetterError}
-                            onReload={handleReloadCoverLetters}
-                            onDelete={handleDeleteCoverLetter}
-                            deletingId={deletingCoverLetterId}
-                            generating={generatingCoverLetter}
-                            onGenerate={handleGenerateCoverLetter}
-                        />
-                    </div>
+                    <CoverLetterPanel
+                        activeResumeId={activeResumeId}
+                        resumeName={activeResumeLabel}
+                        coverLetters={activeCoverLetters}
+                        loading={coverLetterLoading}
+                        forceLoading={waitingForCoverLetter}
+                        error={coverLetterError}
+                        onReload={handleReloadCoverLetters}
+                        onDelete={handleDeleteCoverLetter}
+                        deletingId={deletingCoverLetterId}
+                        generating={generatingCoverLetter}
+                        onGenerate={handleGenerateCoverLetter}
+                    />
                 ) : (
-                    <div className="h-full overflow-auto px-4 pb-4">
-                        <SkillMapPanel
-                            activeResumeId={activeResumeId}
-                            resumeName={activeResumeLabel}
-                            skillMaps={activeSkillMaps}
-                            loading={skillMapLoading}
-                            forceLoading={waitingForSkillMap}
-                            error={skillMapError}
-                            onReload={handleReloadSkillMaps}
-                            onDelete={handleDeleteSkillMap}
-                            deletingId={deletingSkillMapId}
-                            generating={generatingSkillMap}
-                            onGenerate={handleGenerateSkillMap}
-                        />
-                    </div>
+                    <SkillMapPanel
+                        activeResumeId={activeResumeId}
+                        resumeName={activeResumeLabel}
+                        skillMaps={activeSkillMaps}
+                        loading={skillMapLoading}
+                        forceLoading={waitingForSkillMap}
+                        error={skillMapError}
+                        onReload={handleReloadSkillMaps}
+                        onDelete={handleDeleteSkillMap}
+                        deletingId={deletingSkillMapId}
+                        generating={generatingSkillMap}
+                        onGenerate={handleGenerateSkillMap}
+                    />
                 )}
             </div>
 

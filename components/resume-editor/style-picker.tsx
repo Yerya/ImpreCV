@@ -1,10 +1,9 @@
 "use client"
 
 import { memo } from "react"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { resumeVariants, getVariantById } from "@/lib/resume-templates/variants"
+import { resumeVariants } from "@/lib/resume-templates/variants"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"
 
 interface StylePickerProps {
@@ -18,8 +17,6 @@ export const StylePicker = memo(function StylePicker({
     onSelect,
     variant = 'desktop'
 }: StylePickerProps) {
-    const variantMeta = getVariantById(selectedVariant)
-
     if (variant === 'mobile') {
         return (
             <div className="space-y-3">
@@ -52,17 +49,7 @@ export const StylePicker = memo(function StylePicker({
     }
 
     return (
-        <Card className="glass-card p-5 space-y-4 sticky top-24">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-semibold">Choose a look</p>
-                    <p className="text-sm text-muted-foreground">Switch styles instantly.</p>
-                </div>
-                <Badge className="bg-primary/10 text-primary border-primary/20" variant="outline">
-                    {variantMeta.badge}
-                </Badge>
-            </div>
-
+        <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
                 {resumeVariants.map((v) => (
                     <button
@@ -91,6 +78,6 @@ export const StylePicker = memo(function StylePicker({
                     </button>
                 ))}
             </div>
-        </Card>
+        </div>
     )
 })
