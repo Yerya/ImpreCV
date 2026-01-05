@@ -335,13 +335,13 @@
 .glass-card-primary {
     background: linear-gradient(
         135deg,
-        color-mix(in oklch, var(--gradient-1) 18%, transparent) 0%,
-        color-mix(in oklch, var(--gradient-2) 14%, transparent) 50%,
-        color-mix(in oklch, var(--gradient-3) 20%, transparent) 100%
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.18) 0%,
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.12) 50%,
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.08) 100%
     );
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid color-mix(in oklch, var(--gradient-2) 30%, transparent);
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.3);
     box-shadow: 
         0 4px 6px -1px rgba(0, 0, 0, 0.08),
         0 2px 4px -1px rgba(0, 0, 0, 0.04),
@@ -352,11 +352,11 @@
 .dark .glass-card-primary {
     background: linear-gradient(
         135deg,
-        color-mix(in oklch, var(--gradient-1) 22%, transparent) 0%,
-        color-mix(in oklch, var(--gradient-2) 16%, transparent) 50%,
-        color-mix(in oklch, var(--gradient-3) 24%, transparent) 100%
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.22) 0%,
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.14) 50%,
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.10) 100%
     );
-    border-color: color-mix(in oklch, var(--gradient-2) 40%, transparent);
+    border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
     box-shadow: 
         0 4px 6px -1px rgba(0, 0, 0, 0.25),
         0 2px 4px -1px rgba(0, 0, 0, 0.15),

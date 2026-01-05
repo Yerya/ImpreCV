@@ -110,7 +110,7 @@ export function FeaturesCarousel() {
                     <div className="relative z-10">
                       <div 
                         className={cn(
-                          "h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-all duration-500",
+                          "h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-opacity duration-500",
                           isActive 
                             ? "bg-primary/20" 
                             : "bg-primary/10"
@@ -118,14 +118,14 @@ export function FeaturesCarousel() {
                       >
                         <Icon 
                           className={cn(
-                            "h-6 w-6 transition-all duration-500",
+                            "h-6 w-6",
                             isActive ? "text-primary" : "text-primary/70"
                           )} 
                         />
                       </div>
                       <h3 
                         className={cn(
-                          "text-xl font-semibold mb-2 transition-colors duration-500",
+                          "text-xl font-semibold mb-2",
                           isActive ? "text-foreground" : "text-foreground/80"
                         )}
                       >
@@ -133,7 +133,7 @@ export function FeaturesCarousel() {
                       </h3>
                       <p 
                         className={cn(
-                          "text-sm leading-relaxed transition-colors duration-500",
+                          "text-sm leading-relaxed",
                           isActive ? "text-muted-foreground" : "text-muted-foreground/70"
                         )}
                       >
