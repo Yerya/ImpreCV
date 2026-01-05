@@ -15,7 +15,7 @@ import {
     clearCoverLetterPending,
     isCoverLetterPending,
 } from "@/lib/cover-letter-context"
-import type { SavedResume, ResumeEditorProps, UseResumeEditorReturn } from "./types"
+import type { SavedResume, ResumeEditorProps, UseResumeEditorReturn, ResumeMode } from "./types"
 
 const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 const EMPTY_RESUME: ResumeData = {
@@ -48,7 +48,7 @@ export function useResumeEditor({
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(initialTheme)
     const [activeResumeId, setActiveResumeId] = useState<string | null>(resumeId)
-    const [activeResumeMode, setActiveResumeMode] = useState<ResumeEditorProps['initialMode']>(initialMode)
+    const [activeResumeMode, setActiveResumeMode] = useState<ResumeMode | null>(initialMode ?? null)
     const [activeTab, setActiveTab] = useState<'resume' | 'cover' | 'skills'>('resume')
     const [coverLettersByResume, setCoverLettersByResume] = useState<Record<string, CoverLetter[]>>({})
     const [coverLetterLoading, setCoverLetterLoading] = useState(false)
