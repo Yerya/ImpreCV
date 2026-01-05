@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, ArrowRight, CheckCircle2, Sparkles, Target } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles, Target, ChevronLeft } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -13,11 +13,24 @@ import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
 import SkillMapList from "./skill-map-list"
-import { analyzeResume, generateCoverLetter, type GenerateCoverLetterResult } from "@/lib/api-client"
+import { WorkflowSelector, WorkflowHeader, InlineModePicker, type WorkflowMode } from "./workflow-selector"
+import { CreateResumeForm } from "./create-resume-form"
+import { ImproveResumeForm } from "./improve-resume-form"
+import { 
+  analyzeResume, 
+  generateCoverLetter, 
+  improveResume,
+  createResumeFromScratch,
+  type GenerateCoverLetterResult,
+  type CreateResumePayload,
+  type ImproveResumePayload,
+} from "@/lib/api-client"
+import { DashboardSkeleton } from "./dashboard-skeleton"
 import { markCoverLetterPending, clearCoverLetterPending } from "@/lib/cover-letter-context"
 import { toast } from "sonner"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { normalizeJobLink } from "@/lib/job-posting"
+import { MAX_RESUMES_PER_USER } from "@/lib/constants"
 
 interface UserData {
   id: string
@@ -57,14 +70,24 @@ export default function DashboardClient({
 }: DashboardClientProps) {
   const authUser = useAppSelector((s) => s.auth.user)
   const router = useRouter()
+  
+  // Workflow mode state
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("adapt")
+  const [showModeSelector, setShowModeSelector] = useState<boolean | null>(null) // null = not hydrated yet
+  
+  // Resume state
   const [resumes, setResumes] = useState(initialResumes)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
   const [resumeText, setResumeText] = useState("")
+  
+  // Job posting state (for adapt mode)
   const [jobPosting, setJobPosting] = useState({
     description: "",
     jobLink: "",
     inputType: "paste" as "paste" | "link",
   })
+  
+  // UI state
   const [analyzing, setAnalyzing] = useState(false)
   const [inputError, setInputError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -83,6 +106,16 @@ export default function DashboardClient({
     const storedCoverLetterPref = window.localStorage.getItem("cvify:shouldGenerateCoverLetter")
     if (storedCoverLetterPref) {
       setShouldGenerateCoverLetter(storedCoverLetterPref === "true")
+    }
+    // Restore workflow mode and determine if we should show mode selector
+    const storedMode = window.localStorage.getItem("cvify:workflowMode") as WorkflowMode | null
+    if (storedMode && ["adapt", "improve", "create"].includes(storedMode)) {
+      setWorkflowMode(storedMode)
+      // User has previously selected a mode - skip selector
+      setShowModeSelector(false)
+    } else {
+      // First time user - show mode selector
+      setShowModeSelector(true)
     }
   }, [])
 
@@ -107,6 +140,40 @@ export default function DashboardClient({
     }
   }
 
+  // Select mode only (for WorkflowSelector cards)
+  const handleModeSelect = (mode: WorkflowMode) => {
+    setWorkflowMode(mode)
+    setInputError(null)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cvify:workflowMode", mode)
+    }
+  }
+
+  // Change mode and proceed (for InlineModePicker dropdown)
+  const handleModeChange = (mode: WorkflowMode) => {
+    setWorkflowMode(mode)
+    setShowModeSelector(false)
+    setInputError(null)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cvify:workflowMode", mode)
+    }
+  }
+
+  // Continue to workflow steps
+  const handleContinue = () => {
+    setShowModeSelector(false)
+    setInputError(null)
+  }
+
+  const handleBackToModeSelector = () => {
+    setShowModeSelector(true)
+    setInputError(null)
+  }
+
+  // Show skeleton while hydrating from localStorage
+  if (showModeSelector === null) {
+    return <DashboardSkeleton />
+  }
 
   const handleResumeUploaded = (newResume: ResumeRecord) => {
     setInputError(null)
@@ -144,7 +211,7 @@ export default function DashboardClient({
     setResumeText(text)
     clearRequestKey()
     if (text) {
-      setSelectedResumeId(null) // Clear selected file if typing text
+      setSelectedResumeId(null)
     }
   }
 
@@ -161,8 +228,6 @@ export default function DashboardClient({
   }
 
   const notifyCoverLetterResult = async (result: GenerateCoverLetterResult | null) => {
-    console.log("[Cover Letter] notifyCoverLetterResult called with:", result)
-
     if (!result) return
 
     if (result.warning) {
@@ -170,7 +235,6 @@ export default function DashboardClient({
     }
 
     if (result.id) {
-      console.log("[Cover Letter] Cover letter saved with ID:", result.id)
       toast.success("Cover letter generated and saved", {
         description: "Click to open and review.",
         action: {
@@ -181,7 +245,6 @@ export default function DashboardClient({
       return
     }
 
-    console.log("[Cover Letter] No ID, attempting to copy to clipboard")
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(result.content)
@@ -196,14 +259,6 @@ export default function DashboardClient({
 
     toast.success("Cover letter generated", {
       description: "Copy it before leaving this page.",
-      action: {
-        label: "Copy",
-        onClick: () => {
-          if (typeof navigator !== "undefined" && navigator.clipboard) {
-            navigator.clipboard.writeText(result.content)
-          }
-        },
-      },
     })
   }
 
@@ -215,6 +270,7 @@ export default function DashboardClient({
     return `${resumeKey}|${jobKey}`
   }
 
+  // Handler for Adapt to Job mode
   const handleAnalyze = async () => {
     const hasJobInfo =
       jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
@@ -225,7 +281,6 @@ export default function DashboardClient({
       return
     }
 
-    // Allow analysis if we have resume text OR a selected resume ID
     const hasResume = selectedResumeId || resumeText.trim().length > 0
 
     if (!hasResume || !hasJobInfo) {
@@ -272,8 +327,6 @@ export default function DashboardClient({
 
       const result = await analyzeResume(analyzePayload)
 
-      // Generate cover letter AFTER resume adaptation using adapted content
-      // Job data is now stored in database, so cover letter API will get it from there
       if (shouldGenerateCoverLetter && (selectedResumeId || usingResumeText)) {
         const coverLetterPayload = {
           rewrittenResumeId: result.id,
@@ -304,13 +357,9 @@ export default function DashboardClient({
       router.push(`/resume-editor?id=${result.id}`)
     } catch (error: unknown) {
       const err = error as Error
-      const rawMessage =
-        err && typeof err.message === "string"
-          ? err.message
-          : "Failed to analyze. Please try again."
+      const rawMessage = err && typeof err.message === "string" ? err.message : "Failed to analyze. Please try again."
 
       if (rawMessage.includes("keep up to 3 adapted resumes")) {
-        console.info("Analysis limit reached:", rawMessage)
         setInputError(null)
         toast.error("Resume limit reached", {
           description: "You can keep up to 3 adapted resumes. Please delete one from the Resume Editor.",
@@ -320,7 +369,6 @@ export default function DashboardClient({
           },
         })
       } else if (rawMessage.includes("wait a few minutes")) {
-        console.info("Rate limit for re-adaptation:", rawMessage)
         setInputError(null)
         toast.error("Please wait", {
           description: "You can re-adapt the same resume for this job in a few minutes.",
@@ -335,13 +383,82 @@ export default function DashboardClient({
     }
   }
 
+  // Handler for Improve Resume mode
+  const handleImproveResume = async (payload: ImproveResumePayload) => {
+    setAnalyzing(true)
+    setInputError(null)
+    
+    try {
+      const result = await improveResume(payload)
+      
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
+      }
+      
+      toast.success("Resume improved successfully!")
+      router.push(`/resume-editor?id=${result.id}`)
+    } catch (error: unknown) {
+      const err = error as Error
+      const message = err?.message || "Failed to improve resume. Please try again."
+      
+      if (message.includes("keep up to 3")) {
+        toast.error("Resume limit reached", {
+          description: "You can keep up to 3 resumes. Please delete one from the Resume Editor.",
+          action: {
+            label: "Open Editor",
+            onClick: () => router.push("/resume-editor"),
+          },
+        })
+      } else {
+        setInputError(message)
+        toast.error(message)
+      }
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  // Handler for Create from Scratch mode
+  const handleCreateResume = async (payload: CreateResumePayload) => {
+    setAnalyzing(true)
+    setInputError(null)
+    
+    try {
+      const result = await createResumeFromScratch(payload)
+      
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
+      }
+      
+      toast.success("Resume created successfully!")
+      router.push(`/resume-editor?id=${result.id}`)
+    } catch (error: unknown) {
+      const err = error as Error
+      const message = err?.message || "Failed to create resume. Please try again."
+      
+      if (message.includes("keep up to 3")) {
+        toast.error("Resume limit reached", {
+          description: "You can keep up to 3 resumes. Please delete one from the Resume Editor.",
+          action: {
+            label: "Open Editor",
+            onClick: () => router.push("/resume-editor"),
+          },
+        })
+      } else {
+        setInputError(message)
+        toast.error(message)
+      }
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
   const hasJobInfo =
     jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
   const canAnalyze = (selectedResumeId || resumeText.trim().length > 0) && hasJobInfo
 
   return (
     <div className="min-h-screen relative pb-20">
-
       <GlobalHeader variant="dashboard" />
 
       <div className="container mx-auto px-4 py-8 relative z-10 max-w-6xl">
@@ -351,155 +468,210 @@ export default function DashboardClient({
             Welcome back, <span className="gradient-text">{displayName}</span>
           </h1>
           <p className="text-muted-foreground">
-            Follow the simple steps below to analyze your resume against a job posting
+            {showModeSelector 
+              ? "What would you like to do today?"
+              : "Complete the steps below"
+            }
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 min-w-0">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6 min-w-0">
-            {/* Step 1: Upload Resume */}
-            <Card className="glass-card p-6 relative z-10 w-full">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                  1
-                </div>
-                <h2 className="text-2xl font-bold">Upload Your Resume</h2>
-                {(selectedResumeId || resumeText.length > 0) && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
-              </div>
-
-              <ResumeUpload
-                onResumeUploaded={handleResumeUploaded}
-                onTextChange={handleResumeTextChange}
-                textValue={resumeText}
-                currentCount={resumes.length}
-                maxResumes={3}
-              />
-
-              {resumes.length > 0 && (
-                <div className="mt-6" id="resume-list-section">
-                  <h3 className="text-sm font-medium mb-3 text-muted-foreground">
-                    Or select from your uploaded resumes:
-                  </h3>
-                  <ResumeList
-                    resumes={resumes}
-                    selectedResumeId={selectedResumeId}
-                    onSelectResume={handleSelectResume}
-                    onDeleteResume={handleDeleteResume}
-                    deletingId={deletingId}
-                  />
-                </div>
-              )}
-            </Card>
-
-            {/* Step 2: Add Job Posting */}
-            <Card className="glass-card p-6 relative z-10 w-full">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                  2
-                </div>
-                <h2 className="text-2xl font-bold">Add Job Posting</h2>
-                {hasJobInfo && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
-              </div>
-
-              <JobPostingForm jobPosting={jobPosting} onChange={handleJobPostingChange} />
-            </Card>
-
-            {/* Analyze Button */}
-            <Card className="glass-card p-6 relative z-10 w-full">
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Cover letter</p>
-                  <p className="text-xs text-muted-foreground">
-                    Generate a matching cover letter in the background. Saved when an uploaded resume is selected.
-                  </p>
-                </div>
-                <Switch
-                  checked={shouldGenerateCoverLetter}
-                  onCheckedChange={updateCoverLetterPreference}
-                  disabled={analyzing}
-                  aria-label="Toggle cover letter generation"
-                />
-              </div>
-              {shouldGenerateCoverLetter && !selectedResumeId && resumeText.trim().length > 0 && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  We will copy the letter for you, but it will not be saved without an uploaded resume.
-                </p>
-              )}
-              <Button onClick={handleAnalyze} disabled={!canAnalyze || analyzing} size="lg" className="w-full">
-                {analyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    Analyze with AI
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
+        {/* Mode Selector or Workflow Content */}
+        {showModeSelector ? (
+          <div className="space-y-8">
+            <WorkflowSelector
+              selectedMode={workflowMode}
+              onModeChange={handleModeSelect}
+            />
+            
+            <div className="flex justify-center">
+              <Button 
+                size="lg" 
+                onClick={handleContinue}
+                className="px-8"
+              >
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              {!canAnalyze && (
-                <p className="text-sm text-muted-foreground text-center mt-3">
-                  {!selectedResumeId && !resumeText && "Please upload or paste a resume"}
-                  {(selectedResumeId || resumeText) &&
-                    !hasJobInfo &&
-                    (jobPosting.inputType === "paste"
-                      ? "Please paste the job description"
-                      : "Please enter the job posting link")}
-                </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Mode Picker Header - above the grid */}
+            <div className="flex items-center">
+              <InlineModePicker
+                selectedMode={workflowMode}
+                onModeChange={handleModeChange}
+              />
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6 min-w-0">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-6 min-w-0">
+
+              {/* Adapt to Job Mode */}
+              {workflowMode === "adapt" && (
+                <>
+                  {/* Step 1: Upload Resume */}
+                  <Card className="glass-card p-6 relative z-10 w-full">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
+                        1
+                      </div>
+                      <h2 className="text-2xl font-bold">Your Resume</h2>
+                      {(selectedResumeId || resumeText.length > 0) && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
+                    </div>
+
+                    <ResumeUpload
+                      onResumeUploaded={handleResumeUploaded}
+                      onTextChange={handleResumeTextChange}
+                      textValue={resumeText}
+                      currentCount={resumes.length}
+                      maxResumes={MAX_RESUMES_PER_USER}
+                    />
+
+                    {resumes.length > 0 && (
+                      <div className="mt-6" id="resume-list-section">
+                        <h3 className="text-sm font-medium mb-3 text-muted-foreground">
+                          Or select from your uploaded resumes:
+                        </h3>
+                        <ResumeList
+                          resumes={resumes}
+                          selectedResumeId={selectedResumeId}
+                          onSelectResume={handleSelectResume}
+                          onDeleteResume={handleDeleteResume}
+                          deletingId={deletingId}
+                        />
+                      </div>
+                    )}
+                  </Card>
+
+                  {/* Step 2: Add Job Posting */}
+                  <Card className="glass-card p-6 relative z-10 w-full">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
+                        2
+                      </div>
+                      <h2 className="text-2xl font-bold">Add Job Posting</h2>
+                      {hasJobInfo && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
+                    </div>
+
+                    <JobPostingForm jobPosting={jobPosting} onChange={handleJobPostingChange} />
+                  </Card>
+
+                  {/* Analyze Button */}
+                  <Card className="glass-card p-6 relative z-10 w-full">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Cover letter</p>
+                        <p className="text-xs text-muted-foreground">
+                          Generate a matching cover letter in the background.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shouldGenerateCoverLetter}
+                        onCheckedChange={updateCoverLetterPreference}
+                        disabled={analyzing}
+                        aria-label="Toggle cover letter generation"
+                      />
+                    </div>
+                    <Button onClick={handleAnalyze} disabled={!canAnalyze || analyzing} size="lg" className="w-full">
+                      {analyzing ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-5 w-5" />
+                          Adapt Resume to Job
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+                    {!canAnalyze && (
+                      <p className="text-sm text-muted-foreground text-center mt-3">
+                        {!selectedResumeId && !resumeText && "Please upload or paste a resume"}
+                        {(selectedResumeId || resumeText) &&
+                          !hasJobInfo &&
+                          (jobPosting.inputType === "paste"
+                            ? "Please paste the job description"
+                            : "Please enter the job posting link")}
+                      </p>
+                    )}
+                    {inputError && (
+                      <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+                        {inputError}
+                      </div>
+                    )}
+                  </Card>
+                </>
               )}
-              {inputError && (
-                <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+
+              {/* Improve Resume Mode */}
+              {workflowMode === "improve" && (
+                <ImproveResumeForm
+                  resumes={resumes}
+                  onResumeUploaded={handleResumeUploaded}
+                  onDeleteResume={handleDeleteResume}
+                  deletingId={deletingId}
+                  onSubmit={handleImproveResume}
+                  isSubmitting={analyzing}
+                />
+              )}
+
+              {/* Create from Scratch Mode */}
+              {workflowMode === "create" && (
+                <CreateResumeForm
+                  onSubmit={handleCreateResume}
+                  isSubmitting={analyzing}
+                />
+              )}
+
+              {inputError && workflowMode !== "adapt" && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
                   {inputError}
                 </div>
               )}
-            </Card>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6 min-w-0">
+              {/* Resume Editor - aligned with Your Resume */}
+              <Card className="glass-card-primary p-6 relative z-10 w-full">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-semibold mb-1">Resume Editor</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Edit and export your tailored resumes in one place.
+                    </p>
+                  </div>
+                  <Sparkles className="h-5 w-5 text-primary mt-1" />
+                </div>
+                <Button className="w-full mt-4" onClick={() => router.push("/resume-editor")}>
+                  Open Editor
+                </Button>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card className="glass-card p-6 relative z-10 w-full">
+                <h3 className="text-xl font-semibold mb-4">Quick Stats</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-3xl font-bold gradient-text">{resumes.length}</div>
+                    <div className="text-sm text-muted-foreground">Resumes Uploaded</div>
+                  </div>
+                  {workflowMode === "adapt" && (
+                    <div>
+                      <div className="text-3xl font-bold gradient-text">{recentSkillMaps.length}</div>
+                      <div className="text-sm text-muted-foreground">Skill Analyses</div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
           </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6 min-w-0">
-            {/* Recent Skill Maps */}
-            <Card className="glass-card p-6 relative z-10 w-full">
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="h-5 w-5 text-primary" />
-                <h3 className="text-xl font-semibold">Skill Analyses</h3>
-              </div>
-              <SkillMapList skillMaps={recentSkillMaps} />
-            </Card>
-
-            <Card className="glass-card-primary p-6 relative z-10 w-full">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-semibold mb-1">Resume Editor</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Edit and export your tailored resumes in one place.
-                  </p>
-                </div>
-                <Sparkles className="h-5 w-5 text-primary mt-1" />
-              </div>
-              <Button className="w-full mt-4" onClick={() => router.push("/resume-editor")}>
-                Open Editor
-              </Button>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card className="glass-card p-6 relative z-10 w-full">
-              <h3 className="text-xl font-semibold mb-4">Quick Stats</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-3xl font-bold gradient-text">{resumes.length}</div>
-                  <div className="text-sm text-muted-foreground">Resumes Uploaded</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold gradient-text">{recentSkillMaps.length}</div>
-                  <div className="text-sm text-muted-foreground">Skill Analyses</div>
-                </div>
-              </div>
-            </Card>
           </div>
-        </div>
+        )}
       </div>
 
       <MobileBottomNav />

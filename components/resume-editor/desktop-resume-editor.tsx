@@ -20,11 +20,13 @@ import type { UseResumeEditorReturn } from "./types"
 interface DesktopResumeEditorProps {
     editor: UseResumeEditorReturn
     backHref: string
+    showJobRelatedTabs?: boolean
 }
 
 export const DesktopResumeEditor = memo(function DesktopResumeEditor({
     editor,
-    backHref
+    backHref,
+    showJobRelatedTabs = true
 }: DesktopResumeEditorProps) {
     const [showStyleDialog, setShowStyleDialog] = useState(false)
 
@@ -88,8 +90,12 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                             <div className="flex items-center gap-3">
                                 <TabsList>
                                     <TabsTrigger value="resume">Resume</TabsTrigger>
-                                    <TabsTrigger value="cover">Cover Letter</TabsTrigger>
-                                    <TabsTrigger value="skills">Skill Map</TabsTrigger>
+                                    {showJobRelatedTabs && (
+                                        <>
+                                            <TabsTrigger value="cover">Cover Letter</TabsTrigger>
+                                            <TabsTrigger value="skills">Skill Map</TabsTrigger>
+                                        </>
+                                    )}
                                 </TabsList>
                                 {activeTab === 'resume' && (
                                     <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1">
@@ -103,7 +109,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                                         </button>
                                     </div>
                                 )}
-                                {activeTab === 'cover' && (
+                                {showJobRelatedTabs && activeTab === 'cover' && (
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -119,7 +125,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                                         Refresh
                                     </Button>
                                 )}
-                                {activeTab === 'skills' && (
+                                {showJobRelatedTabs && activeTab === 'skills' && (
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -168,7 +174,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                             </Card>
                         )}
 
-                        {activeTab === 'cover' && (
+                        {showJobRelatedTabs && activeTab === 'cover' && (
                             <CoverLetterPanel
                                 activeResumeId={activeResumeId}
                                 resumeName={activeResumeLabel}
@@ -184,7 +190,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                             />
                         )}
 
-                        {activeTab === 'skills' && (
+                        {showJobRelatedTabs && activeTab === 'skills' && (
                             <SkillMapPanel
                                 activeResumeId={activeResumeId}
                                 resumeName={activeResumeLabel}

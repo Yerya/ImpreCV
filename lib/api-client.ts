@@ -1,7 +1,7 @@
 import type { ResumeData } from "@/lib/resume-templates/types";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
 import type { ResumeVariantId } from "@/lib/resume-templates/variants";
-import type { SkillMapData, SkillMapRecord } from "@/types/skill-map";
+import type { SkillMapRecord } from "@/types/skill-map";
 
 interface AnalyzeResumePayload {
     resumeText?: string;
@@ -74,12 +74,6 @@ export interface GenerateCoverLetterResult {
 }
 
 export async function generateCoverLetter(payload: GenerateCoverLetterPayload): Promise<GenerateCoverLetterResult> {
-    console.log("[Cover Letter] Sending request with payload:", {
-        rewrittenResumeId: payload.rewrittenResumeId,
-        hasJobDescription: !!payload.jobDescription,
-        jobLink: payload.jobLink,
-    });
-
     const response = await fetch("/api/generate-cover-letter", {
         method: "POST",
         headers: {
@@ -92,13 +86,10 @@ export async function generateCoverLetter(payload: GenerateCoverLetterPayload): 
         }),
     });
 
-    console.log("[Cover Letter] Response status:", response.status);
     const data = await response.json().catch(() => ({})) as Record<string, unknown>;
-    console.log("[Cover Letter] Response data:", data);
 
     if (!response.ok) {
         const message = typeof data.error === "string" ? data.error : `Cover letter failed with status ${response.status}`;
-        console.error("[Cover Letter] Error:", message);
         throw new Error(message);
     }
 
@@ -184,4 +175,143 @@ export async function deleteSkillMap(id: string): Promise<void> {
         const message = typeof data.error === "string" ? data.error : "Failed to delete skill map";
         throw new Error(message);
     }
+}
+
+// ============================================================================
+// Resume Improvement API
+// ============================================================================
+
+export interface ImproveResumePayload {
+    resumeText?: string;
+    resumeId?: string;
+    targetRole?: string;
+    improvements?: string[];
+}
+
+export interface ImproveResumeResult {
+    id: string;
+    data: ResumeData;
+    variant: ResumeVariantId;
+    theme: "light" | "dark";
+    name?: string;
+    mode: "improved";
+}
+
+export async function improveResume(payload: ImproveResumePayload): Promise<ImproveResumeResult> {
+    const response = await fetch("/api/improve-resume", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            resumeText: payload.resumeText,
+            resumeId: payload.resumeId,
+            targetRole: payload.targetRole || "",
+            improvements: payload.improvements || [],
+        }),
+    });
+
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+    if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : `Improvement failed with status ${response.status}`;
+        throw new Error(message);
+    }
+
+    const parsedData = data.resumeData as ResumeData | undefined;
+    const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; name?: string; mode?: string };
+
+    if (!item?.id || !parsedData) {
+        throw new Error("Failed to prepare improved resume");
+    }
+
+    return {
+        id: item.id,
+        data: parsedData,
+        variant: item.variant || defaultResumeVariant,
+        theme: item.theme || "light",
+        name: item.name,
+        mode: "improved",
+    };
+}
+
+// ============================================================================
+// Resume Creation from Scratch API
+// ============================================================================
+
+export interface CreateResumeExperience {
+    title: string;
+    company: string;
+    location?: string;
+    startDate: string;
+    endDate?: string;
+    current?: boolean;
+    responsibilities?: string;
+}
+
+export interface CreateResumeEducation {
+    degree: string;
+    institution: string;
+    location?: string;
+    graduationDate?: string;
+    gpa?: string;
+}
+
+export interface CreateResumePayload {
+    fullName: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+    website?: string;
+    targetRole: string;
+    yearsOfExperience?: string;
+    experience?: CreateResumeExperience[];
+    education?: CreateResumeEducation[];
+    skills?: string;
+    certifications?: string;
+    languages?: string;
+    additionalInfo?: string;
+}
+
+export interface CreateResumeResult {
+    id: string;
+    data: ResumeData;
+    variant: ResumeVariantId;
+    theme: "light" | "dark";
+    name?: string;
+    mode: "created";
+}
+
+export async function createResumeFromScratch(payload: CreateResumePayload): Promise<CreateResumeResult> {
+    const response = await fetch("/api/create-resume", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+    if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : `Creation failed with status ${response.status}`;
+        throw new Error(message);
+    }
+
+    const parsedData = data.resumeData as ResumeData | undefined;
+    const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; name?: string; mode?: string };
+
+    if (!item?.id || !parsedData) {
+        throw new Error("Failed to create resume");
+    }
+
+    return {
+        id: item.id,
+        data: parsedData,
+        variant: item.variant || defaultResumeVariant,
+        theme: item.theme || "light",
+        name: item.name,
+        mode: "created",
+    };
 }

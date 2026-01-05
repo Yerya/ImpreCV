@@ -10,6 +10,7 @@ import type { ResumeVariantId } from "@/lib/resume-templates/variants"
 import type { CoverLetter } from "@/components/resume-templates/cover-letter-panel"
 import type { SkillMapRecord } from "@/types/skill-map"
 import { generateCoverLetter, generateSkillMap } from "@/lib/api-client"
+import { MAX_ADAPTED_RESUMES } from "@/lib/constants"
 import {
     clearCoverLetterPending,
     isCoverLetterPending,
@@ -34,6 +35,7 @@ export function useResumeEditor({
     initialData,
     initialVariant = defaultResumeVariant,
     initialTheme = 'light',
+    initialMode = null,
     resumeId = null,
     recentResumes = [],
 }: ResumeEditorProps): UseResumeEditorReturn {
@@ -46,6 +48,7 @@ export function useResumeEditor({
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(initialTheme)
     const [activeResumeId, setActiveResumeId] = useState<string | null>(resumeId)
+    const [activeResumeMode, setActiveResumeMode] = useState<ResumeEditorProps['initialMode']>(initialMode)
     const [activeTab, setActiveTab] = useState<'resume' | 'cover' | 'skills'>('resume')
     const [coverLettersByResume, setCoverLettersByResume] = useState<Record<string, CoverLetter[]>>({})
     const [coverLetterLoading, setCoverLetterLoading] = useState(false)
@@ -72,11 +75,19 @@ export function useResumeEditor({
 
     const upsertAvailableResume = useCallback((item: SavedResume) => {
         setAvailableResumes((prev) => {
+            const existing = item.id ? prev.find((resume) => resume.id === item.id) : undefined
+            const merged: SavedResume = {
+                ...existing,
+                ...item,
+                variant: item.variant || existing?.variant || defaultResumeVariant,
+                theme: item.theme || existing?.theme || 'light',
+                mode: item.mode ?? existing?.mode ?? activeResumeMode ?? null,
+            }
             const filtered = item.id ? prev.filter((resume) => resume.id !== item.id) : prev
-            const next = [item, ...filtered]
-            return next.slice(0, 3)
+            const next = [merged, ...filtered]
+            return next.slice(0, MAX_ADAPTED_RESUMES)
         })
-    }, [])
+    }, [activeResumeMode])
 
     const activeCoverLetters = activeResumeId ? coverLettersByResume[activeResumeId] || [] : []
     const activeSkillMaps = activeResumeId ? skillMapsByResume[activeResumeId] || [] : []
@@ -238,9 +249,10 @@ export function useResumeEditor({
             data: resumeData,
             variant: selectedVariant,
             theme: themeMode,
-            fileName: resumeData.personalInfo.name || 'resume'
+            fileName: resumeData.personalInfo.name || 'resume',
+            mode: activeResumeMode ?? null,
         })
-    }, [activeResumeId, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
+    }, [activeResumeId, activeResumeMode, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
 
     // Load cover letters when tab changes
     useEffect(() => {
@@ -536,6 +548,13 @@ export function useResumeEditor({
         setBaselineData(item.data)
         setSelectedVariant(item.variant || defaultResumeVariant)
         setThemeMode(item.theme || 'light')
+        setActiveResumeMode(item.mode ?? null)
+        
+        // Reset to resume tab if switching to a resume that doesn't support job-related tabs
+        const supportsJobTabs = item.mode === 'tailored' || item.mode === null || item.mode === undefined
+        if (!supportsJobTabs) {
+            setActiveTab('resume')
+        }
     }, [])
 
     const handleDeleteSaved = useCallback(async (id: string | null) => {
@@ -607,11 +626,13 @@ export function useResumeEditor({
             }
 
             const item = (data.item || data) as Record<string, unknown>
+            const mappedMode = (item.mode as SavedResume["mode"]) ?? activeResumeMode ?? null
             const mapped: SavedResume = {
                 id: (item.id as string) || activeResumeId,
                 data: resumeData,
                 variant: (item.variant as ResumeVariantId) || selectedVariant,
                 theme: (item.theme as 'light' | 'dark') || themeMode,
+                mode: mappedMode,
                 pdfUrl: (item.pdf_url || item.pdfUrl) as string | null || null,
                 createdAt: (item.created_at || item.createdAt) as string | null || null,
                 updatedAt: (item.updated_at || item.updatedAt) as string | null || null,
@@ -623,6 +644,7 @@ export function useResumeEditor({
             }
 
             setActiveResumeId(mapped.id)
+            setActiveResumeMode(mapped.mode ?? null)
             setBaselineData(resumeData)
             upsertAvailableResume(mapped)
             toast.success('Resume saved')
@@ -695,7 +717,8 @@ export function useResumeEditor({
                         id: activeResumeId,
                         data: resumeData,
                         variant: selectedVariant,
-                        theme: themeMode
+                        theme: themeMode,
+                        mode: activeResumeMode ?? null,
                     }),
                     id: activeResumeId,
                     pdfUrl,
@@ -704,7 +727,8 @@ export function useResumeEditor({
                     createdAt: current?.createdAt || null,
                     data: resumeData,
                     variant: selectedVariant,
-                    theme: themeMode
+                    theme: themeMode,
+                    mode: current?.mode ?? activeResumeMode ?? null,
                 })
             }
 
@@ -726,6 +750,7 @@ export function useResumeEditor({
         themeMode,
         setThemeMode,
         activeResumeId,
+        activeResumeMode,
         activeResumeLabel,
         availableResumes,
         saving,

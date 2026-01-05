@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { MAX_ADAPTED_RESUMES } from "@/lib/constants"
 import type { SavedResume } from "./types"
 
 interface RecentResumesListProps {
@@ -40,7 +41,7 @@ export const RecentResumesList = memo(function RecentResumesList({
                 {resumes.map((resume) => {
                     const timestamp = resume.updatedAt || resume.createdAt
                     const isActive = resume.id === activeResumeId
-                    const label = resume.fileName || resume.data.personalInfo.name || 'Resume'
+                    const label = resume.data.personalInfo.title || resume.fileName || resume.data.personalInfo.name || 'Resume'
                     const timestampDate = timestamp ? new Date(timestamp) : null
                     const relativeTime =
                         timestampDate && !Number.isNaN(timestampDate.getTime())
@@ -105,14 +106,14 @@ export const RecentResumesList = memo(function RecentResumesList({
                     <p className="text-sm text-muted-foreground">Pick a version to edit or export.</p>
                 </div>
                 <Badge className="bg-primary/10 text-primary border-primary/20" variant="outline">
-                    {resumes.length}/3
+                    {resumes.length}/{MAX_ADAPTED_RESUMES}
                 </Badge>
             </div>
             <div className="space-y-2">
                 {resumes.map((resume) => {
                     const timestamp = resume.updatedAt || resume.createdAt
                     const isActive = resume.id === activeResumeId
-                    const label = resume.fileName || resume.data.personalInfo.name || 'Resume'
+                    const label = resume.data.personalInfo.title || resume.fileName || resume.data.personalInfo.name || 'Resume'
                     const timestampDate = timestamp ? new Date(timestamp) : null
                     const relativeTime =
                         timestampDate && !Number.isNaN(timestampDate.getTime())

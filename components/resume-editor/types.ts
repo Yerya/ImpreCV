@@ -3,11 +3,14 @@ import type { ResumeVariantId } from "@/lib/resume-templates/variants"
 import type { CoverLetter } from "@/components/resume-templates/cover-letter-panel"
 import type { SkillMapRecord } from "@/types/skill-map"
 
+export type ResumeMode = 'tailored' | 'improved' | 'created'
+
 export interface SavedResume {
     id: string | null
     data: ResumeData
     variant: ResumeVariantId
     theme: 'light' | 'dark'
+    mode?: ResumeMode | null
     pdfUrl?: string | null
     createdAt?: string | null
     updatedAt?: string | null
@@ -18,6 +21,7 @@ export interface ResumeEditorProps {
     initialData: ResumeData
     initialVariant?: ResumeVariantId
     initialTheme?: 'light' | 'dark'
+    initialMode?: ResumeMode | null
     resumeId?: string | null
     recentResumes?: SavedResume[]
     backHref?: string
@@ -33,6 +37,7 @@ export interface UseResumeEditorReturn {
     themeMode: 'light' | 'dark'
     setThemeMode: React.Dispatch<React.SetStateAction<'light' | 'dark'>>
     activeResumeId: string | null
+    activeResumeMode: ResumeMode | null
     activeResumeLabel: string
     availableResumes: SavedResume[]
 

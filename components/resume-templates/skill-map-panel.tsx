@@ -43,12 +43,6 @@ export function SkillMapPanel({
         return "text-red-500"
     }
 
-    const getScoreBg = (score: number) => {
-        if (score >= 80) return "bg-green-500"
-        if (score >= 60) return "bg-yellow-500"
-        return "bg-red-500"
-    }
-
     const renderHeader = () => (
         <div className="flex items-center justify-between gap-3 mb-4">
             <div>
@@ -169,29 +163,27 @@ export function SkillMapPanel({
                             </div>
                         </div>
 
-                        {/* Scores */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs text-muted-foreground">Match Score</span>
-                                    <span className={`text-sm font-bold ${getScoreColor(matchScore)}`}>
-                                        {matchScore}%
-                                    </span>
-                                </div>
-                                <Progress value={matchScore} className={`h-2 ${getScoreBg(matchScore)}`} />
-                            </div>
-                            {adaptationScore !== undefined && adaptationScore !== null && (
+                        {/* Main Score */}
+                        {(() => {
+                            const hasAdaptation = adaptationScore !== undefined && adaptationScore !== null
+                            const mainScore = hasAdaptation ? adaptationScore : matchScore
+                            const mainLabel = hasAdaptation ? "Adaptation" : "Match Score"
+                            
+                            return (
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-muted-foreground">Adaptation</span>
-                                        <span className={`text-sm font-bold ${getScoreColor(adaptationScore)}`}>
-                                            {adaptationScore}%
+                                        <div className="flex items-center gap-1.5">
+                                            {hasAdaptation && <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                                            <span className="text-xs text-muted-foreground">{mainLabel}</span>
+                                        </div>
+                                        <span className={`text-2xl font-bold tabular-nums ${getScoreColor(mainScore)}`}>
+                                            {mainScore}%
                                         </span>
                                     </div>
-                                    <Progress value={adaptationScore} className={`h-2 ${getScoreBg(adaptationScore)}`} />
+                                    <Progress value={mainScore} className="h-2" />
                                 </div>
-                            )}
-                        </div>
+                            )
+                        })()}
 
                         {/* Quick Stats */}
                         <div className="grid grid-cols-3 gap-2 text-center">

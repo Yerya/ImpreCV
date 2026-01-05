@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowRight, Sparkles, FileText, Target, Zap, Brain, Download, TextSelect } from "lucide-react"
+import { ArrowRight, Sparkles, FileText, Target, Zap, Brain, Download, TextSelect, PenTool, TrendingUp, Wand2 } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { AnimateIn } from "@/components/anim/animate-in"
@@ -30,7 +30,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border mb-6 md:mb-8">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm">AI-Powered Career Tools</span>
+              <span className="text-sm">AI-Powered Resume Tools</span>
             </div>
             <h1 className="text-4xl md:text-7xl font-bold mb-4 md:mb-6 leading-tight">
               <span className="text-balance">Transform your CV</span>
@@ -38,7 +38,7 @@ export default function LandingPage() {
               <span className="gradient-text text-balance">Make it ImpreCV</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance mb-8 md:mb-10">
-              Upload your resume, paste a job post, and AI delivers an impressive, tailored CV with a matching cover letter and a skills plan for interview preparation.
+              Create from scratch, improve for ATS, or tailor to any job posting. AI that helps you stand out and land interviews.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               {isLoading ? (
@@ -77,6 +77,100 @@ export default function LandingPage() {
         </div>
       </AnimateIn>
 
+      {/* Three Ways Section */}
+      <section id="ways" className="py-20 relative z-10">
+        <div className="container mx-auto px-4 relative z-10">
+          <AnimateIn variant="fadeUp" className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="gradient-text">Three Ways to Win</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Choose your path based on where you are in your job search
+            </p>
+          </AnimateIn>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <AnimateIn variant="fadeUp" delayMs={0} className="h-full">
+              <Card className="glass-card p-8 hover:border-primary/50 transition-all relative z-10 h-full group flex flex-col">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500/20 to-violet-500/5 flex items-center justify-center mb-5">
+                  <PenTool className="h-7 w-7 text-violet-400" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Create from Scratch</h3>
+                <p className="text-muted-foreground mb-4 flex-grow">
+                  No resume yet? Answer a few questions and AI will craft a professional resume tailored to your target role.
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground mt-auto">
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                    AI-powered content writing
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                    Industry-specific optimization
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                    Professional templates
+                  </li>
+                </ul>
+              </Card>
+            </AnimateIn>
+            <AnimateIn variant="fadeUp" delayMs={100} className="h-full">
+              <Card className="glass-card p-8 hover:border-primary/50 transition-all relative z-10 h-full flex flex-col">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center mb-5">
+                  <Wand2 className="h-7 w-7 text-emerald-400" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Improve Existing</h3>
+                <p className="text-muted-foreground mb-4 flex-grow">
+                  Have a resume? Make it ATS-friendly, add impact to your bullets, and polish it for any industry.
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground mt-auto">
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    ATS keyword optimization
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    Stronger bullet points
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    Professional formatting
+                  </li>
+                </ul>
+              </Card>
+            </AnimateIn>
+            <AnimateIn variant="fadeUp" delayMs={200} className="h-full">
+              <Card className="glass-card-primary p-8 hover:border-primary transition-all relative z-10 h-full border-primary/30 flex flex-col">
+                <div className="absolute -top-2.5 left-6 px-3 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
+                  Most Popular
+                </div>
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center mb-5">
+                  <Target className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Adapt to Job</h3>
+                <p className="text-muted-foreground mb-4 flex-grow">
+                  Applying to a specific role? AI tailors your resume to match the job requirements perfectly.
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground mt-auto">
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Match score analysis
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Auto cover letter
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Skills gap insights
+                  </li>
+                </ul>
+              </Card>
+            </AnimateIn>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 relative z-10">
         <div className="container mx-auto px-4 relative z-10">
@@ -103,7 +197,7 @@ export default function LandingPage() {
             <AnimateIn variant="fadeUp" delayMs={100} className="h-full">
               <Card className="glass-card p-6 hover:border-border transition-all relative z-10 h-full">
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Target className="h-6 w-6 text-primary" />
+                  <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Match Score</h3>
                 <p className="text-muted-foreground">
@@ -116,7 +210,7 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <FileText className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Resume Rewrite</h3>
+                <h3 className="text-xl font-semibold mb-2">Smart Rewrite</h3>
                 <p className="text-muted-foreground">
                   AI rewrites your resume to highlight relevant experience and match job requirements.
                 </p>
@@ -127,7 +221,7 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <TextSelect className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Cover Letter Generator</h3>
+                <h3 className="text-xl font-semibold mb-2">Cover Letters</h3>
                 <p className="text-muted-foreground">
                   Generate personalized cover letters that showcase your fit for the specific role.
                 </p>
@@ -138,7 +232,7 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Zap className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Keyword Optimization</h3>
+                <h3 className="text-xl font-semibold mb-2">ATS Optimization</h3>
                 <p className="text-muted-foreground">
                   Optimize your resume with relevant keywords to pass ATS systems and get noticed.
                 </p>
@@ -149,9 +243,9 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Download className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Export Ready</h3>
+                <h3 className="text-xl font-semibold mb-2">PDF Export</h3>
                 <p className="text-muted-foreground">
-                  Download your optimized resume and cover letter in professional formats.
+                  Download your optimized resume and cover letter in professional PDF formats.
                 </p>
               </Card>
             </AnimateIn>

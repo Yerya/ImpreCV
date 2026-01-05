@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .eq("id", id)
     .eq("user_id", user.id)
     .select(`
-      id, content, structured_data, resume_id, variant, theme, 
+      id, content, structured_data, resume_id, variant, theme, mode, name,
       pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id,
       job_posting:job_postings(id, title, company)
     `)

@@ -9,33 +9,31 @@ import type { SkillMapData, Skill, RoadmapItem, AdaptationHighlight } from "@/ty
 
 // Prompt for analyzing ORIGINAL resume vs job description (skill gap analysis)
 const buildGapAnalysisPrompt = (originalResumeText: string, jobDescription: string) => {
-  return `Analyze candidate's ORIGINAL resume against job requirements. Return JSON only.
+  return `Analyze resume against job requirements. Return JSON only.
 
-ORIGINAL RESUME:
+RESUME:
 ${originalResumeText}
 
 JOB DESCRIPTION:
 ${jobDescription}
 
-Return this JSON structure:
+Return this JSON:
 {
-  "matchScore": <0-100 based on original resume fit>,
-  "summary": "<2 sentences about candidate's current fit>",
-  "matchedSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "matched", "resumeEvidence": "<quote>", "jobRequirement": "<text>", "matchPercentage": 100}],
-  "transferableSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "transferable", "resumeEvidence": "<quote>", "jobRequirement": "<text>", "matchPercentage": 60}],
-  "missingSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "missing", "jobRequirement": "<text>", "potentialScoreIncrease": 5}],
-  "learningRoadmap": [{"skill": "<missing skill>", "importance": "<why needed>", "firstStep": "<concrete action>", "potentialScoreIncrease": 5}],
+  "matchScore": <0-100>,
+  "summary": "<1-2 sentences about fit>",
+  "matchedSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "matched"}],
+  "transferableSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "transferable"}],
+  "missingSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "missing"}],
   "interviewTips": ["<tip1>", "<tip2>", "<tip3>"]
 }
 
 Rules:
-- matched: skills clearly in BOTH resume and job
-- transferable: related/adjacent skills from resume
-- missing: job requirements NOT in resume (focus for learning)
+- matched: skills in BOTH resume and job
+- transferable: related skills from resume applicable to job
+- missing: job requirements NOT in resume
 - priority: high=must-have, medium=nice-to-have, low=bonus
-- learningRoadmap: only for missing high-priority skills
-- Be honest about gaps - this helps candidate prepare
-`
+- Keep skill names concise (1-3 words)
+- Max 5 skills per category`
 }
 
 // Prompt for comparing original vs adapted resume (adaptation quality)
@@ -44,7 +42,7 @@ const buildAdaptationPrompt = (
   adaptedResumeData: string, 
   jobDescription: string
 ) => {
-  return `Compare how the ADAPTED resume better presents skills for this job. Return JSON only.
+  return `Compare ADAPTED resume vs ORIGINAL for this job. Return JSON only.
 
 ORIGINAL RESUME:
 ${originalResumeText}
@@ -55,26 +53,13 @@ ${adaptedResumeData}
 JOB DESCRIPTION:
 ${jobDescription}
 
-Return this JSON structure:
+Return this JSON:
 {
-  "adaptationScore": <0-100 how well adapted version presents relevant skills>,
-  "adaptationSummary": "<2 sentences about improvement>",
-  "adaptationHighlights": [
-    {
-      "skill": "<skill name>",
-      "originalPresentation": "<how it appeared in original>",
-      "adaptedPresentation": "<how it's now presented>",
-      "improvement": "<what's better>"
-    }
-  ]
+  "adaptationScore": <0-100 how well adapted version aligns with job>,
+  "adaptationSummary": "<1-2 sentences about key improvements>"
 }
 
-Focus on:
-- How skills are now better aligned with job keywords
-- How experience is reframed to match requirements
-- What relevant details were emphasized
-- Keep descriptions concise (under 30 words each)
-`
+Focus on: keyword alignment, skill emphasis, experience reframing.`
 }
 
 const validateSkillMapData = (data: unknown): SkillMapData => {

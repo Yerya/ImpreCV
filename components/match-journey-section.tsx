@@ -22,33 +22,33 @@ type MatchStep = {
 const MATCH_STEPS: MatchStep[] = [
   {
     id: 1,
-    label: "Upload",
-    title: "Upload your resume",
-    description: "Drop your resume and paste the job description you care about.",
+    label: "Choose",
+    title: "Choose your path",
+    description: "Create from scratch, improve existing resume, or adapt to a specific job posting.",
     score: 52,
     emphasis: "match",
   },
   {
     id: 2,
-    label: "Check fit",
-    title: "See your fit score",
-    description: "ImpreCV compares your resume with the job and scores how well it fits.",
+    label: "Input",
+    title: "Provide your details",
+    description: "Upload resume, fill in your experience, or paste the job description you're targeting.",
     score: 68,
     emphasis: "expand",
   },
   {
     id: 3,
-    label: "Improve",
-    title: "Let AI rewrite key points",
-    description: "AI rewrites important bullets and suggests missing but relevant skills.",
+    label: "AI Magic",
+    title: "Let AI work for you",
+    description: "AI creates, improves, or tailors your resume with ATS-optimized content and keywords.",
     score: 82,
     emphasis: "skillmap",
   },
   {
     id: 4,
-    label: "Apply",
-    title: "Get ready to apply",
-    description: "Export a tuned resume, cover letter, and SkillMap summary.",
+    label: "Export",
+    title: "Download and apply",
+    description: "Get your polished resume, cover letter, and SkillMap ready to send.",
     score: 95,
     emphasis: "result",
   },
@@ -128,7 +128,7 @@ function MatchJourneyDesktop() {
             <span className="gradient-text">How ImpreCV Works</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            From raw resume to a tailored application in four simple steps.
+            From idea to interview-ready resume in four simple steps.
           </p>
         </div>
 

@@ -25,7 +25,7 @@ export async function GET() {
     .from("rewritten_resumes")
     .select(`
       id, content, structured_data, resume_id, created_at, updated_at, 
-      pdf_url, pdf_path, variant, theme, file_name, job_posting_id,
+      pdf_url, pdf_path, variant, theme, mode, name, file_name, job_posting_id,
       job_posting:job_postings(id, title, company)
     `)
     .eq("user_id", user.id)
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     .from("rewritten_resumes")
     .select(`
       id, content, structured_data, resume_id, created_at, updated_at, 
-      pdf_url, pdf_path, variant, theme, file_name, job_posting_id,
+      pdf_url, pdf_path, variant, theme, mode, name, file_name, job_posting_id,
       job_posting:job_postings(id, title, company)
     `)
     .eq("user_id", user.id)
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     })
     .select(`
       id, content, structured_data, resume_id, created_at, updated_at, 
-      pdf_url, pdf_path, variant, theme, file_name, job_posting_id
+      pdf_url, pdf_path, variant, theme, mode, name, file_name, job_posting_id
     `)
     .single()
 

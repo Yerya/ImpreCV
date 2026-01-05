@@ -183,34 +183,11 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
             </div>
           </Card>
 
-          {/* API Configuration */}
-          <Card className="glass-card p-6 relative z-10">
-            <h2 className="text-2xl font-semibold mb-6">API Configuration</h2>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="openaiKey">OpenAI API Key (Optional)</Label>
-                <Input id="openaiKey" type="password" placeholder="sk-..." className="bg-background/50" disabled />
-                <p className="text-xs text-muted-foreground">
-                  Add your own OpenAI API key for unlimited analyses (Coming soon)
-                </p>
-              </div>
-            </div>
-          </Card>
-
           {/* Account Actions */}
           <Card className="glass-card p-6 relative z-10">
-            <h2 className="text-2xl font-semibold mb-6">Account</h2>
+            <h2 className="text-2xl font-semibold mb-4">Account</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-border/50">
-                <div>
-                  <p className="font-medium">Account Status</p>
-                  <p className="text-sm text-muted-foreground">Free Plan</p>
-                </div>
-                <Button variant="outline">
-                  Upgrade
-                </Button>
-              </div>
-              <div className="flex items-start justify-between py-3 gap-4">
+              <div className="flex items-start justify-between py-2 gap-4">
                 <div>
                   <p className="font-medium text-destructive">Delete Account</p>
                   <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>

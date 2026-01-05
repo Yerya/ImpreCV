@@ -25,6 +25,7 @@ const mapRowToResume = (row: Record<string, unknown>): SavedResume => {
         data,
         variant: (row?.variant as SavedResume['variant']) || defaultResumeVariant,
         theme: row?.theme === 'dark' ? 'dark' : 'light',
+        mode: (row?.mode as SavedResume['mode']) || null,
         pdfUrl: (row?.pdf_url as string) || null,
         createdAt: (row?.created_at as string) || null,
         updatedAt: (row?.updated_at as string) || null,
@@ -55,7 +56,7 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
 
     const { data: rows } = await supabase
         .from("rewritten_resumes")
-        .select("id, content, structured_data, variant, theme, pdf_url, file_name, created_at, updated_at")
+        .select("id, content, structured_data, variant, theme, mode, pdf_url, file_name, created_at, updated_at")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(3)
@@ -95,6 +96,7 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
             initialData={activeResume.data}
             initialVariant={activeResume.variant}
             initialTheme={activeResume.theme}
+            initialMode={activeResume.mode}
             resumeId={activeResume.id}
             recentResumes={saved}
             backHref="/dashboard"

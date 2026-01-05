@@ -11,6 +11,7 @@ export function ResumeEditor({
     initialData,
     initialVariant = defaultResumeVariant,
     initialTheme = 'light',
+    initialMode = null,
     resumeId = null,
     recentResumes = [],
     backHref = '/dashboard'
@@ -21,14 +22,18 @@ export function ResumeEditor({
         initialData,
         initialVariant,
         initialTheme,
+        initialMode,
         resumeId,
         recentResumes,
         backHref
     })
 
+    // Only show cover letter and skill map tabs for tailored resumes
+    const showJobRelatedTabs = editor.activeResumeMode === 'tailored' || editor.activeResumeMode === null
+
     if (isMobile) {
-        return <MobileResumeEditor editor={editor} backHref={backHref} />
+        return <MobileResumeEditor editor={editor} backHref={backHref} showJobRelatedTabs={showJobRelatedTabs} />
     }
 
-    return <DesktopResumeEditor editor={editor} backHref={backHref} />
+    return <DesktopResumeEditor editor={editor} backHref={backHref} showJobRelatedTabs={showJobRelatedTabs} />
 }

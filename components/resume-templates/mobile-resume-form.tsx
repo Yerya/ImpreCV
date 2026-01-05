@@ -165,7 +165,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                     id="name"
                                     value={data.personalInfo.name}
                                     onChange={(e) => updatePersonalInfo('name', e.target.value)}
-                                    placeholder="John Doe"
+                                    placeholder="Your name"
                                     className="h-9"
                                 />
                             </div>
@@ -187,7 +187,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                         type="email"
                                         value={data.personalInfo.email || ''}
                                         onChange={(e) => updatePersonalInfo('email', e.target.value)}
-                                        placeholder="email@example.com"
+                                        placeholder="you@example.com"
                                         className="h-9"
                                     />
                                 </div>
@@ -218,7 +218,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                     id="linkedin"
                                     value={data.personalInfo.linkedin || ''}
                                     onChange={(e) => updatePersonalInfo('linkedin', e.target.value)}
-                                    placeholder="linkedin.com/in/johndoe"
+                                    placeholder="linkedin.com/in/yourname"
                                     className="h-9"
                                 />
                             </div>
@@ -228,7 +228,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                     id="website"
                                     value={data.personalInfo.website || ''}
                                     onChange={(e) => updatePersonalInfo('website', e.target.value)}
-                                    placeholder="johndoe.com"
+                                    placeholder="yourwebsite.com"
                                     className="h-9"
                                 />
                             </div>

@@ -22,11 +22,13 @@ import type { UseResumeEditorReturn } from "./types"
 interface MobileResumeEditorProps {
     editor: UseResumeEditorReturn
     backHref: string
+    showJobRelatedTabs?: boolean
 }
 
 export const MobileResumeEditor = memo(function MobileResumeEditor({
     editor,
-    backHref
+    backHref,
+    showJobRelatedTabs = true
 }: MobileResumeEditorProps) {
     const [mobileView, setMobileView] = useState<'preview' | 'edit'>('preview')
     const [showStyleDrawer, setShowStyleDrawer] = useState(false)
@@ -85,10 +87,14 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
 
             <div className="px-4 pb-2">
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
-                    <TabsList className="w-full grid grid-cols-3">
+                    <TabsList className={cn("w-full grid", showJobRelatedTabs ? "grid-cols-3" : "grid-cols-1")}>
                         <TabsTrigger value="resume" className="text-xs">Resume</TabsTrigger>
-                        <TabsTrigger value="cover" className="text-xs">Cover</TabsTrigger>
-                        <TabsTrigger value="skills" className="text-xs">Skills</TabsTrigger>
+                        {showJobRelatedTabs && (
+                            <>
+                                <TabsTrigger value="cover" className="text-xs">Cover</TabsTrigger>
+                                <TabsTrigger value="skills" className="text-xs">Skills</TabsTrigger>
+                            </>
+                        )}
                     </TabsList>
                 </Tabs>
             </div>
@@ -161,7 +167,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                             onUpdate={setResumeData}
                         />
                     )
-                ) : activeTab === 'cover' ? (
+                ) : showJobRelatedTabs && activeTab === 'cover' ? (
                     <CoverLetterPanel
                         activeResumeId={activeResumeId}
                         resumeName={activeResumeLabel}
@@ -175,7 +181,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                         generating={generatingCoverLetter}
                         onGenerate={handleGenerateCoverLetter}
                     />
-                ) : (
+                ) : showJobRelatedTabs && activeTab === 'skills' ? (
                     <SkillMapPanel
                         activeResumeId={activeResumeId}
                         resumeName={activeResumeLabel}
@@ -189,7 +195,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                         generating={generatingSkillMap}
                         onGenerate={handleGenerateSkillMap}
                     />
-                )}
+                ) : null}
             </div>
 
             <ResumeActionBar
