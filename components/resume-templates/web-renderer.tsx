@@ -58,6 +58,7 @@ export function WebResumeRenderer({
 
     React.useEffect(() => {
         setSidebarRatio(resolveSidebarRatio(data, variant))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.layout?.sidebarRatio, variant])
 
     const applySidebarRatio = React.useCallback((value: number) => {

@@ -228,6 +228,7 @@ export function useResumeEditor({
         if (pendingContent) {
             window.localStorage.removeItem('resume-editor-content')
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Persist state to localStorage
@@ -654,7 +655,7 @@ export function useResumeEditor({
         } finally {
             setSaving(false)
         }
-    }, [activeResumeId, resumeData, router, selectedVariant, themeMode, upsertAvailableResume])
+    }, [activeResumeId, activeResumeMode, resumeData, router, selectedVariant, themeMode, upsertAvailableResume])
 
     const handleExport = useCallback(async () => {
         setExporting(true)
@@ -739,7 +740,7 @@ export function useResumeEditor({
         } finally {
             setExporting(false)
         }
-    }, [activeResumeId, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
+    }, [activeResumeId, activeResumeMode, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
 
     return {
         resumeData,

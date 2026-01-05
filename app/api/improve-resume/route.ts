@@ -237,14 +237,14 @@ MINIMAL VALID JSON TEMPLATE:
         try {
             const cleanedResponse = cleanJsonResponse(rawResponse);
             parsedData = JSON.parse(cleanedResponse) as ResumeData;
-        } catch (parseError) {
+        } catch {
             userLogger.error("json_parse_failed");
             
             // Try markdown fallback
             try {
                 parsedData = parseMarkdownToResumeData(rawResponse);
                 userLogger.info("markdown_fallback_success");
-            } catch (markdownError) {
+            } catch {
                 userLogger.error("markdown_fallback_failed");
                 return NextResponse.json(
                     { error: "Failed to parse AI response. Please try again." },
@@ -307,7 +307,7 @@ MINIMAL VALID JSON TEMPLATE:
             resumeData: parsedData,
         });
 
-    } catch (error) {
+    } catch {
         logger.error("unhandled_error");
         return NextResponse.json(
             { error: "An unexpected error occurred" },

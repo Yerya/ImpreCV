@@ -37,12 +37,10 @@ export async function POST(req: NextRequest) {
         const { 
             message, 
             resumeData, 
-            rewrittenResumeId,
             history = []
         } = body as {
             message: string
             resumeData: ResumeData
-            rewrittenResumeId?: string
             history?: ChatHistoryMessage[]
         }
 

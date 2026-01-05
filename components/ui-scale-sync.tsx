@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { hydrateUiScale, setUiScale, type UiScale } from "@/features/app/appSlice"
+import { hydrateUiScale, type UiScale } from "@/features/app/appSlice"
 
 const LS_UI_SCALE = "imprecv-ui-scale"
 

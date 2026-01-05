@@ -15,6 +15,7 @@ export function AnimatedBackground({ className = "", intensity = 0.15 }: Animate
   const { isInitialLoading } = usePageLoading()
   const [mounted, setMounted] = useState(false)
   const [shouldRender, setShouldRender] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isMobile, setIsMobile] = useState(false)
 
   const checkMobile = useCallback(() => {

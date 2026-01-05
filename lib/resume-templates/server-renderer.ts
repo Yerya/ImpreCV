@@ -1,4 +1,4 @@
-import type { ResumeData, ResumeItem } from './types'
+import type { ResumeData } from './types'
 import type { ResumeVariantId } from './variants'
 
 export const A4_DIMENSIONS = {

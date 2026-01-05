@@ -1,19 +1,18 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, ArrowRight, CheckCircle2, Sparkles, Target, ChevronLeft } from "lucide-react"
+import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
-import SkillMapList from "./skill-map-list"
-import { WorkflowSelector, WorkflowHeader, InlineModePicker, type WorkflowMode } from "./workflow-selector"
+import { WorkflowSelector, InlineModePicker, type WorkflowMode } from "./workflow-selector"
 import { CreateResumeForm } from "./create-resume-form"
 import { ImproveResumeForm } from "./improve-resume-form"
 import { 
@@ -162,11 +161,6 @@ export default function DashboardClient({
   // Continue to workflow steps
   const handleContinue = () => {
     setShowModeSelector(false)
-    setInputError(null)
-  }
-
-  const handleBackToModeSelector = () => {
-    setShowModeSelector(true)
     setInputError(null)
   }
 

@@ -91,7 +91,8 @@ const classicDarkTheme: VariantTheme = {
     headerAlign: 'center'
 }
 
-const buildStyles = (theme: VariantTheme, variantId: ResumeVariantId) => StyleSheet.create({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const buildStyles = (theme: VariantTheme, _variantId: ResumeVariantId) => StyleSheet.create({
     page: {
         padding: 30,
         fontFamily: theme.fontFamily || 'Helvetica',

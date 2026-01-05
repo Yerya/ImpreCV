@@ -256,7 +256,7 @@ Include additional sections (certifications, languages, projects) only if releva
         try {
             const cleanedResponse = cleanJsonResponse(rawResponse);
             parsedData = JSON.parse(cleanedResponse) as ResumeData;
-        } catch (parseError) {
+        } catch {
             userLogger.error("json_parse_failed");
             return NextResponse.json(
                 { error: "Failed to parse AI response. Please try again." },
@@ -316,7 +316,7 @@ Include additional sections (certifications, languages, projects) only if releva
             resumeData: parsedData,
         });
 
-    } catch (error) {
+    } catch {
         logger.error("unhandled_error");
         return NextResponse.json(
             { error: "An unexpected error occurred" },

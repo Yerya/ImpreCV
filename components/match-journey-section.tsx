@@ -300,7 +300,7 @@ type MatchPanelProps = {
   style?: CSSProperties
 }
 
-function MatchPanel({ step, nextLabel, score, overallProgress, className, style }: MatchPanelProps) {
+function MatchPanel({ step, score, overallProgress, className, style }: MatchPanelProps) {
   return (
     <Card
       className={cn(
