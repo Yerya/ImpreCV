@@ -141,7 +141,7 @@ CRITICAL INSTRUCTIONS:
 
 OUTPUT FORMAT - ABSOLUTE REQUIREMENTS:
 
-⚠️ CRITICAL: Your response MUST be a valid JSON object.
+CRITICAL: Your response MUST be a valid JSON object.
 - Your response MUST start with '{' and end with '}'
 - Do NOT include ANY text before or after the JSON object
 - Do NOT wrap in markdown code blocks (no \`\`\`json)
@@ -157,8 +157,8 @@ SECTION CONTENT RULES:
    - Each object MUST have: "title", optionally "subtitle", "date", "description", "bullets"
    - "content": [{ "title": "...", "subtitle": "...", "date": "...", "bullets": ["..."] }]
    - If section exists but has no items: "content": []
-   - ⚠️ NEVER use empty string "" for array sections
-   - ⚠️ NEVER use plain string arrays like ["item1", "item2"]
+   - NEVER use empty string "" for array sections
+   - NEVER use plain string arrays like ["item1", "item2"]
 
 MINIMAL VALID JSON TEMPLATE - Always follow this exact structure:
 
@@ -280,12 +280,12 @@ Languages section (string):
 }
 
 FINAL REMINDERS:
-✅ Response MUST start with '{' and end with '}'
-✅ For array sections: use [] if empty, NEVER ""
-✅ For string sections: use "" if empty, NEVER []
-✅ Projects/Certifications = array of objects
-✅ Skills/Languages = string
-✅ No markdown, no comments, no explanations
+- Response MUST start with '{' and end with '}'
+- For array sections: use [] if empty, NEVER ""
+- For string sections: use "" if empty, NEVER []
+- Projects/Certifications = array of objects
+- Skills/Languages = string
+- No markdown, no comments, no explanations
 
 `;
 

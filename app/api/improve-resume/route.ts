@@ -140,7 +140,7 @@ CRITICAL INSTRUCTIONS:
 
 OUTPUT FORMAT - ABSOLUTE REQUIREMENTS:
 
-⚠️ CRITICAL: Your response MUST be a valid JSON object.
+CRITICAL: Your response MUST be a valid JSON object.
 - Your response MUST start with '{' and end with '}'
 - Do NOT include ANY text before or after the JSON object
 - Do NOT wrap in markdown code blocks (no \`\`\`json)

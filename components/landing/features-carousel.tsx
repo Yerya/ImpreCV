@@ -3,14 +3,15 @@
 import * as React from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { 
-  Carousel, 
-  CarouselContent, 
+import {
+  Carousel,
+  CarouselContent,
   CarouselItem,
-  type CarouselApi 
+  type CarouselApi
 } from "@/components/ui/carousel"
+import AutoScroll from "embla-carousel-auto-scroll"
 import { cn } from "@/lib/utils"
-import { Brain, TrendingUp, FileText, TextSelect, Zap, Download, ChevronLeft, ChevronRight } from "lucide-react"
+import { Brain, TrendingUp, FileText, TextSelect, Zap, Download, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react"
 
 const FEATURES = [
   {
@@ -22,6 +23,11 @@ const FEATURES = [
     icon: TrendingUp,
     title: "Match Score",
     description: "Get a detailed compatibility score showing how well your resume matches the job posting.",
+  },
+  {
+    icon: MessageSquare,
+    title: "AI Chat",
+    description: "Edit your resume using natural language commands. Just ask and the AI will make the changes.",
   },
   {
     icon: FileText,
@@ -48,6 +54,19 @@ const FEATURES = [
 export function FeaturesCarousel() {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const autoScroll = React.useMemo(
+    () =>
+      AutoScroll({
+        speed: 1,
+        startDelay: 1000,
+        stopOnInteraction: false,
+        stopOnMouseEnter: true,
+        stopOnFocusIn: true,
+        rootNode: () => containerRef.current,
+      }),
+    []
+  )
 
   React.useEffect(() => {
     if (!api) return
@@ -65,7 +84,7 @@ export function FeaturesCarousel() {
   }, [api])
 
   return (
-    <div className="w-full">
+    <div ref={containerRef} className="w-full">
       <Carousel
         setApi={setApi}
         opts={{
@@ -73,31 +92,32 @@ export function FeaturesCarousel() {
           loop: true,
           duration: 20,
         }}
+        plugins={[autoScroll]}
         className="w-full"
       >
         <CarouselContent className="-ml-2 md:-ml-4">
           {FEATURES.map((feature, index) => {
             const Icon = feature.icon
             const isActive = current === index
-            
+
             return (
-              <CarouselItem 
-                key={index} 
+              <CarouselItem
+                key={index}
                 className="pl-2 md:pl-4 basis-[70%] sm:basis-[50%] md:basis-[40%] lg:basis-[30%] no-select"
               >
-                <div 
+                <div
                   className={cn(
                     "transition-all duration-500 ease-out h-full",
-                    isActive 
-                      ? "scale-100 opacity-100" 
+                    isActive
+                      ? "scale-100 opacity-100"
                       : "scale-[0.92] opacity-60"
                   )}
                 >
-                  <Card 
+                  <Card
                     className={cn(
                       "p-6 h-full min-h-[220px] transition-all duration-500 relative overflow-hidden",
-                      isActive 
-                        ? "glass-card-primary border-primary/40 shadow-lg shadow-primary/10" 
+                      isActive
+                        ? "glass-card-primary border-primary/40 shadow-lg shadow-primary/10"
                         : "glass-card border-border/50"
                     )}
                   >
@@ -105,24 +125,24 @@ export function FeaturesCarousel() {
                     {isActive && (
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
                     )}
-                    
+
                     <div className="relative z-10">
-                      <div 
+                      <div
                         className={cn(
                           "h-12 w-12 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-4 transition-all duration-500",
-                          isActive 
-                            ? "from-[var(--gradient-2)]/30 to-[var(--gradient-3)]/10" 
+                          isActive
+                            ? "from-[var(--gradient-2)]/30 to-[var(--gradient-3)]/10"
                             : "from-muted-foreground/20 to-muted-foreground/5"
                         )}
                       >
-                        <Icon 
+                        <Icon
                           className={cn(
                             "h-6 w-6",
                             isActive ? "text-[var(--gradient-2)]" : "text-muted-foreground"
-                          )} 
+                          )}
                         />
                       </div>
-                      <h3 
+                      <h3
                         className={cn(
                           "text-xl font-semibold mb-2",
                           isActive ? "text-foreground" : "text-foreground/80"
@@ -130,7 +150,7 @@ export function FeaturesCarousel() {
                       >
                         {feature.title}
                       </h3>
-                      <p 
+                      <p
                         className={cn(
                           "text-sm leading-relaxed",
                           isActive ? "text-muted-foreground" : "text-muted-foreground/70"
@@ -145,46 +165,46 @@ export function FeaturesCarousel() {
             )
           })}
         </CarouselContent>
-      </Carousel>
-      
-      {/* Dots indicator with arrows */}
-      <div className="flex justify-center items-center gap-4 mt-8">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 rounded-full border-primary/30 bg-background/80 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/50 transition-all"
-          onClick={() => api?.scrollPrev()}
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        
-        <div className="flex gap-2">
-          {FEATURES.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => api?.scrollTo(index)}
-              className={cn(
-                "h-2 rounded-full transition-all duration-300",
-                current === index 
-                  ? "w-6 bg-primary" 
-                  : "w-2 bg-primary/30 hover:bg-primary/50"
-              )}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+
+        {/* Dots indicator with arrows */}
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full border-primary/30 bg-background/80 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/50 transition-all"
+            onClick={() => api?.scrollPrev()}
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+
+          <div className="flex gap-2">
+            {FEATURES.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => api?.scrollTo(index)}
+                className={cn(
+                  "h-2 rounded-full transition-all duration-300",
+                  current === index
+                    ? "w-6 bg-primary"
+                    : "w-2 bg-primary/30 hover:bg-primary/50"
+                )}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full border-primary/30 bg-background/80 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/50 transition-all"
+            onClick={() => api?.scrollNext()}
+            aria-label="Next slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
         </div>
-        
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 rounded-full border-primary/30 bg-background/80 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/50 transition-all"
-          onClick={() => api?.scrollNext()}
-          aria-label="Next slide"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
+      </Carousel>
     </div>
   )
 }
