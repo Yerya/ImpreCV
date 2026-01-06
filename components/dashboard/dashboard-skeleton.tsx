@@ -2,11 +2,10 @@
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen relative pb-20">
+    <div className="min-h-screen relative">
       <GlobalHeader variant="dashboard" />
 
       <div className="container mx-auto px-4 py-8 relative z-10 max-w-6xl">
@@ -23,8 +22,6 @@ export function DashboardSkeleton() {
           <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   )
 }

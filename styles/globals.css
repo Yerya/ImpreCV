@@ -524,6 +524,16 @@
     }
 }
 
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     [data-animate] {
         transition: none !important;

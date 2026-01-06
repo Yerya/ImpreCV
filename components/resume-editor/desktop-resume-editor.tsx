@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { RefreshCw, Loader2, Palette } from "lucide-react"
 import { CoverLetterPanel } from "@/components/resume-templates/cover-letter-panel"
 import { SkillMapPanel } from "@/components/resume-templates/skill-map-panel"
@@ -14,7 +13,7 @@ import { WebResumeRenderer } from "@/components/resume-templates/web-renderer"
 import { ResumeChatPanel } from "@/components/chat/resume-chat-panel"
 import { ResumeActionBar } from "./resume-action-bar"
 import { RecentResumesList } from "./recent-resumes-list"
-import { StylePicker } from "./style-picker"
+import { TemplatePreviewCarousel } from "./template-preview-carousel"
 import type { UseResumeEditorReturn } from "./types"
 
 interface DesktopResumeEditorProps {
@@ -228,24 +227,25 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                 onResetToBaseline={handleReset}
             />
 
-            <MobileBottomNav />
-
             <Dialog open={showStyleDialog} onOpenChange={setShowStyleDialog}>
-                <DialogContent className="glass-card sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Choose a Style</DialogTitle>
-                        <DialogDescription>
-                            Select a template design for your resume
+                <DialogContent className="glass-card !max-w-[95vw] !w-[95vw] !h-[85vh] p-0 overflow-hidden flex flex-col">
+                    <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/50 shrink-0">
+                        <DialogTitle className="text-xl">Choose a Style</DialogTitle>
+                        <DialogDescription className="text-sm">
+                            Preview and select a template design for your resume
                         </DialogDescription>
                     </DialogHeader>
-                    <StylePicker
-                        selectedVariant={selectedVariant}
-                        onSelect={(v) => {
-                            setSelectedVariant(v)
-                            setShowStyleDialog(false)
-                        }}
-                        variant="mobile"
-                    />
+                    <div className="flex-1 min-h-0 overflow-hidden px-2">
+                        <TemplatePreviewCarousel
+                            resumeData={resumeData}
+                            selectedVariant={selectedVariant}
+                            onSelect={(v) => {
+                                setSelectedVariant(v)
+                                setShowStyleDialog(false)
+                            }}
+                            themeMode={themeMode}
+                        />
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

@@ -1,6 +1,6 @@
 -- Migration: Create Tables
 -- Version: 20251202000001
--- Description: Initial database schema for CVify application
+-- Description: Initial database schema for ImpreCV application
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.rewritten_resumes (
   content TEXT NOT NULL CONSTRAINT check_content_not_empty CHECK (LENGTH(TRIM(content)) > 0),
   structured_data JSONB,
   format TEXT DEFAULT 'json' CONSTRAINT check_format_valid CHECK (format IN ('json', 'text', 'markdown')),
-  variant TEXT DEFAULT 'tailored' CONSTRAINT check_variant_valid CHECK (variant IN ('tailored', 'original', 'optimized')),
+  variant TEXT DEFAULT 'tailored' CONSTRAINT check_variant_valid CHECK (variant IN ('tailored', 'modern', 'bold', 'spotlight', 'classic')),
   theme TEXT DEFAULT 'light' CONSTRAINT check_theme_valid CHECK (theme IN ('light', 'dark', 'modern', 'classic', 'minimal')),
   mode TEXT DEFAULT 'tailored' CONSTRAINT check_mode_valid CHECK (mode IN ('tailored', 'improved', 'created')),
   source_type TEXT DEFAULT 'upload' CONSTRAINT check_source_type_valid CHECK (source_type IN ('upload', 'paste', 'scratch')),

@@ -17,7 +17,6 @@ import {
 } from "@/lib/cover-letter-context"
 import type { SavedResume, ResumeEditorProps, UseResumeEditorReturn, ResumeMode } from "./types"
 
-const EDITOR_STORAGE_KEY = 'cvify:resume-editor-state'
 const EMPTY_RESUME: ResumeData = {
     personalInfo: {
         name: '',
@@ -30,6 +29,9 @@ const EMPTY_RESUME: ResumeData = {
     },
     sections: []
 }
+
+const hasLoadedForResume = <T>(map: Record<string, T>, resumeId: string | null) =>
+    !!resumeId && map[resumeId] !== undefined
 
 export function useResumeEditor({
     initialData,
@@ -73,9 +75,10 @@ export function useResumeEditor({
             }))
     )
 
-    const upsertAvailableResume = useCallback((item: SavedResume) => {
+    const upsertAvailableResume = useCallback((item: SavedResume, moveToTop = false) => {
         setAvailableResumes((prev) => {
-            const existing = item.id ? prev.find((resume) => resume.id === item.id) : undefined
+            const existingIndex = item.id ? prev.findIndex((resume) => resume.id === item.id) : -1
+            const existing = existingIndex >= 0 ? prev[existingIndex] : undefined
             const merged: SavedResume = {
                 ...existing,
                 ...item,
@@ -83,6 +86,15 @@ export function useResumeEditor({
                 theme: item.theme || existing?.theme || 'light',
                 mode: item.mode ?? existing?.mode ?? activeResumeMode ?? null,
             }
+            
+            // If existing item found and we don't want to move it, update in place
+            if (existingIndex >= 0 && !moveToTop) {
+                const next = [...prev]
+                next[existingIndex] = merged
+                return next
+            }
+            
+            // Otherwise, add to top (for new items or explicit moveToTop)
             const filtered = item.id ? prev.filter((resume) => resume.id !== item.id) : prev
             const next = [merged, ...filtered]
             return next.slice(0, MAX_ADAPTED_RESUMES)
@@ -186,59 +198,62 @@ export function useResumeEditor({
         [coverLettersByResume]
     )
 
-    // Load initial state from localStorage
+    // Track if this is the first render to avoid saving on mount
+    const isFirstRender = useRef(true)
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const lastSavedSettingsRef = useRef<{ variant: string; theme: string } | null>(null)
+
+    // Auto-save ONLY variant and theme settings (not resume data) when they change
     useEffect(() => {
-        if (typeof window === 'undefined') return
-
-        const storedStateRaw = window.localStorage.getItem(EDITOR_STORAGE_KEY)
-        const pendingContent = window.localStorage.getItem('resume-editor-content')?.trim()
-
-        if (!availableResumes.length && !activeResumeId && pendingContent) {
-            const parsedData = parseMarkdownToResumeData(pendingContent)
-            setResumeData(parsedData)
-            setBaselineData(parsedData)
-            window.localStorage.removeItem('resume-editor-content')
-            window.localStorage.setItem(
-                EDITOR_STORAGE_KEY,
-                JSON.stringify({ data: parsedData, variant: selectedVariant, theme: themeMode, resumeId: null })
-            )
+        // Skip first render to avoid saving initial values loaded from DB
+        if (isFirstRender.current) {
+            isFirstRender.current = false
+            lastSavedSettingsRef.current = { variant: selectedVariant, theme: themeMode }
             return
         }
 
-        if (storedStateRaw && !activeResumeId) {
+        // Only save if we have an active resume ID (saved resume)
+        if (!activeResumeId) return
+
+        // Check if settings actually changed
+        const lastSettings = lastSavedSettingsRef.current
+        if (lastSettings && lastSettings.variant === selectedVariant && lastSettings.theme === themeMode) {
+            return // No changes, skip save
+        }
+
+        // Clear previous timeout to debounce
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current)
+        }
+
+        // Debounce save to avoid too many requests
+        saveTimeoutRef.current = setTimeout(async () => {
             try {
-                const storedState = JSON.parse(storedStateRaw) as {
-                    data?: ResumeData
-                    variant?: ResumeVariantId
-                    theme?: 'light' | 'dark'
-                    resumeId?: string | null
+                const response = await fetch(`/api/rewritten-resumes/${activeResumeId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        variant: selectedVariant,
+                        theme: themeMode,
+                    })
+                })
+
+                if (response.ok) {
+                    lastSavedSettingsRef.current = { variant: selectedVariant, theme: themeMode }
+                } else {
+                    console.error('Failed to auto-save template settings')
                 }
-                if (storedState?.data) {
-                    setResumeData(storedState.data)
-                    setBaselineData(storedState.data)
-                    if (storedState.variant) setSelectedVariant(storedState.variant)
-                    if (storedState.theme) setThemeMode(storedState.theme)
-                    setActiveResumeId(storedState.resumeId || null)
-                }
-            } catch {
-                // ignore corrupted state
+            } catch (error) {
+                console.error('Auto-save error:', error)
+            }
+        }, 500) // 500ms debounce for settings only
+
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current)
             }
         }
-
-        if (pendingContent) {
-            window.localStorage.removeItem('resume-editor-content')
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    // Persist state to localStorage
-    useEffect(() => {
-        if (typeof window === 'undefined') return
-        window.localStorage.setItem(
-            EDITOR_STORAGE_KEY,
-            JSON.stringify({ data: resumeData, variant: selectedVariant, theme: themeMode, resumeId: activeResumeId })
-        )
-    }, [resumeData, selectedVariant, themeMode, activeResumeId])
+    }, [selectedVariant, themeMode, activeResumeId])
 
     // Update available resumes when active resume changes
     useEffect(() => {
@@ -262,7 +277,7 @@ export function useResumeEditor({
             return
         }
 
-        const hasLoaded = coverLettersByResume[activeResumeId] !== undefined
+        const hasLoaded = hasLoadedForResume(coverLettersByResume, activeResumeId)
         if (activeTab === 'cover' && !hasLoaded) {
             setCoverLetterLoading(true)
             loadCoverLetters(activeResumeId, { force: true })
@@ -273,7 +288,7 @@ export function useResumeEditor({
     useEffect(() => {
         if (!activeResumeId) return
         
-        const hasLoaded = coverLettersByResume[activeResumeId] !== undefined
+        const hasLoaded = hasLoadedForResume(coverLettersByResume, activeResumeId)
         if (!hasLoaded) {
             loadCoverLetters(activeResumeId, { silent: true })
         }
@@ -286,12 +301,22 @@ export function useResumeEditor({
             return
         }
 
-        const hasLoaded = skillMapsByResume[activeResumeId] !== undefined
+        const hasLoaded = hasLoadedForResume(skillMapsByResume, activeResumeId)
         if (!hasLoaded) {
             setSkillMapLoading(true)
             loadSkillMaps(activeResumeId, { force: true })
         }
     }, [activeResumeId, activeTab, skillMapsByResume, loadSkillMaps])
+
+    // Load skill maps in background for faster tab open
+    useEffect(() => {
+        if (!activeResumeId) return
+
+        const hasLoaded = hasLoadedForResume(skillMapsByResume, activeResumeId)
+        if (!hasLoaded) {
+            loadSkillMaps(activeResumeId, { silent: true })
+        }
+    }, [activeResumeId, skillMapsByResume, loadSkillMaps])
 
     // Clear errors when resume changes
     useEffect(() => {
@@ -550,13 +575,23 @@ export function useResumeEditor({
         setSelectedVariant(item.variant || defaultResumeVariant)
         setThemeMode(item.theme || 'light')
         setActiveResumeMode(item.mode ?? null)
+        // Update last saved settings to prevent unnecessary auto-save on switch
+        lastSavedSettingsRef.current = { 
+            variant: item.variant || defaultResumeVariant, 
+            theme: item.theme || 'light' 
+        }
+        
+        // Update URL to selected resume so refresh stays on the same resume
+        if (item.id) {
+            router.replace(`/resume-editor?id=${item.id}`, { scroll: false })
+        }
         
         // Reset to resume tab if switching to a resume that doesn't support job-related tabs
         const supportsJobTabs = item.mode === 'tailored' || item.mode === null || item.mode === undefined
         if (!supportsJobTabs) {
             setActiveTab('resume')
         }
-    }, [])
+    }, [router])
 
     const handleDeleteSaved = useCallback(async (id: string | null) => {
         if (!id) return
@@ -585,17 +620,29 @@ export function useResumeEditor({
                     setBaselineData(fallback.data)
                     setSelectedVariant(fallback.variant || defaultResumeVariant)
                     setThemeMode(fallback.theme || 'light')
+                    setActiveResumeMode(fallback.mode ?? null)
+                    // Update last saved settings to prevent unnecessary auto-save
+                    lastSavedSettingsRef.current = {
+                        variant: fallback.variant || defaultResumeVariant,
+                        theme: fallback.theme || 'light'
+                    }
+                    // Update URL to fallback resume to prevent stale ID issues on refresh
+                    router.replace(`/resume-editor?id=${fallback.id}`, { scroll: false })
                 } else {
                     setActiveResumeId(null)
                     setResumeData(EMPTY_RESUME)
                     setBaselineData(EMPTY_RESUME)
                     setSelectedVariant(defaultResumeVariant)
                     setThemeMode('light')
+                    setActiveResumeMode(null)
+                    lastSavedSettingsRef.current = null
+                    // Redirect to dashboard if no resumes left
+                    router.push('/dashboard')
+                    return
                 }
             }
 
             toast.success('Resume deleted')
-            router.refresh()
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to delete resume')
         } finally {
@@ -647,7 +694,7 @@ export function useResumeEditor({
             setActiveResumeId(mapped.id)
             setActiveResumeMode(mapped.mode ?? null)
             setBaselineData(resumeData)
-            upsertAvailableResume(mapped)
+            upsertAvailableResume(mapped, true) // Move to top when saving
             toast.success('Resume saved')
             router.refresh()
         } catch (error) {

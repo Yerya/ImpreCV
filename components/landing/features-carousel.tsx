@@ -9,7 +9,6 @@ import {
   CarouselItem,
   type CarouselApi 
 } from "@/components/ui/carousel"
-import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures"
 import { cn } from "@/lib/utils"
 import { Brain, TrendingUp, FileText, TextSelect, Zap, Download, ChevronLeft, ChevronRight } from "lucide-react"
 
@@ -72,8 +71,8 @@ export function FeaturesCarousel() {
         opts={{
           align: "center",
           loop: true,
+          duration: 20,
         }}
-        plugins={[WheelGesturesPlugin()]}
         className="w-full"
       >
         <CarouselContent className="-ml-2 md:-ml-4">
@@ -84,7 +83,7 @@ export function FeaturesCarousel() {
             return (
               <CarouselItem 
                 key={index} 
-                className="pl-2 md:pl-4 basis-[70%] sm:basis-[50%] md:basis-[40%] lg:basis-[30%]"
+                className="pl-2 md:pl-4 basis-[70%] sm:basis-[50%] md:basis-[40%] lg:basis-[30%] no-select"
               >
                 <div 
                   className={cn(
@@ -110,16 +109,16 @@ export function FeaturesCarousel() {
                     <div className="relative z-10">
                       <div 
                         className={cn(
-                          "h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-opacity duration-500",
+                          "h-12 w-12 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-4 transition-all duration-500",
                           isActive 
-                            ? "bg-primary/20" 
-                            : "bg-primary/10"
+                            ? "from-[var(--gradient-2)]/30 to-[var(--gradient-3)]/10" 
+                            : "from-muted-foreground/20 to-muted-foreground/5"
                         )}
                       >
                         <Icon 
                           className={cn(
                             "h-6 w-6",
-                            isActive ? "text-primary" : "text-primary/70"
+                            isActive ? "text-[var(--gradient-2)]" : "text-muted-foreground"
                           )} 
                         />
                       </div>

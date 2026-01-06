@@ -15,6 +15,23 @@ import {
 import { Plus, Trash2, GripVertical, User, Briefcase, GraduationCap, Award, FolderOpen } from "lucide-react"
 import type { ResumeData, ResumeItem } from "@/lib/resume-templates/types"
 
+// Helper to normalize section content - converts objects to strings
+const normalizeContent = (content: unknown): string | ResumeItem[] => {
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) return content as ResumeItem[]
+    if (content && typeof content === 'object') {
+        // Convert object like { "Soft Skills": [...], "Programming": [...] } to comma-separated string
+        const entries = Object.entries(content as Record<string, unknown>)
+        return entries.map(([category, items]) => {
+            if (Array.isArray(items)) {
+                return `${category}: ${items.join(', ')}`
+            }
+            return `${category}: ${String(items)}`
+        }).join(' | ')
+    }
+    return ''
+}
+
 interface MobileResumeFormProps {
     data: ResumeData
     onUpdate: (data: ResumeData) => void
@@ -238,7 +255,8 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
 
                 {/* Dynamic Sections */}
                 {data.sections.map((section, sectionIndex) => {
-                    const isList = Array.isArray(section.content)
+                    const content = normalizeContent(section.content)
+                    const isList = Array.isArray(content)
                     const sectionKey = `section-${sectionIndex}`
 
                     return (
@@ -251,7 +269,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                     <div className="text-left flex-1 min-w-0">
                                         <p className="font-semibold text-sm truncate">{section.title || 'Untitled Section'}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {isList ? `${(section.content as ResumeItem[]).length} items` : 'Text content'}
+                                            {isList ? `${(content as ResumeItem[]).length} items` : 'Text content'}
                                         </p>
                                     </div>
                                 </div>
@@ -282,7 +300,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                     {/* Section Content */}
                                     {isList ? (
                                         <div className="space-y-3">
-                                            {(section.content as ResumeItem[]).map((item, itemIndex) => (
+                                            {(content as ResumeItem[]).map((item, itemIndex) => (
                                                 <div
                                                     key={itemIndex}
                                                     className="p-3 border border-border/50 rounded-lg bg-background/50 space-y-2"
@@ -377,7 +395,7 @@ export function MobileResumeForm({ data, onUpdate, className }: MobileResumeForm
                                         </div>
                                     ) : (
                                         <Textarea
-                                            value={section.content as string}
+                                            value={content as string}
                                             onChange={(e) => updateSection(sectionIndex, { ...section, content: e.target.value })}
                                             placeholder="Section content..."
                                             className="min-h-[100px] text-sm resize-none"

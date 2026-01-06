@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch"
 import { Loader2, ArrowRight, CheckCircle2, Sparkles } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import ResumeUpload from "./resume-upload"
 import JobPostingForm from "./job-posting-form"
 import ResumeList from "./resume-list"
@@ -139,13 +138,10 @@ export default function DashboardClient({
     }
   }
 
-  // Select mode only (for WorkflowSelector cards)
+  // Select mode only (for WorkflowSelector cards) - don't save to localStorage yet
   const handleModeSelect = (mode: WorkflowMode) => {
     setWorkflowMode(mode)
     setInputError(null)
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("cvify:workflowMode", mode)
-    }
   }
 
   // Change mode and proceed (for InlineModePicker dropdown)
@@ -158,10 +154,13 @@ export default function DashboardClient({
     }
   }
 
-  // Continue to workflow steps
+  // Continue to workflow steps - save mode to localStorage here
   const handleContinue = () => {
     setShowModeSelector(false)
     setInputError(null)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cvify:workflowMode", workflowMode)
+    }
   }
 
   // Show skeleton while hydrating from localStorage
@@ -340,10 +339,6 @@ export default function DashboardClient({
           })
       }
 
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
-      }
-
       setRequestKey(requestKey)
       toast.success(
         shouldGenerateCoverLetter ? "Resume adapted. Drafting cover letter in the background..." : "Resume adapted. Opening editor...",
@@ -385,10 +380,6 @@ export default function DashboardClient({
     try {
       const result = await improveResume(payload)
       
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
-      }
-      
       toast.success("Resume improved successfully!")
       router.push(`/resume-editor?id=${result.id}`)
     } catch (error: unknown) {
@@ -420,10 +411,6 @@ export default function DashboardClient({
     try {
       const result = await createResumeFromScratch(payload)
       
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("resume-editor-content", JSON.stringify(result.data))
-      }
-      
       toast.success("Resume created successfully!")
       router.push(`/resume-editor?id=${result.id}`)
     } catch (error: unknown) {
@@ -452,7 +439,7 @@ export default function DashboardClient({
   const canAnalyze = (selectedResumeId || resumeText.trim().length > 0) && hasJobInfo
 
   return (
-    <div className="min-h-screen relative pb-20">
+    <div className="min-h-screen relative">
       <GlobalHeader variant="dashboard" />
 
       <div className="container mx-auto px-4 py-8 relative z-10 max-w-6xl">
@@ -471,21 +458,24 @@ export default function DashboardClient({
 
         {/* Mode Selector or Workflow Content */}
         {showModeSelector ? (
-          <div className="space-y-8">
+          <div className="pb-24 md:pb-0">
             <WorkflowSelector
               selectedMode={workflowMode}
               onModeChange={handleModeSelect}
             />
             
-            <div className="flex justify-center">
-              <Button 
-                size="lg" 
-                onClick={handleContinue}
-                className="px-8"
-              >
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+            {/* Fixed bottom button on mobile, normal flow on desktop */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t border-border/50 md:relative md:p-0 md:bg-transparent md:backdrop-blur-none md:border-0 md:mt-8 z-50">
+              <div className="flex justify-center">
+                <Button 
+                  size="lg" 
+                  onClick={handleContinue}
+                  className="w-full md:w-auto px-8"
+                >
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -667,8 +657,6 @@ export default function DashboardClient({
           </div>
         )}
       </div>
-
-      <MobileBottomNav />
     </div>
   )
 }

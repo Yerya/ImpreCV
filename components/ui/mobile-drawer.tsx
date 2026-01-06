@@ -12,6 +12,7 @@ interface MobileDrawerProps {
     title?: string
     description?: string
     className?: string
+    noPadding?: boolean
 }
 
 export function MobileDrawer({
@@ -20,7 +21,8 @@ export function MobileDrawer({
     children,
     title,
     description,
-    className
+    className,
+    noPadding = false
 }: MobileDrawerProps) {
     const overlayRef = useRef<HTMLDivElement>(null)
     const drawerRef = useRef<HTMLDivElement>(null)
@@ -151,7 +153,10 @@ export function MobileDrawer({
                 )}
 
                 {/* Content */}
-                <div className="drawer-content flex-1 overflow-auto overscroll-contain px-5 py-4">
+                <div className={cn(
+                    "drawer-content flex-1 overflow-auto overscroll-contain",
+                    noPadding ? "py-2" : "px-5 py-4"
+                )}>
                     {children}
                 </div>
             </div>

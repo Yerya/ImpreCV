@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { Sparkles, Target, PenTool, Check, FileText, Zap, Brain, TrendingUp, Wand2, BookOpen, ChevronDown } from "lucide-react"
 
@@ -77,67 +78,146 @@ interface WorkflowSelectorProps {
 
 export function WorkflowSelector({ selectedMode, onModeChange, className }: WorkflowSelectorProps) {
     return (
-        <div className={cn("grid gap-4 md:grid-cols-3", className)}>
-            {WORKFLOW_OPTIONS.map((option) => {
-                const isSelected = selectedMode === option.id
-                return (
-                    <Card
-                        key={option.id}
-                        className={cn(
-                            "group relative cursor-pointer p-6 transition-all flex flex-col",
-                            isSelected
-                                ? "glass-card-primary ring-1 ring-primary/30"
-                                : "glass-card hover:border-primary/30"
-                        )}
-                        onClick={() => onModeChange(option.id)}
-                    >
-                        {isSelected && (
-                            <div className="absolute top-4 right-4 h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                                <Check className="h-3.5 w-3.5 text-primary-foreground" />
+        <div className={className}>
+            {/* Desktop: Grid layout */}
+            <div className="hidden md:grid md:grid-cols-3 gap-4">
+                {WORKFLOW_OPTIONS.map((option) => {
+                    const isSelected = selectedMode === option.id
+                    return (
+                        <Card
+                            key={option.id}
+                            className={cn(
+                                "group relative cursor-pointer p-6 transition-all flex flex-col",
+                                isSelected
+                                    ? "glass-card-primary ring-2 ring-primary/50"
+                                    : "glass-card hover:border-primary/30"
+                            )}
+                            onClick={() => onModeChange(option.id)}
+                        >
+                            {isSelected && (
+                                <div className="absolute top-4 right-4 h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+                                    <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                                </div>
+                            )}
+                            <div className="flex items-start gap-4">
+                                <div
+                                    className={cn(
+                                        "h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 transition-all duration-200",
+                                        isSelected 
+                                            ? option.iconBgActive 
+                                            : cn(option.iconBg, "group-hover:from-[var(--gradient-2)]/30 group-hover:to-[var(--gradient-3)]/10 group-hover:text-[var(--gradient-2)]")
+                                    )}
+                                >
+                                    {option.icon}
+                                </div>
+                                <div className="min-w-0 flex-1 pr-6">
+                                    <h3 className="text-lg font-semibold">{option.title}</h3>
+                                    <p className="text-xs text-muted-foreground/70 mt-0.5">
+                                        {option.subtitle}
+                                    </p>
+                                </div>
                             </div>
-                        )}
-                        <div className="flex items-start gap-4">
-                            <div
+                            <p className="text-sm text-muted-foreground mt-4 leading-relaxed flex-1">
+                                {option.description}
+                            </p>
+                            <div className="mt-5 space-y-2">
+                                {option.features.map((feature, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="flex items-center gap-2 text-sm text-muted-foreground"
+                                    >
+                                        <span className={cn(
+                                            "opacity-70 transition-all duration-200",
+                                            isSelected 
+                                                ? "text-primary opacity-100" 
+                                                : "group-hover:text-[var(--gradient-2)] group-hover:opacity-100"
+                                        )}>
+                                            {feature.icon}
+                                        </span>
+                                        {feature.text}
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            {/* Mobile: Accordion layout */}
+            <div className="md:hidden">
+                <Accordion 
+                    type="single" 
+                    defaultValue={selectedMode} 
+                    collapsible 
+                    className="space-y-3"
+                    onValueChange={(value) => {
+                        if (value) onModeChange(value as WorkflowMode)
+                    }}
+                >
+                    {WORKFLOW_OPTIONS.map((option) => {
+                        const isSelected = selectedMode === option.id
+                        return (
+                            <AccordionItem 
+                                key={option.id} 
+                                value={option.id}
                                 className={cn(
-                                    "h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 transition-all duration-200",
+                                    "border rounded-2xl px-4 overflow-hidden transition-all",
                                     isSelected 
-                                        ? option.iconBgActive 
-                                        : cn(option.iconBg, "group-hover:from-[var(--gradient-2)]/30 group-hover:to-[var(--gradient-3)]/10 group-hover:text-[var(--gradient-2)]")
+                                        ? "glass-card-primary ring-2 ring-primary/50" 
+                                        : "glass-card"
                                 )}
                             >
-                                {option.icon}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <h3 className="text-lg font-semibold">{option.title}</h3>
-                                <p className="text-xs text-muted-foreground/70 mt-0.5">
-                                    {option.subtitle}
-                                </p>
-                            </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-4 leading-relaxed flex-1">
-                            {option.description}
-                        </p>
-                        <div className="mt-5 space-y-2">
-                            {option.features.map((feature, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center gap-2 text-sm text-muted-foreground"
-                                >
-                                    <span className={cn(
-                                        "opacity-70 transition-all duration-200",
-                                        isSelected 
-                                            ? "text-primary opacity-100" 
-                                            : "group-hover:text-[var(--gradient-2)] group-hover:opacity-100"
-                                    )}>
-                                        {feature.icon}
-                                    </span>
-                                    {feature.text}
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                )
-            })}
+                                <AccordionTrigger className="py-4 hover:no-underline gap-3">
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <div className={cn(
+                                            "h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0",
+                                            isSelected ? option.iconBgActive : option.iconBg
+                                        )}>
+                                            {option.icon}
+                                        </div>
+                                        <div className="text-left flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold">{option.title}</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground/70 mt-0.5">
+                                                {option.subtitle}
+                                            </p>
+                                        </div>
+                                        {isSelected && (
+                                            <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center shrink-0 mr-2">
+                                                <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-4">
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            {option.description}
+                                        </p>
+                                        <div className="space-y-2">
+                                            {option.features.map((feature, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                                                >
+                                                    <span className={cn(
+                                                        "transition-all duration-200",
+                                                        isSelected ? "text-primary" : "opacity-70"
+                                                    )}>
+                                                        {feature.icon}
+                                                    </span>
+                                                    {feature.text}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )
+                    })}
+                </Accordion>
+            </div>
         </div>
     )
 }

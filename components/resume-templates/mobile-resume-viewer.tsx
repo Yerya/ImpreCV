@@ -169,10 +169,9 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
 
     // Calculate scaled dimensions
     const scaledWidth = 794 * scale
-    const scaledHeight = 1123 * scale
 
     return (
-        <div className={cn("relative flex flex-col", className)} style={{ height: '100%' }}>
+        <div className={cn("relative flex flex-col", className)}>
             {/* Zoom Controls */}
             <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-lg border border-border/50 p-1 shadow-md">
                 <Button
@@ -212,7 +211,7 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
             <div
                 ref={containerRef}
                 className={cn(
-                    "flex-1 overflow-auto overscroll-contain",
+                    "flex-1 overflow-auto overscroll-contain flex flex-col min-h-0",
                     isDragging ? "cursor-grabbing select-none" : "cursor-grab"
                 )}
                 onPointerDown={handlePointerDown}
@@ -222,14 +221,15 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                style={{ touchAction: 'none' }}
+                style={{ touchAction: 'none', height: '100%' }}
             >
                 {/* Wrapper for centering */}
                 <div
                     className="flex justify-center items-start p-2"
                     style={{
                         minWidth: scaledWidth + 16,
-                        minHeight: scaledHeight + 16,
+                        height: 'auto',
+                        minHeight: 'auto',
                     }}
                 >
                     <div

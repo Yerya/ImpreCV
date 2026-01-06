@@ -9,7 +9,6 @@ import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 
 export const dynamic = 'force-dynamic'
 
@@ -86,7 +85,6 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
                         </div>
                     </Card>
                 </div>
-                <MobileBottomNav />
             </div>
         )
     }

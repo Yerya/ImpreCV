@@ -23,13 +23,13 @@ export const ResumeActionBar = memo(function ResumeActionBar({
 }: ResumeActionBarProps) {
     if (variant === 'mobile') {
         return (
-            <div className="fixed bottom-16 left-0 right-0 z-30 px-3 py-2">
+            <div className="fixed bottom-0 left-0 right-0 z-30 px-3 py-2">
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={onReset}
-                        className="flex-1 h-9"
+                        className="flex-1 h-9 bg-background text-foreground border-border"
                     >
                         <RefreshCw className="h-4 w-4 mr-1.5" />
                         Reset

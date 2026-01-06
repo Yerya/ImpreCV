@@ -8,7 +8,13 @@ import { Badge } from "@/components/ui/badge"
 import { Loader2, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MAX_ADAPTED_RESUMES } from "@/lib/constants"
-import type { SavedResume } from "./types"
+import type { SavedResume, ResumeMode } from "./types"
+
+const MODE_BADGE_CONFIG: Record<ResumeMode, { label: string; className: string }> = {
+    tailored: { label: 'Tailored', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400' },
+    improved: { label: 'Enhanced', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' },
+    created: { label: 'New', className: 'bg-violet-500/10 text-violet-600 border-violet-500/20 dark:text-violet-400' },
+}
 
 interface RecentResumesListProps {
     resumes: SavedResume[]
@@ -68,6 +74,11 @@ export const RecentResumesList = memo(function RecentResumesList({
                                     <p className="text-sm text-muted-foreground mt-0.5">{relativeTime}</p>
                                 </button>
                                 <div className="flex items-center gap-2">
+                                    {resume.mode && MODE_BADGE_CONFIG[resume.mode] && (
+                                        <Badge variant="outline" className={cn("text-[10px]", MODE_BADGE_CONFIG[resume.mode].className)}>
+                                            {MODE_BADGE_CONFIG[resume.mode].label}
+                                        </Badge>
+                                    )}
                                     {resume.pdfUrl && (
                                         <Badge variant="outline">PDF</Badge>
                                     )}
@@ -99,9 +110,9 @@ export const RecentResumesList = memo(function RecentResumesList({
     }
 
     return (
-        <Card className="glass-card p-5 space-y-4">
+        <Card className="glass-card p-5 space-y-4 w-[320px]">
             <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0">
                     <p className="text-sm font-semibold">Recent resumes</p>
                     <p className="text-sm text-muted-foreground">Pick a version to edit or export.</p>
                 </div>
@@ -134,14 +145,19 @@ export const RecentResumesList = memo(function RecentResumesList({
                                 <button
                                     type="button"
                                     onClick={() => onSelect(resume)}
-                                    className="text-left flex-1 min-w-0"
+                                    className="text-left flex-1 min-w-0 overflow-hidden"
                                 >
-                                    <p className="text-sm font-semibold truncate">{label}</p>
+                                    <p className="text-sm font-semibold truncate max-w-[180px]">{label}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
                                         {relativeTime}
                                     </p>
                                 </button>
                                 <div className="flex items-center gap-2">
+                                    {resume.mode && MODE_BADGE_CONFIG[resume.mode] && (
+                                        <Badge variant="outline" className={cn("text-[10px]", MODE_BADGE_CONFIG[resume.mode].className)}>
+                                            {MODE_BADGE_CONFIG[resume.mode].label}
+                                        </Badge>
+                                    )}
                                     {resume.pdfUrl && (
                                         <Badge variant="outline" className="text-[10px]">
                                             PDF

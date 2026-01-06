@@ -5,6 +5,7 @@ import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import { useResumeEditor } from "./use-resume-editor"
 import { MobileResumeEditor } from "./mobile-resume-editor"
 import { DesktopResumeEditor } from "./desktop-resume-editor"
+import { ResumeEditorSkeleton } from "./resume-editor-skeleton"
 import type { ResumeEditorProps } from "./types"
 
 export function ResumeEditor({
@@ -30,6 +31,11 @@ export function ResumeEditor({
 
     // Only show cover letter and skill map tabs for tailored resumes
     const showJobRelatedTabs = editor.activeResumeMode === 'tailored' || editor.activeResumeMode === null
+
+    // Show skeleton only on very first render when isMobile is undefined (no cached value)
+    if (isMobile === undefined) {
+        return <ResumeEditorSkeleton />
+    }
 
     if (isMobile) {
         return <MobileResumeEditor editor={editor} backHref={backHref} showJobRelatedTabs={showJobRelatedTabs} />

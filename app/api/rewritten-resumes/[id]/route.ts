@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
-import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import { MAX_CONTENT_LENGTH } from "@/lib/constants"
 
@@ -65,32 +64,51 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const body = await req.json().catch(() => ({}))
 
-  const rawContent = typeof body?.content === "string" ? body.content : ""
-  const structuredData = (body?.structuredData || body?.structured_data) as ResumeData | undefined
-  const variant = typeof body?.variant === "string" ? body.variant : defaultResumeVariant
-  const theme = body?.theme === "dark" ? "dark" : "light"
-  const pdfUrl = typeof body?.pdfUrl === "string" ? body.pdfUrl : null
-  const pdfPath = typeof body?.pdfPath === "string" ? body.pdfPath : null
-  const parsedData = structuredData ?? parseMarkdownToResumeData(rawContent)
-  const content = JSON.stringify(parsedData)
-  const fileName = typeof body?.fileName === "string" && body.fileName.trim() ? body.fileName.trim() : parsedData.personalInfo.name || "resume"
+  // Build update object with only provided fields
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  }
 
-  if (content.length > MAX_CONTENT_LENGTH) {
-    return NextResponse.json({ error: "Content is too long." }, { status: 400 })
+  // Handle structured data / content only if provided
+  const rawContent = typeof body?.content === "string" ? body.content : null
+  const structuredData = (body?.structuredData || body?.structured_data) as ResumeData | undefined
+  
+  if (structuredData || rawContent) {
+    const parsedData = structuredData ?? parseMarkdownToResumeData(rawContent || "")
+    const content = JSON.stringify(parsedData)
+    
+    if (content.length > MAX_CONTENT_LENGTH) {
+      return NextResponse.json({ error: "Content is too long." }, { status: 400 })
+    }
+    
+    updateData.content = content
+    updateData.structured_data = parsedData
+    
+    // Only update fileName if content is being updated
+    if (typeof body?.fileName === "string" && body.fileName.trim()) {
+      updateData.file_name = body.fileName.trim()
+    } else if (parsedData.personalInfo.name) {
+      updateData.file_name = parsedData.personalInfo.name
+    }
+  }
+
+  // Handle optional fields
+  if (typeof body?.variant === "string") {
+    updateData.variant = body.variant
+  }
+  if (body?.theme === "dark" || body?.theme === "light") {
+    updateData.theme = body.theme
+  }
+  if (typeof body?.pdfUrl === "string") {
+    updateData.pdf_url = body.pdfUrl
+  }
+  if (typeof body?.pdfPath === "string") {
+    updateData.pdf_path = body.pdfPath
   }
 
   const { data, error } = await supabase
     .from("rewritten_resumes")
-    .update({
-      content,
-      structured_data: parsedData,
-      variant,
-      theme,
-      pdf_url: pdfUrl,
-      pdf_path: pdfPath,
-      file_name: fileName,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", id)
     .eq("user_id", user.id)
     .select(`

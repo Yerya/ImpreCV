@@ -12,7 +12,6 @@ import { GlobalHeader } from "@/components/global-header"
 import { Loader2 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/appSlice"
 import { signOutThunk } from "@/features/auth/authSlice"
@@ -248,8 +247,6 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
           </Card>
         </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   )
 }

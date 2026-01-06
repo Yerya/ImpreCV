@@ -3,6 +3,23 @@ import type { ResumeData, ResumeItem } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
 import { A4_DIMENSIONS, balanceSectionsAcrossColumns, resolveSidebarRatio, variantStyles } from '@/lib/resume-templates/server-renderer'
 
+// Helper to normalize section content - converts objects to strings
+const normalizeContent = (content: unknown): string | ResumeItem[] => {
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) return content as ResumeItem[]
+    if (content && typeof content === 'object') {
+        // Convert object like { "Soft Skills": [...], "Programming": [...] } to comma-separated string
+        const entries = Object.entries(content as Record<string, unknown>)
+        return entries.map(([category, items]) => {
+            if (Array.isArray(items)) {
+                return `${category}: ${items.join(', ')}`
+            }
+            return `${category}: ${String(items)}`
+        }).join(' | ')
+    }
+    return ''
+}
+
 interface ServerResumeRendererProps {
     data: ResumeData
     variant: ResumeVariantId
@@ -17,7 +34,8 @@ export function ServerResumeRenderer({
     const layout = (variant === 'tailored' || variant === 'modern' || variant === 'bold') ? 'split' : 'single'
 
     const renderSection = (section: typeof data.sections[0], index: number) => {
-        const isList = Array.isArray(section.content)
+        const content = normalizeContent(section.content)
+        const isList = Array.isArray(content)
 
         return (
             <div key={index} className={cn('resume-print-section', styles.section)}>
@@ -28,7 +46,7 @@ export function ServerResumeRenderer({
                 <div className={cn('resume-print-block', styles.card)}>
                     {isList ? (
                         <div>
-                            {(section.content as ResumeItem[]).map((item, itemIndex) => (
+                            {(content as ResumeItem[]).map((item, itemIndex) => (
                                 <div
                                     key={itemIndex}
                                     className="resume-print-item mb-3 last:mb-0"
@@ -70,7 +88,7 @@ export function ServerResumeRenderer({
                         </div>
                     ) : (
                         <div className={cn(styles.paragraph, 'min-h-[2rem]')}>
-                            {section.content as string}
+                            {content as string}
                         </div>
                     )}
                 </div>
@@ -97,6 +115,10 @@ export function ServerResumeRenderer({
         if (Array.isArray(section.content)) {
             const meaningfulItems = section.content.filter((item) => !isItemEmpty(item))
             return meaningfulItems.length > 0
+        }
+        // Handle object content (e.g., categorized skills from LLM)
+        if (section.content && typeof section.content === 'object') {
+            return Object.keys(section.content).length > 0
         }
         return false
     }

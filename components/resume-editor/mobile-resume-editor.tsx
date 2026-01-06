@@ -4,7 +4,6 @@ import { memo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MobileDrawer } from "@/components/ui/mobile-drawer"
 import { cn } from "@/lib/utils"
 import { Eye, Edit3, FileText, Palette } from "lucide-react"
@@ -16,7 +15,7 @@ import { MobileResumeForm } from "@/components/resume-templates/mobile-resume-fo
 import { ResumeChatPanel } from "@/components/chat/resume-chat-panel"
 import { ResumeActionBar } from "./resume-action-bar"
 import { RecentResumesList } from "./recent-resumes-list"
-import { StylePicker } from "./style-picker"
+import { TemplatePreviewCarousel } from "./template-preview-carousel"
 import type { UseResumeEditorReturn } from "./types"
 
 interface MobileResumeEditorProps {
@@ -75,7 +74,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
     } = editor
 
     return (
-        <div className="min-h-screen flex flex-col pb-20">
+        <div className="h-screen flex flex-col overflow-hidden">
             <GlobalHeader variant="back" backHref={backHref} backLabel="Back" />
 
             <div className="px-4 pt-3 pb-2">
@@ -85,19 +84,17 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 </p>
             </div>
 
-            <div className="px-4 pb-2">
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
-                    <TabsList className={cn("w-full grid", showJobRelatedTabs ? "grid-cols-3" : "grid-cols-1")}>
-                        <TabsTrigger value="resume" className="text-xs">Resume</TabsTrigger>
-                        {showJobRelatedTabs && (
-                            <>
-                                <TabsTrigger value="cover" className="text-xs">Cover</TabsTrigger>
-                                <TabsTrigger value="skills" className="text-xs">Skills</TabsTrigger>
-                            </>
-                        )}
-                    </TabsList>
-                </Tabs>
-            </div>
+            {showJobRelatedTabs && (
+                <div className="px-4 pb-2">
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
+                        <TabsList className="w-full grid grid-cols-3">
+                            <TabsTrigger value="resume" className="text-xs">Resume</TabsTrigger>
+                            <TabsTrigger value="cover" className="text-xs">Cover</TabsTrigger>
+                            <TabsTrigger value="skills" className="text-xs">Skills</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+            )}
 
             {activeTab === 'resume' && (
                 <div className="px-4 pb-2 flex items-center gap-2">
@@ -148,7 +145,10 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 </div>
             )}
 
-            <div className="flex-1 px-4 pb-4">
+            <div className={cn(
+                "flex-1 px-4 pb-20 min-h-0",
+                mobileView === 'edit' || activeTab !== 'resume' ? "overflow-auto" : "overflow-hidden"
+            )}>
                 {activeTab === 'resume' ? (
                     mobileView === 'preview' ? (
                         <MobileResumeViewer className="min-h-[60vh]">
@@ -211,16 +211,21 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 open={showStyleDrawer}
                 onOpenChange={setShowStyleDrawer}
                 title="Choose a Style"
-                description="Select a template for your resume"
+                description="Preview and select a template for your resume"
+                className="max-h-[95vh]"
+                noPadding
             >
-                <StylePicker
-                    selectedVariant={selectedVariant}
-                    onSelect={(v) => {
-                        setSelectedVariant(v)
-                        setShowStyleDrawer(false)
-                    }}
-                    variant="mobile"
-                />
+                <div className="pb-4">
+                    <TemplatePreviewCarousel
+                        resumeData={resumeData}
+                        selectedVariant={selectedVariant}
+                        onSelect={(v) => {
+                            setSelectedVariant(v)
+                            setShowStyleDrawer(false)
+                        }}
+                        themeMode={themeMode}
+                    />
+                </div>
             </MobileDrawer>
 
             <MobileDrawer
@@ -248,8 +253,6 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 onApplyModifications={setResumeData}
                 onResetToBaseline={handleReset}
             />
-
-            <MobileBottomNav />
         </div>
     )
 })

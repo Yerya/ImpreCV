@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import {
   CheckCircle2,
   ArrowRight,
@@ -247,7 +246,6 @@ export default function SkillMapClient({ skillMap }: SkillMapClientProps) {
           </Button>
         </div>
       </div>
-      <MobileBottomNav />
     </div>
   )
 }

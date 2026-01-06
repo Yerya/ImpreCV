@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Download, Copy, CheckCircle2, Edit3, Eye, X, Save } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -212,7 +211,6 @@ export default function CoverLetterClient({ coverLetter }: CoverLetterClientProp
           </div>
         </Card>
       </div>
-      <MobileBottomNav />
     </div>
   )
 }

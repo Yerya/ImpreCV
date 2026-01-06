@@ -37,7 +37,28 @@ const isSectionRenderable = (section: ResumeData['sections'][number]) => {
         const meaningfulItems = section.content.filter((item) => !isItemEmpty(item))
         return meaningfulItems.length > 0
     }
+    // Handle object content (e.g., categorized skills from LLM)
+    if (section.content && typeof section.content === 'object') {
+        return Object.keys(section.content).length > 0
+    }
     return false
+}
+
+// Helper to normalize section content - converts objects to strings
+const normalizeContent = (content: unknown): string | ResumeItem[] => {
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) return content as ResumeItem[]
+    if (content && typeof content === 'object') {
+        // Convert object like { "Soft Skills": [...], "Programming": [...] } to comma-separated string
+        const entries = Object.entries(content as Record<string, unknown>)
+        return entries.map(([category, items]) => {
+            if (Array.isArray(items)) {
+                return `${category}: ${items.join(', ')}`
+            }
+            return `${category}: ${String(items)}`
+        }).join(' | ')
+    }
+    return ''
 }
 
 export function WebResumeRenderer({
@@ -140,7 +161,8 @@ export function WebResumeRenderer({
     }
 
     const renderSection = (section: typeof data.sections[0], index: number) => {
-        const isList = Array.isArray(section.content)
+        const content = normalizeContent(section.content)
+        const isList = Array.isArray(content)
 
         return (
             <div key={index} className={styles.section + " group/section relative"}>
@@ -166,7 +188,7 @@ export function WebResumeRenderer({
                 <div className={styles.card}>
                     {isList ? (
                         <EditableList
-                            items={section.content as ResumeItem[]}
+                            items={content as ResumeItem[]}
                             onUpdate={(newItems) => updateSection(index, { ...section, content: newItems })}
                             newItemTemplate={{ title: 'New Item', description: 'Description' }}
                             readOnly={!isEditing}
@@ -242,7 +264,7 @@ export function WebResumeRenderer({
                     ) : (
                         <div className={cn(styles.paragraph, 'min-h-[2rem]')}>
                             <EditableText
-                                value={section.content as string}
+                                value={content as string}
                                 onChange={(val) => updateSection(index, { ...section, content: val })}
                                 multiline
                                 placeholder="Section content..."

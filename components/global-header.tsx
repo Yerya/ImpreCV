@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, LogOut, Settings, Menu, X, ListChecks, Route, LayoutDashboard } from "lucide-react"
+import { ArrowLeft, LogOut, Settings, Menu, X, ListChecks, Route, LayoutDashboard, FileText } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PaletteToggle } from "@/components/palette-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
@@ -125,19 +125,17 @@ export function GlobalHeader({
             <PaletteToggle />
             <ThemeToggle />
 
-            {/* Mobile Menu Toggle (Landing Page Only) */}
-            {variant === "landing" && (
-              <Button
-                ref={buttonRef}
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            )}
+            {/* Mobile Menu Toggle */}
+            <Button
+              ref={buttonRef}
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
 
             {/* Desktop Auth Buttons */}
             <div className="hidden lg:flex items-center gap-2">
@@ -210,7 +208,7 @@ export function GlobalHeader({
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
-        {isMobileMenuOpen && variant === "landing" && (
+        {isMobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -230,40 +228,84 @@ export function GlobalHeader({
                 }}
               />
               <nav className="flex flex-col gap-2 relative z-10">
-                <Link
-                  href="#features"
-                  className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                    <ListChecks className="h-4 w-4 text-primary shrink-0" />
-                    <span>Features</span>
-                  </span>
-                </Link>
-                <Link
-                  href="#how-it-works"
-                  className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                    <Route className="h-4 w-4 text-primary shrink-0" />
-                    <span>How It Works</span>
-                  </span>
-                </Link>
+                {variant === "landing" && (
+                  <>
+                    <Link
+                      href="#features"
+                      className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                        <ListChecks className="h-4 w-4 text-primary shrink-0" />
+                        <span>Features</span>
+                      </span>
+                    </Link>
+                    <Link
+                      href="#how-it-works"
+                      className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                        <Route className="h-4 w-4 text-primary shrink-0" />
+                        <span>How It Works</span>
+                      </span>
+                    </Link>
+                  </>
+                )}
+                {variant !== "landing" && user && (
+                  <>
+                    {!isDashboardPage && (
+                      <Link
+                        href="/dashboard"
+                        className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                          <LayoutDashboard className="h-4 w-4 text-primary shrink-0" />
+                          <span>Dashboard</span>
+                        </span>
+                      </Link>
+                    )}
+                    <Link
+                      href="/resume-editor"
+                      className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                        <span>Resume Editor</span>
+                      </span>
+                    </Link>
+                    {!isSettingsPage && (
+                      <Link
+                        href="/settings"
+                        className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                          <Settings className="h-4 w-4 text-primary shrink-0" />
+                          <span>Settings</span>
+                        </span>
+                      </Link>
+                    )}
+                  </>
+                )}
               </nav>
               <div className="flex flex-col gap-2 relative z-10">
                 {!isLoading && (
                   <>
                     {user ? (
                       <>
-                        <Button asChild className="w-full justify-start px-4 py-3" variant="ghost">
-                          <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                            <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                              <LayoutDashboard className="h-4 w-4 shrink-0" />
-                              <span>Dashboard</span>
-                            </span>
-                          </Link>
-                        </Button>
+                        {variant === "landing" && (
+                          <Button asChild className="w-full justify-start px-4 py-3" variant="ghost">
+                            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                              <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                                <span>Dashboard</span>
+                              </span>
+                            </Link>
+                          </Button>
+                        )}
                         <Button
                           className="w-full justify-start px-4 py-3 text-destructive hover:text-destructive"
                           variant="ghost"

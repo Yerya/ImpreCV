@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { GlobalHeader } from "@/components/global-header"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
@@ -246,7 +245,6 @@ export default function ResumeRewriteClient({ rewrittenResume }: ResumeRewriteCl
           </div>
         </div>
       </div>
-      <MobileBottomNav />
     </div>
   )
 }
