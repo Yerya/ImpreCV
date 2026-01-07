@@ -100,3 +100,13 @@ CREATE TABLE IF NOT EXISTS public.chat_usage (
 );
 
 COMMENT ON TABLE public.chat_usage IS 'Tracks AI chat modification limits per user and resume. Records auto-expire after reset period.';
+
+-- Rate limits table (for global IP/user rate limiting)
+CREATE TABLE IF NOT EXISTS public.rate_limits (
+  key TEXT PRIMARY KEY,
+  count INTEGER NOT NULL DEFAULT 1,
+  reset_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+COMMENT ON TABLE public.rate_limits IS 'Sliding-window rate limiting by IP or user. Accessed via SECURITY DEFINER function only.';

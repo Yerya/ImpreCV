@@ -7,6 +7,7 @@ import { Upload, Loader2, CheckCircle2, FileText, FileType } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { MAX_FILE_SIZE_BYTES } from "@/lib/constants"
 
 interface ResumeRecord {
   id: string
@@ -22,8 +23,6 @@ interface ResumeUploadProps {
   currentCount?: number
   maxResumes?: number
 }
-
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
 export default function ResumeUpload({
   onResumeUploaded,

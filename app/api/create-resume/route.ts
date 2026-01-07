@@ -8,6 +8,7 @@ import {
     MAX_ADAPTED_RESUMES,
     ADAPTED_RESUME_LIMIT_ERROR,
 } from "@/lib/constants";
+import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit";
 
 interface CreateResumeInput {
     fullName: string;
@@ -42,7 +43,7 @@ interface CreateResumeInput {
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("create-resume");
-    
+
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured");
@@ -50,6 +51,18 @@ export async function POST(req: NextRequest) {
         }
 
         const supabase = await getSupabaseServerClient();
+
+        // Rate limit by IP first
+        const clientIp = getClientIp(req);
+        const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+        if (!ipLimit.allowed) {
+            logger.warn("ip_rate_limit_exceeded", { ip: clientIp });
+            return NextResponse.json(
+                { error: "Too many requests. Please try again later." },
+                { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+            );
+        }
+
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -57,6 +70,16 @@ export async function POST(req: NextRequest) {
         if (!user) {
             logger.warn("unauthorized_request");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Rate limit by user
+        const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+        if (!userLimit.allowed) {
+            logger.warn("user_rate_limit_exceeded", { userId: user.id });
+            return NextResponse.json(
+                { error: "Rate limit exceeded." },
+                { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+            );
         }
 
         const userLogger = createLogger("create-resume", user.id);
@@ -88,7 +111,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Build user input summary for the prompt
-        const experienceText = body.experience?.map(exp => 
+        const experienceText = body.experience?.map(exp =>
             `- ${exp.title} at ${exp.company}${exp.location ? `, ${exp.location}` : ''} (${exp.startDate} - ${exp.current ? 'Present' : exp.endDate || 'Present'})${exp.responsibilities ? `\n  ${exp.responsibilities}` : ''}`
         ).join('\n') || 'No experience provided';
 
@@ -240,8 +263,8 @@ Include additional sections (certifications, languages, projects) only if releva
             if (error instanceof LLMError) {
                 userLogger.error("llm_error");
                 if (error.type === "RATE_LIMIT") {
-                    return NextResponse.json({ 
-                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
+                    return NextResponse.json({
+                        error: "AI service is temporarily overloaded. Please try again in a few moments."
                     }, { status: 429 });
                 }
                 return NextResponse.json({ error: "AI service unavailable. Please try again." }, { status: 503 });

@@ -6,6 +6,7 @@ import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeModification, ChatUsage } from "@/lib/chat"
 import { MAX_MODIFICATIONS_PER_DAY, USAGE_RESET_HOURS, MAX_MESSAGE_CHARS } from "@/lib/chat"
 import { MAX_CHAT_HISTORY_MESSAGES } from "@/lib/constants"
+import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 
 interface ChatHistoryMessage {
     role: "user" | "assistant"
@@ -14,7 +15,7 @@ interface ChatHistoryMessage {
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("chat-resume")
-    
+
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured")
@@ -22,6 +23,18 @@ export async function POST(req: NextRequest) {
         }
 
         const supabase = await getSupabaseServerClient()
+
+        // Rate limit by IP first
+        const clientIp = getClientIp(req);
+        const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+        if (!ipLimit.allowed) {
+            logger.warn("ip_rate_limit_exceeded", { ip: clientIp });
+            return NextResponse.json(
+                { error: "Too many requests. Please try again later." },
+                { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+            );
+        }
+
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
@@ -29,14 +42,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        // Rate limit by user
+        const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+        if (!userLimit.allowed) {
+            logger.warn("user_rate_limit_exceeded", { userId: user.id });
+            return NextResponse.json(
+                { error: "Rate limit exceeded." },
+                { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+            );
+        }
+
         // Update logger with user context
         const userLogger = createLogger("chat-resume", user.id)
         userLogger.requestStart("/api/chat-resume")
 
         const body = await req.json()
-        const { 
-            message, 
-            resumeData, 
+        const {
+            message,
+            resumeData,
             history = []
         } = body as {
             message: string
@@ -108,9 +131,9 @@ export async function POST(req: NextRequest) {
                 idx: i,
                 type: s.type,
                 title: s.title,
-                contentPreview: typeof s.content === "string" 
+                contentPreview: typeof s.content === "string"
                     ? s.content.slice(0, 200) + (s.content.length > 200 ? "..." : "")
-                    : Array.isArray(s.content) 
+                    : Array.isArray(s.content)
                         ? `[${s.content.length} items]`
                         : s.content
             }))
@@ -128,7 +151,7 @@ export async function POST(req: NextRequest) {
 
         // Add context message (resume data)
         const contextMessage = `[RESUME]\n${JSON.stringify(compactResume, null, 1)}\n\n[SECTIONS]\n${JSON.stringify(resumeData.sections, null, 1)}`
-        
+
         contents.push({ role: "user", parts: [{ text: contextMessage }] })
         contents.push({ role: "model", parts: [{ text: '{"message": "Ready to help you edit. What would you like to change?"}' }] })
 
@@ -158,7 +181,7 @@ export async function POST(req: NextRequest) {
             rawText = response.text
             usedFallback = response.usedFallback
             modelUsed = response.model
-            
+
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback,
@@ -171,12 +194,12 @@ export async function POST(req: NextRequest) {
                 success: false,
                 error: error instanceof Error ? error.message : "Unknown error"
             })
-            
+
             if (error instanceof LLMError) {
                 if (error.type === "RATE_LIMIT") {
                     userLogger.requestComplete(429, { reason: "rate_limit" })
-                    return NextResponse.json({ 
-                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
+                    return NextResponse.json({
+                        error: "AI service is temporarily overloaded. Please try again in a few moments."
                     }, { status: 429 })
                 }
             }
@@ -241,7 +264,7 @@ export async function POST(req: NextRequest) {
             resetAt: resetAt.getTime()
         }
 
-        userLogger.requestComplete(200, { 
+        userLogger.requestComplete(200, {
             modificationsCount: modifications.length,
             hasAction: !!parsed.action,
             usageCount: newCount

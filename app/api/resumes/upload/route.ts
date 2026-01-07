@@ -5,6 +5,7 @@ import { extractAndSanitizeResume, MAX_FILE_SIZE_BYTES, resolveResumeFileType } 
 import { isMeaningfulText } from "@/lib/text-utils"
 import { uploadFileWithRecord } from "@/lib/supabase/transaction"
 import { MAX_RESUMES_PER_USER } from "@/lib/constants"
+import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 
@@ -22,12 +23,32 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await getSupabaseServerClient()
+
+  // Rate limit by IP first
+  const clientIp = getClientIp(req);
+  const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+  if (!ipLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+    );
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Rate limit by user
+  const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+  if (!userLimit.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded." },
+      { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+    );
   }
 
   const { count: resumeCount, error: countError } = await supabase

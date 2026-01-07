@@ -1,9 +1,10 @@
 import { sanitizePlainText } from "./text-utils"
+import { MAX_FILE_SIZE_BYTES, MAX_EXTRACTED_TEXT_LENGTH } from "./constants"
 
 export type ResumeFileType = "pdf" | "docx" | "txt"
 
-export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
-const MAX_TEXT_LENGTH = 25000
+// Re-export for backward compatibility with existing imports
+export { MAX_FILE_SIZE_BYTES }
 
 const MIME_TYPE_MAP: Record<ResumeFileType, string[]> = {
   pdf: ["application/pdf"],
@@ -80,5 +81,5 @@ export async function extractAndSanitizeResume(buffer: Buffer, opts: { mimeType?
   }
 
   const cleaned = sanitizePlainText(raw)
-  return cleaned.slice(0, MAX_TEXT_LENGTH).trim()
+  return cleaned.slice(0, MAX_EXTRACTED_TEXT_LENGTH).trim()
 }

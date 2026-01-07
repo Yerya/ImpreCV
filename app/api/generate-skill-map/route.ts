@@ -5,6 +5,7 @@ import { sanitizePlainText, isMeaningfulText } from "@/lib/text-utils"
 import { deriveJobMetadata } from "@/lib/job-posting"
 import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm"
 import { createLogger } from "@/lib/api/logger"
+import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 import type { SkillMapData, Skill, RoadmapItem, AdaptationHighlight } from "@/types/skill-map"
 
 // Prompt for analyzing ORIGINAL resume vs job description (skill gap analysis)
@@ -38,8 +39,8 @@ Rules:
 
 // Prompt for comparing original vs adapted resume (adaptation quality)
 const buildAdaptationPrompt = (
-  originalResumeText: string, 
-  adaptedResumeData: string, 
+  originalResumeText: string,
+  adaptedResumeData: string,
   jobDescription: string
 ) => {
   return `Compare ADAPTED resume vs ORIGINAL for this job. Return JSON only.
@@ -134,8 +135,8 @@ const validateSkillMapData = (data: unknown): SkillMapData => {
     interviewTips: Array.isArray(record.interviewTips)
       ? (record.interviewTips as unknown[]).filter((t): t is string => typeof t === "string")
       : [],
-    adaptationScore: typeof record.adaptationScore === "number" 
-      ? Math.min(100, Math.max(0, record.adaptationScore)) 
+    adaptationScore: typeof record.adaptationScore === "number"
+      ? Math.min(100, Math.max(0, record.adaptationScore))
       : undefined,
     adaptationSummary: typeof record.adaptationSummary === "string" ? record.adaptationSummary : undefined,
     adaptationHighlights: Array.isArray(record.adaptationHighlights)
@@ -146,7 +147,7 @@ const validateSkillMapData = (data: unknown): SkillMapData => {
 
 export async function POST(request: NextRequest) {
   const logger = createLogger("skill-map")
-  
+
   try {
     if (!isSupabaseConfigured()) {
       logger.error("supabase_not_configured")
@@ -154,6 +155,18 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await getSupabaseServerClient()
+
+    // Rate limit by IP first
+    const clientIp = getClientIp(request);
+    const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+    if (!ipLimit.allowed) {
+      logger.warn("ip_rate_limit_exceeded", { ip: clientIp });
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+      );
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -161,6 +174,16 @@ export async function POST(request: NextRequest) {
     if (!user) {
       logger.warn("unauthorized_request")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Rate limit by user
+    const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+    if (!userLimit.allowed) {
+      logger.warn("user_rate_limit_exceeded", { userId: user.id });
+      return NextResponse.json(
+        { error: "Rate limit exceeded." },
+        { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+      );
     }
 
     const userLogger = createLogger("skill-map", user.id)
@@ -210,8 +233,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract job posting data
-    const jobPosting = rewrittenResume.job_posting as { 
-      id?: string; title?: string; company?: string; description?: string; link?: string 
+    const jobPosting = rewrittenResume.job_posting as {
+      id?: string; title?: string; company?: string; description?: string; link?: string
     } | null;
 
     if (rewrittenResume.user_id !== user.id) {
@@ -297,14 +320,14 @@ export async function POST(request: NextRequest) {
         enableFallback: true,
         logPrefix: "[SkillMap]"
       })
-      
+
       userLogger.llmComplete({
         model: response.model,
         usedFallback: response.usedFallback,
         success: true
       })
       userLogger.info("llm_analysis_complete", { analysisType })
-      
+
       const cleanedText = cleanJsonResponse(response.text)
       return JSON.parse(cleanedText)
     }
@@ -322,11 +345,11 @@ export async function POST(request: NextRequest) {
         success: false,
         error: message
       })
-      
+
       if (error instanceof LLMError && error.type === "RATE_LIMIT") {
         userLogger.requestComplete(429, { reason: "rate_limit" })
-        return NextResponse.json({ 
-          error: "AI service is temporarily overloaded. Please try again in a few moments." 
+        return NextResponse.json({
+          error: "AI service is temporarily overloaded. Please try again in a few moments."
         }, { status: 429 })
       }
       userLogger.requestComplete(500, { reason: "gap_analysis_failed" })
@@ -387,7 +410,7 @@ export async function POST(request: NextRequest) {
       job_company: jobCompany,
     };
 
-    userLogger.requestComplete(200, { 
+    userLogger.requestComplete(200, {
       skillMapId: savedSkillMap.id,
       matchScore: parsedData.matchScore
     })

@@ -5,6 +5,7 @@ import { A4_DIMENSIONS } from '@/lib/resume-templates/server-renderer'
 import fs from 'fs'
 import path from 'path'
 import { getSupabaseServerClient, isSupabaseConfigured } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 
 // Configure chromium for serverless (disable WebGL for performance)
 chromium.setGraphicsMode = false
@@ -29,7 +30,7 @@ async function getBrowser(): Promise<Browser> {
             '/usr/bin/chromium-browser',
             '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         ]
-        
+
         let executablePath: string | undefined
         for (const p of possiblePaths) {
             if (fs.existsSync(p)) {
@@ -37,11 +38,11 @@ async function getBrowser(): Promise<Browser> {
                 break
             }
         }
-        
+
         if (!executablePath) {
             throw new Error('No local Chrome/Chromium found. Install Chrome or set PUPPETEER_EXECUTABLE_PATH')
         }
-        
+
         return puppeteerFull.default.launch({
             headless: true,
             executablePath,
@@ -49,7 +50,7 @@ async function getBrowser(): Promise<Browser> {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         })
     }
-    
+
     // In production (Railway, Vercel, etc.), use @sparticuz/chromium
     return puppeteer.launch({
         args: chromium.args,
@@ -62,6 +63,38 @@ async function getBrowser(): Promise<Browser> {
 export async function POST(req: NextRequest) {
     let browser: Browser | null = null
     try {
+        // Auth required
+        if (!isSupabaseConfigured()) {
+            return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+        }
+
+        const supabase = await getSupabaseServerClient();
+
+        // Rate limit by IP first
+        const clientIp = getClientIp(req);
+        const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+        if (!ipLimit.allowed) {
+            return NextResponse.json(
+                { error: "Too many requests. Please try again later." },
+                { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+            );
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
+        // Rate limit by user
+        const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+        if (!userLimit.allowed) {
+            return NextResponse.json(
+                { error: "Rate limit exceeded." },
+                { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+            );
+        }
+
         const { data, templateId, themeConfig, resumeId, fileName } = await req.json()
 
         // Read globals.css to extract CSS variables

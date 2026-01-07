@@ -269,7 +269,6 @@ export default function DashboardClient({
       jobPosting.inputType === "paste" ? jobPosting.description.trim().length > 0 : jobPosting.jobLink.trim().length > 0
     const normalizedLink = normalizeJobLink(jobPosting.jobLink)
 
-    // Check for restricted job sites (LinkedIn, etc.)
     if (jobPosting.inputType === "link" && jobPosting.jobLink.trim()) {
       const restrictedCheck = isRestrictedJobSite(jobPosting.jobLink)
       if (restrictedCheck.isRestricted) {
@@ -478,7 +477,7 @@ export default function DashboardClient({
             />
 
             {/* Fixed bottom button on mobile, normal flow on desktop */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t border-border/50 md:relative md:p-0 md:bg-transparent md:backdrop-blur-none md:border-0 md:mt-8 z-50">
+            <div className="fixed bottom-0 left-0 right-0 p-4 md:relative md:p-0 md:mt-8 z-50">
               <div className="flex justify-center">
                 <Button
                   size="lg"
@@ -494,7 +493,7 @@ export default function DashboardClient({
         ) : (
           <div className="space-y-6">
             {/* Mode Picker Header - above the grid */}
-            <div className="flex items-center">
+            <div className="flex items-center justify-center md:justify-start">
               <InlineModePicker
                 selectedMode={workflowMode}
                 onModeChange={handleModeChange}

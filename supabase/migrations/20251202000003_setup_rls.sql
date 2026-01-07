@@ -10,6 +10,8 @@ ALTER TABLE public.rewritten_resumes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cover_letters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.skill_maps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
+-- Note: rate_limits has NO policies = no direct access, only via SECURITY DEFINER function
 
 -- Profiles policies
 CREATE POLICY "Users can view their own profile"

@@ -11,10 +11,11 @@ import {
     ADAPTED_RESUME_LIMIT_ERROR,
     MAX_CONTENT_LENGTH
 } from "@/lib/constants";
+import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
     const logger = createLogger("improve-resume");
-    
+
     try {
         if (!isSupabaseConfigured()) {
             logger.error("supabase_not_configured");
@@ -22,6 +23,18 @@ export async function POST(req: NextRequest) {
         }
 
         const supabase = await getSupabaseServerClient();
+
+        // Rate limit by IP first
+        const clientIp = getClientIp(req);
+        const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+        if (!ipLimit.allowed) {
+            logger.warn("ip_rate_limit_exceeded", { ip: clientIp });
+            return NextResponse.json(
+                { error: "Too many requests. Please try again later." },
+                { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+            );
+        }
+
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -29,6 +42,16 @@ export async function POST(req: NextRequest) {
         if (!user) {
             logger.warn("unauthorized_request");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Rate limit by user
+        const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+        if (!userLimit.allowed) {
+            logger.warn("user_rate_limit_exceeded", { userId: user.id });
+            return NextResponse.json(
+                { error: "Rate limit exceeded." },
+                { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+            );
         }
 
         const userLogger = createLogger("improve-resume", user.id);
@@ -92,11 +115,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Build improvement instructions
-        const improvementFocus = improvements?.length > 0 
-            ? improvements.join(", ") 
+        const improvementFocus = improvements?.length > 0
+            ? improvements.join(", ")
             : "ATS optimization, clarity, impact, keywords";
 
-        const targetRoleContext = targetRole 
+        const targetRoleContext = targetRole
             ? `The candidate is targeting roles like: ${targetRole}. Optimize the resume for these types of positions.`
             : "";
 
@@ -221,8 +244,8 @@ MINIMAL VALID JSON TEMPLATE:
             if (error instanceof LLMError) {
                 userLogger.error("llm_error");
                 if (error.type === "RATE_LIMIT") {
-                    return NextResponse.json({ 
-                        error: "AI service is temporarily overloaded. Please try again in a few moments." 
+                    return NextResponse.json({
+                        error: "AI service is temporarily overloaded. Please try again in a few moments."
                     }, { status: 429 });
                 }
                 return NextResponse.json({ error: "AI service unavailable. Please try again." }, { status: 503 });
@@ -239,7 +262,7 @@ MINIMAL VALID JSON TEMPLATE:
             parsedData = JSON.parse(cleanedResponse) as ResumeData;
         } catch {
             userLogger.error("json_parse_failed");
-            
+
             // Try markdown fallback
             try {
                 parsedData = parseMarkdownToResumeData(rawResponse);
@@ -263,7 +286,7 @@ MINIMAL VALID JSON TEMPLATE:
         }
 
         // Create the improved resume record
-        const resumeName = targetRole 
+        const resumeName = targetRole
             ? `${parsedData.personalInfo.name || "Resume"} - ${targetRole}`
             : `${parsedData.personalInfo.name || "Resume"} - Improved`;
 

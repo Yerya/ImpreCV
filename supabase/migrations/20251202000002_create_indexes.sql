@@ -27,3 +27,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_skill_maps_user_resume_unique ON public.sk
 
 -- Chat usage indexes
 CREATE INDEX IF NOT EXISTS idx_chat_usage_user_resume ON public.chat_usage(user_id, resume_id);
+
+-- Rate limits indexes (for cleanup efficiency)
+CREATE INDEX IF NOT EXISTS idx_rate_limits_reset_at ON public.rate_limits(reset_at);

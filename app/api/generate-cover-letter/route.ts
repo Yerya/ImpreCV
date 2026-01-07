@@ -6,6 +6,7 @@ import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
 import { createLLMClient, LLMError, LLM_MODELS } from "@/lib/api/llm"
 import { createLogger } from "@/lib/api/logger"
 import { MAX_CONTENT_LENGTH } from "@/lib/constants"
+import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 
 const buildPrompt = (input: { resume: string; job: string; role: string; company?: string }) => {
   return `You are ImpreCV, an AI career coach who writes concise, human cover letters (no templates).
@@ -28,7 +29,7 @@ GUIDELINES:
 
 export async function POST(request: NextRequest) {
   const logger = createLogger("cover-letter")
-  
+
   try {
     if (!isSupabaseConfigured()) {
       logger.error("supabase_not_configured")
@@ -36,6 +37,18 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await getSupabaseServerClient()
+
+    // Rate limit by IP first
+    const clientIp = getClientIp(request);
+    const ipLimit = await checkRateLimit(supabase, `ip:${clientIp}`);
+    if (!ipLimit.allowed) {
+      logger.warn("ip_rate_limit_exceeded", { ip: clientIp });
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: rateLimitHeaders(ipLimit.remaining, ipLimit.resetAt) }
+      );
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -43,6 +56,16 @@ export async function POST(request: NextRequest) {
     if (!user) {
       logger.warn("unauthorized_request")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Rate limit by user
+    const userLimit = await checkRateLimit(supabase, `user:${user.id}`);
+    if (!userLimit.allowed) {
+      logger.warn("user_rate_limit_exceeded", { userId: user.id });
+      return NextResponse.json(
+        { error: "Rate limit exceeded." },
+        { status: 429, headers: rateLimitHeaders(userLimit.remaining, userLimit.resetAt) }
+      );
     }
 
     const userLogger = createLogger("cover-letter", user.id)
@@ -75,8 +98,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract job posting data
-    const jobPostingData = rewrittenResume.job_posting as { 
-      id?: string; title?: string; company?: string; description?: string; link?: string 
+    const jobPostingData = rewrittenResume.job_posting as {
+      id?: string; title?: string; company?: string; description?: string; link?: string
     } | null;
 
     const normalizedLink = typeof jobLink === "string" ? normalizeJobLink(jobLink) : ""
@@ -135,10 +158,10 @@ export async function POST(request: NextRequest) {
 
     const looksValid = isMeaningfulText(cleanedResume) && isMeaningfulText(cleanedJobDescription)
     if (!looksValid) {
-      userLogger.warn("validation_failed", { 
+      userLogger.warn("validation_failed", {
         reason: "invalid_text",
-        resumeValid: isMeaningfulText(cleanedResume), 
-        jobValid: isMeaningfulText(cleanedJobDescription) 
+        resumeValid: isMeaningfulText(cleanedResume),
+        jobValid: isMeaningfulText(cleanedJobDescription)
       })
       return NextResponse.json(
         {
@@ -194,7 +217,7 @@ export async function POST(request: NextRequest) {
       })
       content = response.text.trim()
       modelUsed = response.model
-      
+
       userLogger.llmComplete({
         model: modelUsed,
         usedFallback: response.usedFallback,
@@ -207,12 +230,12 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error"
       })
-      
+
       if (error instanceof LLMError) {
         if (error.type === "RATE_LIMIT") {
           userLogger.requestComplete(429, { reason: "rate_limit" })
-          return NextResponse.json({ 
-            error: "AI service is temporarily overloaded. Please try again in a few moments." 
+          return NextResponse.json({
+            error: "AI service is temporarily overloaded. Please try again in a few moments."
           }, { status: 429 })
         }
       }
@@ -273,7 +296,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    userLogger.requestComplete(200, { 
+    userLogger.requestComplete(200, {
       coverLetterId,
       action: existingCoverLetter ? "updated" : "created"
     })

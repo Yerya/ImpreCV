@@ -45,3 +45,17 @@ export const CHAT_STORAGE_KEY = "cvify:chat-history"
 // ==================== API DEFAULTS ====================
 /** Default limit for list queries */
 export const DEFAULT_LIST_LIMIT = 10
+
+// ==================== FILE LIMITS ====================
+/** Maximum file size for resume uploads (5MB) */
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+
+/** Maximum extracted text length from resume files */
+export const MAX_EXTRACTED_TEXT_LENGTH = 25000
+
+// ==================== GLOBAL RATE LIMITS ====================
+/** Rate limit for API endpoints (requests per window) */
+export const RATE_LIMIT_MAX_REQUESTS = 60
+
+/** Rate limit window in seconds */
+export const RATE_LIMIT_WINDOW_SECONDS = 60
