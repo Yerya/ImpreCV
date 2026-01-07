@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import type { ResumeData, ResumeItem } from '@/lib/resume-templates/types'
+import type { ResumeData, ResumeItem, ColumnPlacement } from '@/lib/resume-templates/types'
 import type { ResumeVariantId } from '@/lib/resume-templates/variants'
 import { EditableText, EditableList } from './editable-elements'
 import { A4_DIMENSIONS, balanceSectionsAcrossColumns, clampSidebarRatio, resolveSidebarRatio, variantStyles } from '@/lib/resume-templates/server-renderer'
@@ -79,7 +79,7 @@ export function WebResumeRenderer({
 
     React.useEffect(() => {
         setSidebarRatio(resolveSidebarRatio(data, variant))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.layout?.sidebarRatio, variant])
 
     const applySidebarRatio = React.useCallback((value: number) => {
@@ -146,19 +146,21 @@ export function WebResumeRenderer({
         onUpdate({ ...data, sections: newSections })
     }
 
-    const addSection = () => {
+    const addSectionToColumn = (column?: ColumnPlacement) => {
+        const newSection = {
+            type: 'custom' as const,
+            title: 'New Section',
+            content: [],
+            ...(column ? { preferredColumn: column } : {})
+        }
         onUpdate({
             ...data,
-            sections: [
-                ...data.sections,
-                {
-                    type: 'custom',
-                    title: 'New Section',
-                    content: []
-                }
-            ]
+            sections: [...data.sections, newSection]
         })
     }
+
+    // Determine if template has light background for button styling
+    const isLightTemplate = variant === 'spotlight' || variant === 'classic' || variant === 'modern' || variant === 'bold'
 
     const renderSection = (section: typeof data.sections[0], index: number) => {
         const content = normalizeContent(section.content)
@@ -308,7 +310,7 @@ export function WebResumeRenderer({
                     ? (['email', 'phone', 'location', 'linkedin', 'website'] as const)
                     : (['email', 'phone', 'location', 'linkedin', 'website'] as const).filter(
                         (field) => ((data.personalInfo[field] as string) || '').trim().length > 0
-                      )
+                    )
                 ).map((field) => (
                     <div key={field} className={styles.contactLine}>
                         <EditableText
@@ -346,19 +348,37 @@ export function WebResumeRenderer({
                 width: `${A4_DIMENSIONS.widthMm}mm`,
                 maxWidth: `${A4_DIMENSIONS.widthMm}mm`,
                 minWidth: `${A4_DIMENSIONS.widthMm}mm`,
-            minHeight: `${A4_DIMENSIONS.heightMm}mm`
-        }}
-    >
-        <div className={cn(styles.pageCard, 'flex-1 h-full')}>
-            {shouldSplit ? (
-                <div ref={columnsRef} className={cn(styles.columns, 'relative')}>
-                    <div className={styles.sidebar} style={sidebarStyle}>
-                        {header}
-                        {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
-                    </div>
+                minHeight: `${A4_DIMENSIONS.heightMm}mm`
+            }}
+        >
+            <div className={cn(styles.pageCard, 'flex-1 h-full')}>
+                {shouldSplit ? (
+                    <div ref={columnsRef} className={cn(styles.columns, 'relative')}>
+                        <div className={cn(styles.sidebar, 'flex flex-col')} style={sidebarStyle}>
+                            {header}
+                            {sidebarSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
+                            {isEditing && (
+                                <div className="mt-4 flex justify-center group/add-sidebar">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addSectionToColumn('sidebar')}
+                                        className={cn(
+                                            "border-dashed transition-all opacity-0 group-hover/add-sidebar:opacity-100",
+                                            isLightTemplate
+                                                ? "border-gray-400 text-gray-600 hover:text-gray-900 hover:border-gray-600 bg-white/80 hover:bg-white"
+                                                : "border-muted-foreground/40 text-muted-foreground/70 hover:text-primary hover:border-primary/50"
+                                        )}
+                                    >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add Section
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
 
-                    {isEditing && (
-                        <div className="absolute top-0 bottom-0 pointer-events-none" style={handlePositionStyle}>
+                        {isEditing && (
+                            <div className="absolute top-0 bottom-0 pointer-events-none" style={handlePositionStyle}>
                                 <div
                                     role="separator"
                                     aria-orientation="vertical"
@@ -369,27 +389,56 @@ export function WebResumeRenderer({
                                     <span className="mx-auto h-full w-px bg-border rounded-full transition-colors duration-150 hover:bg-primary" />
                                 </div>
                             </div>
-                    )}
+                        )}
 
-                    <div className={styles.main} style={mainStyle}>
-                        {mainSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
+                        <div className={cn(styles.main, 'flex flex-col')} style={mainStyle}>
+                            {mainSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
+                            {isEditing && (
+                                <div className="mt-4 flex justify-center group/add-main">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addSectionToColumn('main')}
+                                        className={cn(
+                                            "border-dashed transition-all opacity-0 group-hover/add-main:opacity-100",
+                                            isLightTemplate
+                                                ? "border-gray-400 text-gray-600 hover:text-gray-900 hover:border-gray-600 bg-white/80 hover:bg-white"
+                                                : "border-muted-foreground/40 text-muted-foreground/70 hover:text-primary hover:border-primary/50"
+                                        )}
+                                    >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add Section
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <div className="w-full">
-                    {header}
-                    {renderableSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
-                </div>
-            )}
-
-                {isEditing && (
-                    <div className="mt-8 flex justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <Button variant="outline" size="sm" onClick={addSection} className="border-dashed border-muted-foreground/30 text-muted-foreground hover:text-primary">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Section
-                        </Button>
+                ) : (
+                    <div className="w-full flex flex-col">
+                        {header}
+                        {renderableSections.map((section) => renderSection(section, data.sections.indexOf(section)))}
+                        {isEditing && (
+                            <div className="mt-4 flex justify-center group/add-single">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => addSectionToColumn()}
+                                    className={cn(
+                                        "border-dashed transition-all opacity-0 group-hover/add-single:opacity-100",
+                                        isLightTemplate
+                                            ? "border-gray-400 text-gray-600 hover:text-gray-900 hover:border-gray-600 bg-white/80 hover:bg-white"
+                                            : "border-muted-foreground/40 text-muted-foreground/70 hover:text-primary hover:border-primary/50"
+                                    )}
+                                >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add Section
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
+
+
             </div>
         </div>
     )

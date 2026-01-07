@@ -41,6 +41,9 @@ export interface UseResumeEditorReturn {
     activeResumeLabel: string
     availableResumes: SavedResume[]
 
+    // Unsaved state
+    hasUnsavedChanges: boolean
+
     // Loading states
     saving: boolean
     exporting: boolean

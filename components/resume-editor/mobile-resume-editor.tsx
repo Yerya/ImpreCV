@@ -43,6 +43,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
         activeResumeId,
         activeResumeLabel,
         availableResumes,
+        hasUnsavedChanges,
         saving,
         exporting,
         deletingId,
@@ -78,7 +79,17 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
             <GlobalHeader variant="back" backHref={backHref} backLabel="Back" />
 
             <div className="px-4 pt-3 pb-2">
-                <h1 className="text-xl font-bold gradient-text">Edit Resume</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl font-bold gradient-text">Edit Resume</h1>
+                    {hasUnsavedChanges && (
+                        <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white animate-pulse-subtle"
+                            style={{ backgroundColor: 'rgba(var(--accent-r), var(--accent-g), var(--accent-b), 1)' }}
+                        >
+                            Unsaved
+                        </span>
+                    )}
+                </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                     {mobileView === 'preview' ? 'Pinch to zoom, drag to pan' : 'Edit your resume sections'}
                 </p>
@@ -201,6 +212,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
             <ResumeActionBar
                 saving={saving}
                 exporting={exporting}
+                hasUnsavedChanges={hasUnsavedChanges}
                 onReset={handleReset}
                 onSave={handleSave}
                 onExport={handleExport}
@@ -252,6 +264,8 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 resumeId={activeResumeId}
                 onApplyModifications={setResumeData}
                 onResetToBaseline={handleReset}
+                hasUnsavedChanges={hasUnsavedChanges}
+                onSave={handleSave}
             />
         </div>
     )

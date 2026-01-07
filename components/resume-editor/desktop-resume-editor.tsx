@@ -39,6 +39,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
         activeResumeId,
         activeResumeLabel,
         availableResumes,
+        hasUnsavedChanges,
         saving,
         exporting,
         deletingId,
@@ -76,7 +77,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
             <div className="container mx-auto px-4 py-4 max-w-7xl">
                 {/* Header section - NOT sticky, scrolls away */}
                 <div className="mb-4">
-                    <h1 className="text-3xl font-bold mb-1 gradient-text">Tailor Your Resume</h1>
+                    <h1 className="text-3xl font-bold mb-1"><span className="gradient-text">Tailor Your Resume</span></h1>
                     <p className="text-muted-foreground text-sm max-w-2xl">
                         Click directly on the resume to edit. What you see is exactly what you export.
                     </p>
@@ -111,6 +112,15 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                                             Templates
                                         </button>
                                     </div>
+                                )}
+                                {hasUnsavedChanges && (
+                                    <span
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white animate-pulse-subtle"
+                                        style={{ backgroundColor: 'rgba(var(--accent-r), var(--accent-g), var(--accent-b), 1)' }}
+                                    >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                                        Unsaved changes
+                                    </span>
                                 )}
                                 {showJobRelatedTabs && activeTab === 'cover' && (
                                     <Button
@@ -149,6 +159,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                         <ResumeActionBar
                             saving={saving}
                             exporting={exporting}
+                            hasUnsavedChanges={hasUnsavedChanges}
                             onReset={handleReset}
                             onSave={handleSave}
                             onExport={handleExport}
@@ -229,6 +240,8 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                 resumeId={activeResumeId}
                 onApplyModifications={setResumeData}
                 onResetToBaseline={handleReset}
+                hasUnsavedChanges={hasUnsavedChanges}
+                onSave={handleSave}
             />
 
             <Dialog open={showStyleDialog} onOpenChange={setShowStyleDialog}>

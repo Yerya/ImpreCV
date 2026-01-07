@@ -233,6 +233,20 @@ export function balanceSectionsAcrossColumns(sections: ResumeSection[]) {
     let mainWeight = 0
 
     indexedSections.forEach(({ section, weight }) => {
+        // First priority: respect explicit preferredColumn hint
+        if (section.preferredColumn === 'sidebar') {
+            sidebar.push(section)
+            sidebarWeight += weight
+            return
+        }
+
+        if (section.preferredColumn === 'main') {
+            main.push(section)
+            mainWeight += weight
+            return
+        }
+
+        // Second priority: type-based rules
         if (SIDEBAR_PRIORITY_TYPES.has(section.type)) {
             sidebar.push(section)
             sidebarWeight += weight
@@ -256,6 +270,8 @@ export function balanceSectionsAcrossColumns(sections: ResumeSection[]) {
                 .forEach(({ section, weight }) => {
                     if (!main.includes(section)) return
                     if (mainWeight - sidebarWeight <= REBALANCE_THRESHOLD) return
+                    // Never move sections with explicit preferredColumn='main'
+                    if (section.preferredColumn === 'main') return
 
                     main.splice(main.indexOf(section), 1)
                     sidebar.push(section)

@@ -12,15 +12,17 @@ import {
     AlertCircle,
     RotateCcw,
     ChevronDown,
-    Bot
+    Bot,
+    Save
 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import {
     ChatMessage,
     ChatUsage,
     ResumeModification,
     generateMessageId,
-    applyModifications,
+    applyModificationsWithReport,
     CHAT_EXAMPLES,
     MAX_CHAT_MESSAGES,
     CHAT_STORAGE_KEY,
@@ -32,6 +34,8 @@ interface ResumeChatPanelProps {
     resumeId: string | null
     onApplyModifications: (newData: ResumeData) => void
     onResetToBaseline?: () => void
+    hasUnsavedChanges?: boolean
+    onSave?: () => void
     className?: string
 }
 
@@ -167,11 +171,45 @@ const UsageIndicator = memo(function UsageIndicator({
     )
 })
 
+const HeaderIconButton = memo(function HeaderIconButton({
+    label,
+    onClick,
+    children,
+    className,
+    disabled
+}: {
+    label: string
+    onClick?: () => void
+    children: React.ReactNode
+    className?: string
+    disabled?: boolean
+}) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-8 w-8", className)}
+                    onClick={onClick}
+                    disabled={disabled}
+                    aria-label={label}
+                >
+                    {children}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{label}</TooltipContent>
+        </Tooltip>
+    )
+})
+
 export function ResumeChatPanel({
     resumeData,
     resumeId,
     onApplyModifications,
     onResetToBaseline,
+    hasUnsavedChanges = false,
+    onSave,
     className
 }: ResumeChatPanelProps) {
     const [isOpen, setIsOpen] = useState(false)
@@ -188,6 +226,7 @@ export function ResumeChatPanel({
 
     const charCount = inputValue.length
     const isOverLimit = charCount > MAX_MESSAGE_CHARS
+    const maxInputHeight = 160
 
     // Load messages from storage on mount
     useEffect(() => {
@@ -225,6 +264,15 @@ export function ResumeChatPanel({
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
         })
     }, [messages])
+
+    useEffect(() => {
+        const el = inputRef.current
+        if (!el) return
+        el.style.height = "auto"
+        const nextHeight = Math.min(el.scrollHeight, maxInputHeight)
+        el.style.height = `${nextHeight}px`
+        el.style.overflowY = el.scrollHeight > maxInputHeight ? "auto" : "hidden"
+    }, [inputValue, maxInputHeight])
 
     // Fetch usage when panel opens
     useEffect(() => {
@@ -321,32 +369,42 @@ export function ResumeChatPanel({
                 setUsage(data.usage)
             }
 
-            const assistantMessage: ChatMessage = {
-                id: generateMessageId(),
-                role: "assistant",
-                content: data.message,
-                timestamp: Date.now()
-            }
-
-            setMessages(prev =>
-                prev.filter(m => m.id !== pendingMessage.id).concat(assistantMessage)
-            )
+            let assistantContent = data.message
+            const modifications = data.modifications as ResumeModification[] | undefined
 
             // Handle reset action
             if (data.action === "reset" && onResetToBaseline) {
                 onResetToBaseline()
             }
             // Apply resume modifications
-            else if (data.modifications && data.modifications.length > 0) {
+            else if (modifications && modifications.length > 0) {
                 if (process.env.NODE_ENV === "development") {
-                    console.log("[Chat] Applying modifications:", data.modifications)
+                    console.log("[Chat] Applying modifications:", modifications)
                 }
-                const newData = applyModifications(resumeData, data.modifications as ResumeModification[])
+                const result = applyModificationsWithReport(resumeData, modifications)
                 if (process.env.NODE_ENV === "development") {
-                    console.log("[Chat] Result after apply:", newData.personalInfo)
+                    console.log("[Chat] Result after apply:", result.data.personalInfo)
                 }
-                onApplyModifications(newData)
+                if (result.appliedCount > 0) {
+                    onApplyModifications(result.data)
+                }
+                if (result.appliedCount < modifications.length) {
+                    assistantContent = result.appliedCount === 0
+                        ? "No changes were applied. Please specify the section or indices. Try asking for a different change."
+                        : "Some changes could not be applied. Please check section indices. Try asking for a different change."
+                }
             }
+
+            const assistantMessage: ChatMessage = {
+                id: generateMessageId(),
+                role: "assistant",
+                content: assistantContent,
+                timestamp: Date.now()
+            }
+
+            setMessages(prev =>
+                prev.filter(m => m.id !== pendingMessage.id).concat(assistantMessage)
+            )
 
         } catch (err) {
             if ((err as Error).name === "AbortError") return
@@ -431,25 +489,27 @@ export function ResumeChatPanel({
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
-                    {messages.length > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={handleClearHistory}
-                            title="Clear history"
+                    {hasUnsavedChanges && (
+                        <HeaderIconButton
+                            label="Save changes"
+                            onClick={onSave}
+                            className="animate-pulse-subtle"
+                            disabled={!onSave}
                         >
-                            <RotateCcw className="h-4 w-4" />
-                        </Button>
+                            <Save
+                                className="h-4 w-4"
+                                style={{ color: "rgb(var(--accent-r), var(--accent-g), var(--accent-b))" }}
+                            />
+                        </HeaderIconButton>
                     )}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setIsOpen(false)}
-                    >
+                    {messages.length > 0 && (
+                        <HeaderIconButton label="Clear chat" onClick={handleClearHistory}>
+                            <RotateCcw className="h-4 w-4" />
+                        </HeaderIconButton>
+                    )}
+                    <HeaderIconButton label="Close chat" onClick={() => setIsOpen(false)}>
                         <ChevronDown className="h-4 w-4" />
-                    </Button>
+                    </HeaderIconButton>
                 </div>
             </div>
 
@@ -473,7 +533,7 @@ export function ResumeChatPanel({
                     <div className="text-center py-8">
                         <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground/50" />
                         <p className="text-sm text-muted-foreground">
-                            Ask me about the resume or CVify platform
+                            Ask me to edit or improve your resume
                         </p>
                     </div>
                 ) : (
@@ -530,7 +590,7 @@ export function ResumeChatPanel({
                                 "w-full resize-none rounded-xl border-0 bg-secondary/50 px-3 md:px-4 py-2 md:py-2.5 pr-12 md:pr-16",
                                 "text-sm placeholder:text-muted-foreground leading-5",
                                 "focus:outline-none focus:ring-2 focus:ring-primary/30",
-                                "h-9 md:h-10",
+                                "min-h-9 md:min-h-10 max-h-32",
                                 isOverLimit && "ring-2 ring-destructive/50"
                             )}
                             disabled={isLoading}

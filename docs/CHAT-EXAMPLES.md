@@ -93,6 +93,56 @@ This document provides dialog examples and test scenarios for the AI chat assist
 
 ---
 
+### 4b. Updating a Specific Bullet
+
+**User:** Update the second bullet in my first job to mention React
+
+**Assistant:**
+```json
+{
+    "message": "Updated the second bullet to include React.",
+    "modifications": [
+        {
+            "action": "update",
+            "target": "bullet",
+            "sectionIndex": 1,
+            "itemIndex": 0,
+            "bulletIndex": 1,
+            "value": "Built responsive web applications using React and TypeScript, improving user engagement by 25%"
+        }
+    ]
+}
+```
+
+---
+
+### 4c. Replacing All Bullets on an Item
+
+**User:** Rewrite all bullets for my Google job to be more impactful
+
+**Assistant:**
+```json
+{
+    "message": "Rewrote all 3 bullets for your Google position with stronger action verbs.",
+    "modifications": [
+        {
+            "action": "update",
+            "target": "item",
+            "sectionIndex": 1,
+            "itemIndex": 1,
+            "field": "bullets",
+            "value": [
+                "Architected microservices platform handling 10M+ daily requests with 99.9% uptime",
+                "Led cross-functional team of 8 engineers to deliver critical product features ahead of schedule",
+                "Pioneered adoption of Kubernetes, reducing infrastructure costs by 35%"
+            ]
+        }
+    ]
+}
+```
+
+---
+
 ### 5. Removing a Section
 
 **User:** Remove the Projects section

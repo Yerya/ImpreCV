@@ -86,14 +86,14 @@ export function useResumeEditor({
                 theme: item.theme || existing?.theme || 'light',
                 mode: item.mode ?? existing?.mode ?? activeResumeMode ?? null,
             }
-            
+
             // If existing item found and we don't want to move it, update in place
             if (existingIndex >= 0 && !moveToTop) {
                 const next = [...prev]
                 next[existingIndex] = merged
                 return next
             }
-            
+
             // Otherwise, add to top (for new items or explicit moveToTop)
             const filtered = item.id ? prev.filter((resume) => resume.id !== item.id) : prev
             const next = [merged, ...filtered]
@@ -113,6 +113,15 @@ export function useResumeEditor({
     }, [activeResumeId, availableResumes, resumeData])
     const waitingForCoverLetter = activeTab === 'cover' && !!activeResumeId && !activeCoverLetters.length && (coverLetterLoading || generatingCoverLetter)
     const waitingForSkillMap = activeTab === 'skills' && !!activeResumeId && !activeSkillMaps.length && (skillMapLoading || generatingSkillMap)
+
+    // Track unsaved changes - compare current data with baseline (last saved)
+    // Uses stable JSON comparison only when needed
+    const hasUnsavedChanges = useMemo(() => {
+        // Quick reference check first
+        if (resumeData === baselineData) return false
+        // Stable JSON comparison as fallback
+        return JSON.stringify(resumeData) !== JSON.stringify(baselineData)
+    }, [resumeData, baselineData])
 
     const loadSkillMaps = useCallback(
         async (resumeId: string, options?: { force?: boolean; silent?: boolean }) => {
@@ -287,7 +296,7 @@ export function useResumeEditor({
     // Load cover letters in background for chat panel
     useEffect(() => {
         if (!activeResumeId) return
-        
+
         const hasLoaded = hasLoadedForResume(coverLettersByResume, activeResumeId)
         if (!hasLoaded) {
             loadCoverLetters(activeResumeId, { silent: true })
@@ -327,6 +336,14 @@ export function useResumeEditor({
             setSkillMapLoading(false)
         }
     }, [activeResumeId])
+
+    // Ensure we don't stay on job tabs when the active resume doesn't support them
+    useEffect(() => {
+        const supportsJobTabs = activeResumeMode === 'tailored' || activeResumeMode === null
+        if (!supportsJobTabs && activeTab !== 'resume') {
+            setActiveTab('resume')
+        }
+    }, [activeResumeMode, activeTab])
 
     const stopCoverLetterPoll = useCallback(() => {
         if (coverLetterPollRef.current) {
@@ -576,16 +593,16 @@ export function useResumeEditor({
         setThemeMode(item.theme || 'light')
         setActiveResumeMode(item.mode ?? null)
         // Update last saved settings to prevent unnecessary auto-save on switch
-        lastSavedSettingsRef.current = { 
-            variant: item.variant || defaultResumeVariant, 
-            theme: item.theme || 'light' 
+        lastSavedSettingsRef.current = {
+            variant: item.variant || defaultResumeVariant,
+            theme: item.theme || 'light'
         }
-        
+
         // Update URL to selected resume so refresh stays on the same resume
         if (item.id) {
             router.replace(`/resume-editor?id=${item.id}`, { scroll: false })
         }
-        
+
         // Reset to resume tab if switching to a resume that doesn't support job-related tabs
         const supportsJobTabs = item.mode === 'tailored' || item.mode === null || item.mode === undefined
         if (!supportsJobTabs) {
@@ -801,6 +818,7 @@ export function useResumeEditor({
         activeResumeMode,
         activeResumeLabel,
         availableResumes,
+        hasUnsavedChanges,
         saving,
         exporting,
         deletingId,

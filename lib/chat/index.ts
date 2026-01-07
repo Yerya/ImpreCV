@@ -15,12 +15,13 @@ export interface ChatUsage {
 }
 
 export interface ResumeModification {
-    action: "update" | "add" | "delete" | "replace"
+    action: "update" | "add" | "delete" | "replace" | "move"
     target: "personalInfo" | "section" | "item" | "bullet"
     path?: string
     sectionIndex?: number
     itemIndex?: number
     bulletIndex?: number
+    toIndex?: number
     field?: string
     value?: string | ResumeItem | ResumeSection | string[]
     newSection?: ResumeSection
@@ -33,32 +34,75 @@ export interface ChatResponse {
     error?: string
 }
 
+export interface ApplyModificationsResult {
+    data: ResumeData
+    appliedCount: number
+}
+
 export function generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+}
+
+/**
+ * Normalize a bullet value - handles cases where LLM returns {text: "..."} objects instead of strings
+ */
+function normalizeBullet(bullet: unknown): string {
+    if (typeof bullet === "string") return bullet
+    if (bullet && typeof bullet === "object" && "text" in bullet && typeof (bullet as { text: unknown }).text === "string") {
+        return (bullet as { text: string }).text
+    }
+    return String(bullet)
+}
+
+/**
+ * Normalize an array of bullets
+ */
+function normalizeBullets(bullets: unknown[]): string[] {
+    return bullets.map(normalizeBullet)
+}
+
+function normalizeMoveIndex(toIndex: number, fromIndex: number, maxIndex: number): number {
+    let target = toIndex
+    if (target > fromIndex) target -= 1
+    if (target < 0) target = 0
+    if (target > maxIndex) target = maxIndex
+    return target
 }
 
 export function applyModifications(
     data: ResumeData,
     modifications: ResumeModification[]
 ): ResumeData {
+    return applyModificationsWithReport(data, modifications).data
+}
+
+export function applyModificationsWithReport(
+    data: ResumeData,
+    modifications: ResumeModification[]
+): ApplyModificationsResult {
     let updated = JSON.parse(JSON.stringify(data)) as ResumeData
+    let appliedCount = 0
 
     for (const mod of modifications) {
         try {
-            updated = applySingleModification(updated, mod)
+            const next = applySingleModification(updated, mod)
+            if (JSON.stringify(next) !== JSON.stringify(updated)) {
+                appliedCount += 1
+            }
+            updated = next
         } catch (error) {
             console.warn("Failed to apply modification:", mod, error)
         }
     }
 
-    return updated
+    return { data: updated, appliedCount }
 }
 
 function applySingleModification(
     data: ResumeData,
     mod: ResumeModification
 ): ResumeData {
-    const { action, target, sectionIndex, itemIndex, bulletIndex, field, value, newSection } = mod
+    const { action, target, sectionIndex, itemIndex, bulletIndex, toIndex, field, value, newSection } = mod
 
     switch (target) {
         case "personalInfo": {
@@ -120,12 +164,23 @@ function applySingleModification(
                 return { ...data, sections }
             }
 
+            if (action === "move" && typeof sectionIndex === "number" && typeof toIndex === "number") {
+                const sections = [...data.sections]
+                if (sectionIndex < 0 || sectionIndex >= sections.length) break
+                const [moved] = sections.splice(sectionIndex, 1)
+                const targetIndex = normalizeMoveIndex(toIndex, sectionIndex, sections.length)
+                sections.splice(targetIndex, 0, moved)
+                return { ...data, sections }
+            }
+
             if (action === "update" && typeof sectionIndex === "number") {
                 const sections = [...data.sections]
                 if (field === "title" && typeof value === "string") {
                     sections[sectionIndex] = { ...sections[sectionIndex], title: value }
                 } else if (field === "content" && typeof value === "string") {
                     sections[sectionIndex] = { ...sections[sectionIndex], content: value }
+                } else if (field === "preferredColumn" && (value === "sidebar" || value === "main")) {
+                    sections[sectionIndex] = { ...sections[sectionIndex], preferredColumn: value }
                 }
                 return { ...data, sections }
             }
@@ -158,10 +213,28 @@ function applySingleModification(
                 return { ...data, sections }
             }
 
-            if (action === "update" && typeof itemIndex === "number" && field && typeof value === "string") {
-                items[itemIndex] = { ...items[itemIndex], [field]: value }
+            if (action === "move" && typeof itemIndex === "number" && typeof toIndex === "number") {
+                if (itemIndex < 0 || itemIndex >= items.length) break
+                const [moved] = items.splice(itemIndex, 1)
+                const targetIndex = normalizeMoveIndex(toIndex, itemIndex, items.length)
+                items.splice(targetIndex, 0, moved)
                 sections[sectionIndex] = { ...section, content: items }
                 return { ...data, sections }
+            }
+
+            if (action === "update" && typeof itemIndex === "number" && field) {
+                // Handle bullets field (array of strings or objects with text)
+                if (field === "bullets" && Array.isArray(value)) {
+                    items[itemIndex] = { ...items[itemIndex], bullets: normalizeBullets(value) }
+                    sections[sectionIndex] = { ...section, content: items }
+                    return { ...data, sections }
+                }
+                // Handle string fields
+                if (typeof value === "string") {
+                    items[itemIndex] = { ...items[itemIndex], [field]: value }
+                    sections[sectionIndex] = { ...section, content: items }
+                    return { ...data, sections }
+                }
             }
 
             if (action === "replace" && typeof itemIndex === "number" && value && typeof value === "object") {
@@ -188,8 +261,8 @@ function applySingleModification(
 
             const bullets = [...item.bullets]
 
-            if (action === "add" && typeof value === "string") {
-                bullets.push(value)
+            if (action === "add" && value != null) {
+                bullets.push(normalizeBullet(value))
                 items[itemIndex] = { ...item, bullets }
                 sections[sectionIndex] = { ...section, content: items }
                 return { ...data, sections }
@@ -202,15 +275,25 @@ function applySingleModification(
                 return { ...data, sections }
             }
 
-            if (action === "update" && typeof bulletIndex === "number" && typeof value === "string") {
-                bullets[bulletIndex] = value
+            if (action === "move" && typeof bulletIndex === "number" && typeof toIndex === "number") {
+                if (bulletIndex < 0 || bulletIndex >= bullets.length) break
+                const [moved] = bullets.splice(bulletIndex, 1)
+                const targetIndex = normalizeMoveIndex(toIndex, bulletIndex, bullets.length)
+                bullets.splice(targetIndex, 0, moved)
+                items[itemIndex] = { ...item, bullets }
+                sections[sectionIndex] = { ...section, content: items }
+                return { ...data, sections }
+            }
+
+            if (action === "update" && typeof bulletIndex === "number" && value != null) {
+                bullets[bulletIndex] = normalizeBullet(value)
                 items[itemIndex] = { ...item, bullets }
                 sections[sectionIndex] = { ...section, content: items }
                 return { ...data, sections }
             }
 
             if (action === "replace" && Array.isArray(value)) {
-                items[itemIndex] = { ...item, bullets: value as string[] }
+                items[itemIndex] = { ...item, bullets: normalizeBullets(value) }
                 sections[sectionIndex] = { ...section, content: items }
                 return { ...data, sections }
             }
@@ -222,14 +305,13 @@ function applySingleModification(
 }
 
 export const CHAT_EXAMPLES = [
-    "Add TypeScript to my skills",
-    "Rewrite my summary to focus on leadership",
-    "Add a bullet point about improving team productivity by 20%",
-    "Change my job title to Senior Developer",
-    "Remove the Projects section",
-    "Make my experience sound more impactful",
-    "Undo my changes / Reset",
-    "What is ImpreCV?",
+    "Make my summary stronger in 2-3 sentences",
+    "Shorten my skills to the most important ones",
+    "Add a bullet about speeding up page loads",
+    "Move Education below Work Experience",
+    "Rewrite my experience with stronger action verbs",
+    "Add a new section called Personal Qualities",
+    "Undo my last changes",
 ]
 
 // Re-export constants from centralized file for backward compatibility

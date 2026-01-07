@@ -1,7 +1,23 @@
 import type { ResumeData } from "@/lib/resume-templates/types";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
 import type { ResumeVariantId } from "@/lib/resume-templates/variants";
+import { AI_REFUSAL_ERROR } from "@/lib/constants";
 import type { SkillMapRecord } from "@/types/skill-map";
+
+const getErrorMessage = (data: unknown, fallback: string): string => {
+    if (!data || typeof data !== "object") return fallback;
+    const record = data as Record<string, unknown>;
+
+    if (typeof record.error === "string") return record.error;
+    if (typeof record.message === "string") return record.message;
+    if (record.error && typeof record.error === "object") {
+        const nested = record.error as Record<string, unknown>;
+        if (typeof nested.message === "string") return nested.message;
+    }
+    if (record.blocked === true) return AI_REFUSAL_ERROR;
+
+    return fallback;
+};
 
 interface AnalyzeResumePayload {
     resumeText?: string;
@@ -36,7 +52,7 @@ export async function analyzeResume(payload: AnalyzeResumePayload): Promise<Anal
         const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
         if (!response.ok) {
-            const message = typeof data.error === "string" ? data.error : `Analysis failed with status ${response.status}`;
+            const message = getErrorMessage(data, `Analysis failed with status ${response.status}`);
             throw new Error(message);
         }
 
@@ -89,7 +105,7 @@ export async function generateCoverLetter(payload: GenerateCoverLetterPayload): 
     const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
     if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : `Cover letter failed with status ${response.status}`;
+        const message = getErrorMessage(data, `Cover letter failed with status ${response.status}`);
         throw new Error(message);
     }
 
@@ -135,7 +151,7 @@ export async function generateSkillMap(payload: GenerateSkillMapPayload): Promis
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : `Skill map generation failed with status ${response.status}`;
+        const message = getErrorMessage(data, `Skill map generation failed with status ${response.status}`);
         throw new Error(message);
     }
 
@@ -158,7 +174,7 @@ export async function getSkillMap(id: string): Promise<SkillMapRecord> {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : "Failed to fetch skill map";
+        const message = getErrorMessage(data, "Failed to fetch skill map");
         throw new Error(message);
     }
 
@@ -172,7 +188,7 @@ export async function deleteSkillMap(id: string): Promise<void> {
 
     if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        const message = typeof data.error === "string" ? data.error : "Failed to delete skill map";
+        const message = getErrorMessage(data, "Failed to delete skill map");
         throw new Error(message);
     }
 }
@@ -214,7 +230,7 @@ export async function improveResume(payload: ImproveResumePayload): Promise<Impr
     const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
     if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : `Improvement failed with status ${response.status}`;
+        const message = getErrorMessage(data, `Improvement failed with status ${response.status}`);
         throw new Error(message);
     }
 
@@ -295,7 +311,7 @@ export async function createResumeFromScratch(payload: CreateResumePayload): Pro
     const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
     if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : `Creation failed with status ${response.status}`;
+        const message = getErrorMessage(data, `Creation failed with status ${response.status}`);
         throw new Error(message);
     }
 

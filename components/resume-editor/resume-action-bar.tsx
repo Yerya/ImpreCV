@@ -3,10 +3,12 @@
 import { memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Download, RefreshCw, Save, Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ResumeActionBarProps {
     saving: boolean
     exporting: boolean
+    hasUnsavedChanges?: boolean
     onReset: () => void
     onSave: () => void
     onExport: () => void
@@ -16,11 +18,22 @@ interface ResumeActionBarProps {
 export const ResumeActionBar = memo(function ResumeActionBar({
     saving,
     exporting,
+    hasUnsavedChanges = false,
     onReset,
     onSave,
     onExport,
     variant = 'desktop'
 }: ResumeActionBarProps) {
+    // Pulsing styles for unsaved changes - respects prefers-reduced-motion via CSS
+    const saveButtonClasses = cn(
+        "gap-2",
+        hasUnsavedChanges && !saving && "animate-pulse-subtle"
+    )
+
+    const saveButtonStyle = hasUnsavedChanges && !saving ? {
+        boxShadow: '0 0 0 2px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5)'
+    } : undefined
+
     if (variant === 'mobile') {
         return (
             <div className="fixed bottom-0 left-0 right-0 z-30 px-3 py-2">
@@ -38,7 +51,13 @@ export const ResumeActionBar = memo(function ResumeActionBar({
                         size="sm"
                         onClick={onSave}
                         disabled={saving}
-                        className="flex-1 h-9"
+                        className={cn(
+                            "flex-1 h-9",
+                            hasUnsavedChanges && !saving && "animate-pulse-subtle"
+                        )}
+                        style={hasUnsavedChanges && !saving ? {
+                            boxShadow: '0 0 0 2px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5)'
+                        } : undefined}
                     >
                         {saving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}
                         {saving ? 'Saving...' : 'Save'}
@@ -72,7 +91,8 @@ export const ResumeActionBar = memo(function ResumeActionBar({
                 size="sm"
                 onClick={onSave}
                 disabled={saving}
-                className="gap-2"
+                className={saveButtonClasses}
+                style={saveButtonStyle}
             >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 {saving ? 'Saving...' : 'Save'}

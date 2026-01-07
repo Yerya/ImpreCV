@@ -6,7 +6,7 @@ import { deriveJobMetadata } from "@/lib/job-posting";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
-import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm";
+import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse, isLikelyRefusalResponse, getRefusalInfo } from "@/lib/api/llm";
 import { createLogger } from "@/lib/api/logger";
 import type { ResumeData } from "@/lib/resume-templates/types";
 import {
@@ -14,7 +14,8 @@ import {
     ADAPTED_RESUME_LIMIT_ERROR,
     RESUME_ADAPT_COOLDOWN_MINUTES,
     ADAPT_RATE_LIMIT_ERROR,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH,
+    AI_REFUSAL_ERROR
 } from "@/lib/constants"
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 
@@ -170,6 +171,8 @@ CRITICAL: Your response MUST be a valid JSON object.
 - Do NOT wrap in markdown code blocks (no \`\`\`json)
 - Do NOT include comments or explanations
 - Return ONLY the raw JSON string
+- If you must refuse or cannot comply, return ONLY:
+  {"status":"refused","message":"...","refusalReason":"..."}
 
 SECTION CONTENT RULES:
 1. **Simple Text Sections** (summary, skills, languages): Use a PLAIN STRING
@@ -362,12 +365,30 @@ FINAL REMINDERS:
             return NextResponse.json({ error: "Failed to adapt resume" }, { status: 500 })
         }
 
+        if (isLikelyRefusalResponse(rawResponseText)) {
+            userLogger.warn("llm_refusal_detected", { model: modelUsed })
+            userLogger.requestComplete(422, { reason: "llm_refusal" })
+            return NextResponse.json({ error: AI_REFUSAL_ERROR, blocked: true }, { status: 422 })
+        }
+
         // Parse and validate JSON response
         const adaptedResume = cleanJsonResponse(rawResponseText);
+        let parsedJson: unknown = null
         try {
-            JSON.parse(adaptedResume);
+            parsedJson = JSON.parse(adaptedResume);
         } catch {
             userLogger.warn("json_parse_failed", { responseLength: adaptedResume?.length })
+        }
+
+        const refusalInfo = getRefusalInfo(parsedJson)
+        if (refusalInfo) {
+            userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback })
+            userLogger.requestComplete(422, { reason: "llm_refusal" })
+            return NextResponse.json({
+                error: refusalInfo.message || AI_REFUSAL_ERROR,
+                blocked: true,
+                refusalReason: refusalInfo.refusalReason || null
+            }, { status: 422 })
         }
 
         const parsedData: ResumeData = parseMarkdownToResumeData(adaptedResume);

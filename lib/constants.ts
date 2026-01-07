@@ -42,6 +42,10 @@ export const MAX_CHAT_MESSAGES_STORED = 20
 /** Local storage key for chat history */
 export const CHAT_STORAGE_KEY = "cvify:chat-history"
 
+// ==================== AI SAFETY ====================
+/** Error message shown when AI refuses a request */
+export const AI_REFUSAL_ERROR = "The AI could not complete this request due to safety restrictions. Please revise your input and try again."
+
 // ==================== API DEFAULTS ====================
 /** Default limit for list queries */
 export const DEFAULT_LIST_LIMIT = 10

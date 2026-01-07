@@ -30,10 +30,14 @@ export type SectionType =
     | 'skills'
     | 'custom'
 
+export type ColumnPlacement = 'sidebar' | 'main'
+
 export interface ResumeSection {
     type: SectionType
     title?: string
     content: string | ResumeItem[]
+    /** Optional hint for which column this section should be placed in for split layouts */
+    preferredColumn?: ColumnPlacement
 }
 
 export interface ResumeData {

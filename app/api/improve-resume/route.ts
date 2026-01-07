@@ -3,13 +3,14 @@ import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
-import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm";
+import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse, isLikelyRefusalResponse, getRefusalInfo } from "@/lib/api/llm";
 import { createLogger } from "@/lib/api/logger";
 import type { ResumeData } from "@/lib/resume-templates/types";
 import {
     MAX_ADAPTED_RESUMES,
     ADAPTED_RESUME_LIMIT_ERROR,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH,
+    AI_REFUSAL_ERROR
 } from "@/lib/constants";
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit";
 
@@ -169,6 +170,8 @@ CRITICAL: Your response MUST be a valid JSON object.
 - Do NOT wrap in markdown code blocks (no \`\`\`json)
 - Do NOT include comments or explanations
 - Return ONLY the raw JSON string
+- If you must refuse or cannot comply, return ONLY:
+  {"status":"refused","message":"...","refusalReason":"..."}
 
 SECTION CONTENT RULES:
 1. **Simple Text Sections** (summary, skills, languages): Use a PLAIN STRING
@@ -232,6 +235,8 @@ MINIMAL VALID JSON TEMPLATE:
         userLogger.info("llm_request_started", { model: LLM_MODELS.PRIMARY });
 
         let rawResponse: string;
+        let modelUsed: string = LLM_MODELS.PRIMARY;
+        let usedFallback = false;
         try {
             const response = await llmClient.generate(prompt, {
                 model: LLM_MODELS.PRIMARY,
@@ -240,6 +245,8 @@ MINIMAL VALID JSON TEMPLATE:
                 logPrefix: "[Improve]"
             });
             rawResponse = response.text;
+            modelUsed = response.model;
+            usedFallback = response.usedFallback;
         } catch (error) {
             if (error instanceof LLMError) {
                 userLogger.error("llm_error");
@@ -255,14 +262,40 @@ MINIMAL VALID JSON TEMPLATE:
 
         userLogger.info("llm_response_received", { responseLength: rawResponse.length });
 
+        if (isLikelyRefusalResponse(rawResponse)) {
+            userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback });
+            userLogger.requestComplete(422, { reason: "llm_refusal" });
+            return NextResponse.json({ error: AI_REFUSAL_ERROR, blocked: true }, { status: 422 });
+        }
+
         // Parse the response
         let parsedData: ResumeData;
+        const cleanedResponse = cleanJsonResponse(rawResponse);
+        let parsedJson: unknown = null;
+
         try {
-            const cleanedResponse = cleanJsonResponse(rawResponse);
-            parsedData = JSON.parse(cleanedResponse) as ResumeData;
+            parsedJson = JSON.parse(cleanedResponse);
         } catch {
             userLogger.error("json_parse_failed");
+        }
 
+        const refusalInfo = getRefusalInfo(parsedJson);
+        if (refusalInfo) {
+            userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback });
+            userLogger.requestComplete(422, { reason: "llm_refusal" });
+            return NextResponse.json(
+                {
+                    error: refusalInfo.message || AI_REFUSAL_ERROR,
+                    blocked: true,
+                    refusalReason: refusalInfo.refusalReason || null,
+                },
+                { status: 422 }
+            );
+        }
+
+        if (parsedJson && typeof parsedJson === "object") {
+            parsedData = parsedJson as ResumeData;
+        } else {
             // Try markdown fallback
             try {
                 parsedData = parseMarkdownToResumeData(rawResponse);

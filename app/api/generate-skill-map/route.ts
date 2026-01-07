@@ -3,8 +3,9 @@ import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/se
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server"
 import { sanitizePlainText, isMeaningfulText } from "@/lib/text-utils"
 import { deriveJobMetadata } from "@/lib/job-posting"
-import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse } from "@/lib/api/llm"
+import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse, isLikelyRefusalResponse, getRefusalInfo } from "@/lib/api/llm"
 import { createLogger } from "@/lib/api/logger"
+import { AI_REFUSAL_ERROR } from "@/lib/constants"
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 import type { SkillMapData, Skill, RoadmapItem, AdaptationHighlight } from "@/types/skill-map"
 
@@ -27,6 +28,8 @@ Return this JSON:
   "missingSkills": [{"name": "<skill>", "priority": "high|medium|low", "category": "missing"}],
   "interviewTips": ["<tip1>", "<tip2>", "<tip3>"]
 }
+If you must refuse or cannot comply, return ONLY:
+{"status":"refused","message":"...","refusalReason":"..."}
 
 Rules:
 - matched: skills in BOTH resume and job
@@ -59,6 +62,8 @@ Return this JSON:
   "adaptationScore": <0-100 how well adapted version aligns with job>,
   "adaptationSummary": "<1-2 sentences about key improvements>"
 }
+If you must refuse or cannot comply, return ONLY:
+{"status":"refused","message":"...","refusalReason":"..."}
 
 Focus on: keyword alignment, skill emphasis, experience reframing.`
 }
@@ -186,8 +191,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userLogger = createLogger("skill-map", user.id)
-    userLogger.requestStart("/api/generate-skill-map")
+  const userLogger = createLogger("skill-map", user.id)
+  userLogger.requestStart("/api/generate-skill-map")
 
     const body = await request.json().catch(() => ({}))
     const { rewrittenResumeId } = body
@@ -328,8 +333,32 @@ export async function POST(request: NextRequest) {
       })
       userLogger.info("llm_analysis_complete", { analysisType })
 
-      const cleanedText = cleanJsonResponse(response.text)
-      return JSON.parse(cleanedText)
+      const rawText = response.text
+      if (isLikelyRefusalResponse(rawText)) {
+        const refusal = new Error(AI_REFUSAL_ERROR) as Error & { code?: string; analysisType?: string }
+        refusal.code = "LLM_REFUSAL"
+        refusal.analysisType = analysisType
+        throw refusal
+      }
+      const cleanedText = cleanJsonResponse(rawText)
+      const parsed = JSON.parse(cleanedText)
+      const refusalInfo = getRefusalInfo(parsed)
+      if (refusalInfo) {
+        const refusal = new Error(refusalInfo.message || AI_REFUSAL_ERROR) as Error & {
+          code?: string
+          analysisType?: string
+          refusalReason?: string
+        }
+        refusal.code = "LLM_REFUSAL"
+        refusal.analysisType = analysisType
+        refusal.refusalReason = refusalInfo.refusalReason
+        throw refusal
+      }
+      return parsed
+    }
+
+    const isRefusalError = (error: unknown): error is Error & { code?: string; analysisType?: string; refusalReason?: string } => {
+      return error instanceof Error && (error as { code?: string }).code === "LLM_REFUSAL"
     }
 
     // Step 1: Gap Analysis (original resume vs job)
@@ -339,6 +368,15 @@ export async function POST(request: NextRequest) {
       gapData = await callLLM(gapPrompt, "gap_analysis")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error"
+      if (isRefusalError(error)) {
+        userLogger.warn("llm_refusal_detected", { analysisType: error.analysisType || "gap_analysis" })
+        userLogger.requestComplete(422, { reason: "llm_refusal", analysisType: error.analysisType || "gap_analysis" })
+        return NextResponse.json({
+          error: error.message || AI_REFUSAL_ERROR,
+          blocked: true,
+          refusalReason: error.refusalReason || null,
+        }, { status: 422 })
+      }
       userLogger.llmComplete({
         model: LLM_MODELS.FALLBACK,
         usedFallback: false,
@@ -364,6 +402,15 @@ export async function POST(request: NextRequest) {
         adaptationData = await callLLM(adaptPrompt, "adaptation_comparison")
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
+        if (isRefusalError(error)) {
+          userLogger.warn("llm_refusal_detected", { analysisType: error.analysisType || "adaptation_comparison" })
+          userLogger.requestComplete(422, { reason: "llm_refusal", analysisType: error.analysisType || "adaptation_comparison" })
+          return NextResponse.json({
+            error: error.message || AI_REFUSAL_ERROR,
+            blocked: true,
+            refusalReason: error.refusalReason || null,
+          }, { status: 422 })
+        }
         userLogger.warn("adaptation_comparison_failed", { error: message })
       }
     }

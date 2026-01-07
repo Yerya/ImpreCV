@@ -3,9 +3,9 @@ import { deriveJobMetadata, normalizeJobLink } from "@/lib/job-posting"
 import { fetchJobPostingFromUrl } from "@/lib/job-posting-server"
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils"
-import { createLLMClient, LLMError, LLM_MODELS } from "@/lib/api/llm"
+import { createLLMClient, LLMError, LLM_MODELS, isLikelyRefusalResponse, parseRefusalInfo } from "@/lib/api/llm"
 import { createLogger } from "@/lib/api/logger"
-import { MAX_CONTENT_LENGTH } from "@/lib/constants"
+import { MAX_CONTENT_LENGTH, AI_REFUSAL_ERROR } from "@/lib/constants"
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "@/lib/rate-limit"
 
 const buildPrompt = (input: { resume: string; job: string; role: string; company?: string }) => {
@@ -24,7 +24,9 @@ GUIDELINES:
 - Reference 2-3 concrete achievements from the resume that align with the job description. Use metrics if present.
 - Mirror the tone of the job description (formal vs. dynamic) and name the role/company early.
 - Do not invent experience, dates, or contact details. If a detail is missing, skip it gracefully.
-- Keep it under 260 words, ready to paste into an email. Return plain text only.`
+- Keep it under 260 words, ready to paste into an email. Return plain text only.
+- If you must refuse or cannot comply, return ONLY this JSON:
+  {"status":"refused","message":"...","refusalReason":"..."}`
 }
 
 export async function POST(request: NextRequest) {
@@ -215,7 +217,23 @@ export async function POST(request: NextRequest) {
         enableFallback: true,
         logPrefix: "[Cover Letter]"
       })
-      content = response.text.trim()
+      const rawText = response.text
+      const refusalInfo = parseRefusalInfo(rawText)
+      if (refusalInfo) {
+        userLogger.warn("llm_refusal_detected", { model: response.model, usedFallback: response.usedFallback })
+        userLogger.requestComplete(422, { reason: "llm_refusal" })
+        return NextResponse.json({
+          error: refusalInfo.message || AI_REFUSAL_ERROR,
+          blocked: true,
+          refusalReason: refusalInfo.refusalReason || null,
+        }, { status: 422 })
+      }
+      if (isLikelyRefusalResponse(rawText)) {
+        userLogger.warn("llm_refusal_detected", { model: response.model, usedFallback: response.usedFallback })
+        userLogger.requestComplete(422, { reason: "llm_refusal" })
+        return NextResponse.json({ error: AI_REFUSAL_ERROR, blocked: true }, { status: 422 })
+      }
+      content = rawText.trim()
       modelUsed = response.model
 
       userLogger.llmComplete({
