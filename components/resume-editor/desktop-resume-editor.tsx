@@ -87,15 +87,19 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resume' | 'cover' | 'skills')}>
                             <div className="flex items-center gap-3">
-                                <TabsList>
-                                    <TabsTrigger value="resume">Resume</TabsTrigger>
-                                    {showJobRelatedTabs && (
-                                        <>
-                                            <TabsTrigger value="cover">Cover Letter</TabsTrigger>
-                                            <TabsTrigger value="skills">Skill Map</TabsTrigger>
-                                        </>
-                                    )}
-                                </TabsList>
+                                {(showJobRelatedTabs || availableResumes.length > 1) && (
+                                    <TabsList>
+                                        {availableResumes.length > 1 && (
+                                            <TabsTrigger value="resume">Resume</TabsTrigger>
+                                        )}
+                                        {showJobRelatedTabs && (
+                                            <>
+                                                <TabsTrigger value="cover">Cover Letter</TabsTrigger>
+                                                <TabsTrigger value="skills">Skill Map</TabsTrigger>
+                                            </>
+                                        )}
+                                    </TabsList>
+                                )}
                                 {activeTab === 'resume' && (
                                     <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1">
                                         <button
@@ -104,7 +108,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                                             className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium bg-background text-foreground shadow-sm transition-all"
                                         >
                                             <Palette className="h-4 w-4" />
-                                            Style
+                                            Templates
                                         </button>
                                     </div>
                                 )}

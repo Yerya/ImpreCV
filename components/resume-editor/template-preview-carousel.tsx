@@ -4,11 +4,11 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { 
-  Carousel, 
-  CarouselContent, 
+import {
+  Carousel,
+  CarouselContent,
   CarouselItem,
-  type CarouselApi 
+  type CarouselApi
 } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
 import { resumeVariants, type ResumeVariantId } from "@/lib/resume-templates/variants"
@@ -28,7 +28,7 @@ interface TemplatePreviewCarouselProps {
 const shouldRenderSlide = (index: number, current: number, total: number) => {
   // For small carousels (≤5 items), render all
   if (total <= 5) return true
-  
+
   const diff = Math.abs(index - current)
   // Handle loop: check distance in both directions around the carousel
   const loopDiff = Math.min(diff, total - diff)
@@ -44,9 +44,10 @@ export function TemplatePreviewCarousel({
 }: TemplatePreviewCarouselProps) {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
-  
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
   // Find the initial index based on selectedVariant
-  const initialIndex = React.useMemo(() => 
+  const initialIndex = React.useMemo(() =>
     resumeVariants.findIndex(v => v.id === selectedVariant),
     [selectedVariant]
   )
@@ -73,6 +74,22 @@ export function TemplatePreviewCarousel({
     }
   }, [api, initialIndex])
 
+  // Keyboard navigation
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (!api) return
+
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      api.scrollPrev()
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      api.scrollNext()
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleSelect(current)
+    }
+  }, [api, current])
+
   const handleSelect = React.useCallback((index: number) => {
     const variant = resumeVariants[index]
     if (variant) {
@@ -81,7 +98,14 @@ export function TemplatePreviewCarousel({
   }, [onSelect])
 
   return (
-    <div className="w-full h-full flex flex-col no-select">
+    <div
+      ref={containerRef}
+      className="w-full h-full flex flex-col no-select outline-none"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      role="listbox"
+      aria-label="Template selector"
+    >
       {/* Main carousel */}
       <Carousel
         setApi={setApi}
@@ -99,17 +123,17 @@ export function TemplatePreviewCarousel({
             const isSelected = selectedVariant === variant.id
             // Virtualization: only render slides within ±2 of current
             const shouldRender = shouldRenderSlide(index, current, resumeVariants.length)
-            
+
             return (
-              <CarouselItem 
-                key={variant.id} 
+              <CarouselItem
+                key={variant.id}
                 className="pl-2 sm:pl-4 basis-[55%] sm:basis-[50%] md:basis-[45%] lg:basis-[35%] xl:basis-[30%] h-full flex items-center justify-center"
               >
-                <div 
+                <div
                   className={cn(
                     "transition-all duration-500 ease-out cursor-pointer group h-full flex flex-col items-center justify-center",
-                    isActive 
-                      ? "scale-100 opacity-100" 
+                    isActive
+                      ? "scale-100 opacity-100"
                       : "scale-[0.92] opacity-60 hover:opacity-80"
                   )}
                   onClick={() => {
@@ -122,8 +146,8 @@ export function TemplatePreviewCarousel({
                 >
                   {/* Badge row above card */}
                   <div className="flex items-center justify-center gap-2 mb-2 h-6 shrink-0">
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="text-xs font-medium bg-background/80 border shadow-sm"
                     >
                       {variant.badge}
@@ -137,7 +161,7 @@ export function TemplatePreviewCarousel({
                   </div>
 
                   {/* Template card wrapper - responsive height based on viewport */}
-                  <div 
+                  <div
                     className={cn(
                       "relative rounded-2xl border-2 overflow-hidden transition-all duration-300",
                       "shadow-xl hover:shadow-2xl",
@@ -156,7 +180,7 @@ export function TemplatePreviewCarousel({
                     {/* Select button - visible on active slide, small highlight on button only */}
                     {isActive && !isSelected && (
                       <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:p-4 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
+                        <Button
                           className="text-sm shadow-lg shadow-primary/20"
                           size="sm"
                           onClick={(e) => {
@@ -172,7 +196,7 @@ export function TemplatePreviewCarousel({
                     {/* Resume preview - virtualized: only render nearby slides */}
                     <div className="absolute inset-0 overflow-hidden bg-muted/20 flex items-center justify-center">
                       {shouldRender ? (
-                        <div 
+                        <div
                           className="pointer-events-none absolute top-0 left-0 right-0 bottom-0 flex items-start justify-start"
                         >
                           {/* 
@@ -192,7 +216,7 @@ export function TemplatePreviewCarousel({
                             <WebResumeRenderer
                               data={resumeData}
                               variant={variant.id}
-                              onUpdate={() => {}}
+                              onUpdate={() => { }}
                               isEditing={false}
                               themeMode={themeMode}
                             />
@@ -219,7 +243,7 @@ export function TemplatePreviewCarousel({
           })}
         </CarouselContent>
       </Carousel>
-      
+
       {/* Navigation controls */}
       <div className="flex justify-center items-center gap-4 py-3 shrink-0">
         <Button
@@ -231,7 +255,7 @@ export function TemplatePreviewCarousel({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        
+
         {/* Dots indicator */}
         <div className="flex gap-2">
           {resumeVariants.map((variant, index) => (
@@ -240,8 +264,8 @@ export function TemplatePreviewCarousel({
               onClick={() => api?.scrollTo(index)}
               className={cn(
                 "h-2 rounded-full transition-all duration-300",
-                current === index 
-                  ? "w-6 bg-primary" 
+                current === index
+                  ? "w-6 bg-primary"
                   : selectedVariant === variant.id
                     ? "w-2 bg-primary/60"
                     : "w-2 bg-primary/30 hover:bg-primary/50"
@@ -250,7 +274,7 @@ export function TemplatePreviewCarousel({
             />
           ))}
         </div>
-        
+
         <Button
           variant="outline"
           size="icon"

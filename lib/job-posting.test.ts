@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeJobLink, deriveJobMetadata } from './job-posting'
+import { normalizeJobLink, deriveJobMetadata, isRestrictedJobSite } from './job-posting'
 
 describe('normalizeJobLink', () => {
     it('returns empty string for undefined input', () => {
@@ -75,5 +75,39 @@ describe('deriveJobMetadata', () => {
         const result = deriveJobMetadata(text)
         expect(result.title).toBe('Product Manager')
         expect(result.company).toBe('Acme Inc')
+    })
+})
+
+describe('isRestrictedJobSite', () => {
+    it('returns not restricted for empty input', () => {
+        expect(isRestrictedJobSite('')).toEqual({ isRestricted: false })
+    })
+
+    it('detects LinkedIn job URLs as restricted', () => {
+        const result = isRestrictedJobSite('https://www.linkedin.com/jobs/view/123456789')
+        expect(result.isRestricted).toBe(true)
+        expect(result.message).toContain('LinkedIn')
+        expect(result.message).toContain('copy and paste')
+    })
+
+    it('detects various LinkedIn URL formats', () => {
+        expect(isRestrictedJobSite('https://linkedin.com/jobs/view/123').isRestricted).toBe(true)
+        expect(isRestrictedJobSite('http://www.linkedin.com/jobs/collections/123').isRestricted).toBe(true)
+        expect(isRestrictedJobSite('https://fr.linkedin.com/jobs/view/123').isRestricted).toBe(true)
+    })
+
+    it('detects LinkedIn URLs without protocol', () => {
+        expect(isRestrictedJobSite('linkedin.com/jobs/view/123').isRestricted).toBe(true)
+        expect(isRestrictedJobSite('www.linkedin.com/jobs/view/123').isRestricted).toBe(true)
+    })
+
+    it('returns not restricted for regular job sites', () => {
+        expect(isRestrictedJobSite('https://example.com/jobs/123').isRestricted).toBe(false)
+        expect(isRestrictedJobSite('https://greenhouse.io/job/123').isRestricted).toBe(false)
+        expect(isRestrictedJobSite('https://lever.co/company/123').isRestricted).toBe(false)
+    })
+
+    it('handles invalid URLs gracefully', () => {
+        expect(isRestrictedJobSite('not-a-url').isRestricted).toBe(false)
     })
 })

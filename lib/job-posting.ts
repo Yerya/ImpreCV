@@ -5,6 +5,45 @@ export interface JobMetadata {
   company?: string
 }
 
+export interface RestrictedSiteResult {
+  isRestricted: boolean
+  message?: string
+}
+
+/**
+ * Checks if the URL is from a site that restricts automated access (like LinkedIn).
+ * Returns an appropriate user-friendly message if restricted.
+ */
+export function isRestrictedJobSite(url: string): RestrictedSiteResult {
+  if (!url) return { isRestricted: false }
+
+  try {
+    const trimmed = url.trim()
+    const withProtocol = /^[a-z]+:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+    const parsed = new URL(withProtocol)
+    const hostname = parsed.hostname.toLowerCase()
+
+    // LinkedIn - blocks web scraping and requires authentication
+    if (hostname.includes("linkedin.com")) {
+      return {
+        isRestricted: true,
+        message:
+          "LinkedIn requires login to view job postings, so we can't fetch the job details automatically. Please copy and paste the job description instead."
+      }
+    }
+
+    // Indeed - some regions block automated access
+    if (hostname.includes("indeed.com") && parsed.pathname.includes("/viewjob")) {
+      // Indeed viewjob pages often require JavaScript rendering
+      // Note: We don't block Indeed entirely as some pages work
+    }
+
+    return { isRestricted: false }
+  } catch {
+    return { isRestricted: false }
+  }
+}
+
 const TITLE_PATTERNS = [/^job\s*title[:\-]\s*(.+)$/i, /^title[:\-]\s*(.+)$/i, /^position[:\-]\s*(.+)$/i, /^role[:\-]\s*(.+)$/i]
 const COMPANY_PATTERNS = [/^company[:\-]\s*(.+)$/i, /^employer[:\-]\s*(.+)$/i, /^organization[:\-]\s*(.+)$/i]
 const SECTION_STOPS = ["responsibilities", "requirements", "qualifications", "about the role", "job description", "what you'll do"]

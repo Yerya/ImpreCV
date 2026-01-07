@@ -1,10 +1,12 @@
 "use client"
 
+import { useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { FileText, Link2 } from "lucide-react"
+import { FileText, Link2, AlertTriangle } from "lucide-react"
+import { isRestrictedJobSite } from "@/lib/job-posting"
 
 interface JobPostingFormProps {
   jobPosting: {
@@ -16,6 +18,15 @@ interface JobPostingFormProps {
 }
 
 export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormProps) {
+  // Check if the current URL is from a restricted site (e.g., LinkedIn)
+  const restrictedSiteWarning = useMemo(() => {
+    if (jobPosting.inputType !== "link" || !jobPosting.jobLink.trim()) {
+      return null
+    }
+    const result = isRestrictedJobSite(jobPosting.jobLink)
+    return result.isRestricted ? result.message : null
+  }, [jobPosting.inputType, jobPosting.jobLink])
+
   return (
     <div className="space-y-4">
       <div className="space-y-3">
@@ -62,11 +73,20 @@ export default function JobPostingForm({ jobPosting, onChange }: JobPostingFormP
               placeholder="https://example.com/jobs/senior-engineer"
               value={jobPosting.jobLink}
               onChange={(e) => onChange({ ...jobPosting, jobLink: e.target.value })}
-              className="bg-background/50"
+              className={`bg-background/50 ${restrictedSiteWarning ? "border-amber-500 focus-visible:ring-amber-500" : ""}`}
             />
-            <p className="text-xs text-muted-foreground">
-              We&apos;ll automatically fetch and parse the job posting from the link
-            </p>
+            {restrictedSiteWarning ? (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {restrictedSiteWarning}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                We&apos;ll automatically fetch and parse the job posting from the link
+              </p>
+            )}
           </div>
         )}
       </div>

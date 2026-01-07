@@ -59,7 +59,7 @@ export function FeaturesCarousel() {
     () =>
       AutoScroll({
         speed: 1,
-        startDelay: 1000,
+        startDelay: 0,
         stopOnInteraction: false,
         stopOnMouseEnter: true,
         stopOnFocusIn: true,
@@ -84,7 +84,7 @@ export function FeaturesCarousel() {
   }, [api])
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="w-full pb-6 -mb-6">
       <Carousel
         setApi={setApi}
         opts={{
