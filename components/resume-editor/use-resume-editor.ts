@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured"
 import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"

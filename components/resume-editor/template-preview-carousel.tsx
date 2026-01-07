@@ -74,6 +74,13 @@ export function TemplatePreviewCarousel({
     }
   }, [api, initialIndex])
 
+  const handleSelect = React.useCallback((index: number) => {
+    const variant = resumeVariants[index]
+    if (variant) {
+      onSelect(variant.id)
+    }
+  }, [onSelect])
+
   // Keyboard navigation
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (!api) return
@@ -88,14 +95,7 @@ export function TemplatePreviewCarousel({
       e.preventDefault()
       handleSelect(current)
     }
-  }, [api, current])
-
-  const handleSelect = React.useCallback((index: number) => {
-    const variant = resumeVariants[index]
-    if (variant) {
-      onSelect(variant.id)
-    }
-  }, [onSelect])
+  }, [api, current, handleSelect])
 
   return (
     <div

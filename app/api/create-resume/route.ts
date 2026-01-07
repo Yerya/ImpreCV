@@ -288,7 +288,6 @@ Include additional sections (certifications, languages, projects) only if releva
         }
 
         // Parse the response
-        let parsedData: ResumeData;
         const cleanedResponse = cleanJsonResponse(rawResponse);
         let parsedJson: unknown = null;
 
@@ -316,7 +315,7 @@ Include additional sections (certifications, languages, projects) only if releva
             );
         }
 
-        parsedData = parsedJson as ResumeData;
+        const parsedData = parsedJson as ResumeData;
 
         // Validate parsed data
         if (!parsedData.personalInfo || !parsedData.sections) {

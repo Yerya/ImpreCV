@@ -330,6 +330,7 @@ FINAL REMINDERS:
         // Call LLM with automatic fallback (gemini-2.5-flash → gemini-2.0-flash)
         let rawResponseText = ""
         let modelUsed: string = LLM_MODELS.PRIMARY
+        let usedFallback = false
         try {
             const response = await llmClient.generate(prompt, {
                 model: LLM_MODELS.PRIMARY,
@@ -339,6 +340,7 @@ FINAL REMINDERS:
             })
             rawResponseText = response.text
             modelUsed = response.model
+            usedFallback = response.usedFallback
 
             userLogger.llmComplete({
                 model: modelUsed,
@@ -366,7 +368,7 @@ FINAL REMINDERS:
         }
 
         if (isLikelyRefusalResponse(rawResponseText)) {
-            userLogger.warn("llm_refusal_detected", { model: modelUsed })
+            userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback })
             userLogger.requestComplete(422, { reason: "llm_refusal" })
             return NextResponse.json({ error: AI_REFUSAL_ERROR, blocked: true }, { status: 422 })
         }
