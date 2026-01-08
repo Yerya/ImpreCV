@@ -15,6 +15,7 @@ import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSignUpMutation } from "@/features/api/authApi"
 import { BrandMark } from "@/components/brand-mark"
+import { toast } from "sonner"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -60,6 +61,7 @@ export default function SignupPage() {
       const res = await signUp({ fullName, email, password, redirectTo })
       if ('data' in res) {
         if (res.data?.ok) {
+          toast.success(`Confirmation email sent to ${email}. Check your inbox to finish signup.`)
           setSuccess(true)
           setTimeout(() => {
             router.push("/dashboard")
@@ -88,6 +90,10 @@ export default function SignupPage() {
             <CheckCircle2 className="h-8 w-8 text-primary" />
           </div>
           <h2 className="text-3xl font-bold mb-2">Account Created!</h2>
+          <p className="text-muted-foreground mb-2">
+            Confirmation email sent to <span className="font-medium text-foreground">{email}</span>.
+          </p>
+          <p className="text-muted-foreground mb-3">Check your inbox to finish signup.</p>
           <p className="text-muted-foreground mb-6">Redirecting you to your dashboard...</p>
           <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
         </Card>
