@@ -429,10 +429,13 @@ export function CreateResumeForm({ onSubmit, isSubmitting }: CreateResumeFormPro
                     ),
                 },
             ]}
-            onComplete={handleSubmit}
-            isCompleteDisabled={!hasPersonalInfo || isSubmitting}
             completeButton={
-                <Button disabled={!hasPersonalInfo || isSubmitting} size="lg" className="w-full">
+                <Button
+                    onClick={handleSubmit}
+                    disabled={!hasPersonalInfo || isSubmitting}
+                    size="lg"
+                    className="w-full"
+                >
                     {isSubmitting ? (
                         <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />

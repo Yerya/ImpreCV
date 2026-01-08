@@ -244,10 +244,9 @@ export function ImproveResumeForm({
                     ),
                 },
             ]}
-            onComplete={handleSubmit}
-            isCompleteDisabled={!canSubmit || isSubmitting}
             completeButton={
                 <Button
+                    onClick={handleSubmit}
                     disabled={!canSubmit || isSubmitting}
                     size="lg"
                     className="w-full"
@@ -268,4 +267,3 @@ export function ImproveResumeForm({
         />
     )
 }
-

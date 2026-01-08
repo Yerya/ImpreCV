@@ -577,8 +577,6 @@ export default function DashboardClient({
                         ),
                       },
                     ]}
-                    onComplete={handleAnalyze}
-                    isCompleteDisabled={!canAnalyze || analyzing}
                     completeButton={
                       <>
                         {/* Cover Letter Toggle */}
@@ -597,6 +595,7 @@ export default function DashboardClient({
                           />
                         </div>
                         <Button
+                          onClick={handleAnalyze}
                           disabled={!canAnalyze || analyzing}
                           size="lg"
                           className="w-full"

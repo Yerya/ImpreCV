@@ -23,17 +23,13 @@ export interface WizardStep {
 
 interface WizardFlowProps {
     steps: WizardStep[]
-    onComplete: () => void
     completeButton: ReactNode
-    isCompleteDisabled?: boolean
     className?: string
 }
 
 export function WizardFlow({
     steps,
-    onComplete,
     completeButton,
-    isCompleteDisabled,
     className,
 }: WizardFlowProps) {
     const [openStep, setOpenStep] = useState<string | undefined>(steps[0]?.id)
@@ -148,9 +144,7 @@ export function WizardFlow({
 
             {/* Final Action Button - Always visible */}
             <div className="pt-2 space-y-2">
-                <div onClick={isCompleteDisabled ? undefined : onComplete}>
-                    {completeButton}
-                </div>
+                <div>{completeButton}</div>
 
                 {/* Show what's missing */}
                 {!allRequiredComplete && (
