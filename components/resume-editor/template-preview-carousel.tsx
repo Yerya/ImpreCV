@@ -15,6 +15,7 @@ import { resumeVariants, type ResumeVariantId } from "@/lib/resume-templates/var
 import type { ResumeData } from "@/lib/resume-templates/types"
 import { WebResumeRenderer } from "@/components/resume-templates/web-renderer"
 import { ChevronLeft, ChevronRight, Check } from "lucide-react"
+import { ResumePreviewSlot } from "./resume-preview-slot"
 
 interface TemplatePreviewCarouselProps {
   resumeData: ResumeData
@@ -196,33 +197,11 @@ export function TemplatePreviewCarousel({
                     {/* Resume preview - virtualized: only render nearby slides */}
                     <div className="absolute inset-0 overflow-hidden bg-muted/20 flex items-center justify-center">
                       {shouldRender ? (
-                        <div
-                          className="flex items-center justify-center w-full h-full"
-                        >
-                          {/* 
-                            Responsive scale using CSS calc:
-                            Mobile (35vh): 35vh / 1123px ≈ 0.28
-                            Desktop (50vh): 50vh / 1123px ≈ 0.40
-                          */}
-                          <div
-                            className="[--resume-scale:calc(35vh/1123px)] sm:[--resume-scale:calc(40vh/1123px)] md:[--resume-scale:calc(45vh/1123px)] lg:[--resume-scale:calc(50vh/1123px)] shadow-lg bg-white"
-                            style={{
-                              transform: 'scale(var(--resume-scale))',
-                              transformOrigin: 'center center',
-                              width: '210mm',
-                              height: '297mm',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <WebResumeRenderer
-                              data={resumeData}
-                              variant={variant.id}
-                              onUpdate={() => { }}
-                              isEditing={false}
-                              themeMode={themeMode}
-                            />
-                          </div>
-                        </div>
+                        <ResumePreviewSlot
+                          resumeData={resumeData}
+                          variant={variant.id}
+                          themeMode={themeMode}
+                        />
                       ) : (
                         // Placeholder for non-rendered slides (virtualization)
                         <Skeleton className="w-full h-full rounded-lg" />
