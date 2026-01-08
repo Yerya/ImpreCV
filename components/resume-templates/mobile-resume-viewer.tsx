@@ -164,30 +164,36 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
                 y: gestureRef.current.startTransform.y + dy
             }))
         } else if (e.touches.length === 2) {
-            // Pinch Zoom
+            // Pinch Zoom & Pan
             const touch1 = e.touches[0]
             const touch2 = e.touches[1]
 
             const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY)
+            const centerX = (touch1.clientX + touch2.clientX) / 2
+            const centerY = (touch1.clientY + touch2.clientY) / 2
 
-            if (gestureRef.current.initialDistance > 0) {
+            if (gestureRef.current.initialDistance > 0 && containerRef.current) {
                 const scaleFactor = dist / gestureRef.current.initialDistance
                 const newScale = gestureRef.current.startTransform.scale * scaleFactor
 
-                // Determine the new transform using the simplified pivot logic
-                // We want: initialCenter to map to the same point on content relative to container
-
                 const currentScale = Math.min(Math.max(newScale, MIN_SCALE), MAX_SCALE)
-                const startScale = gestureRef.current.startTransform.scale
-                const ratio = currentScale / startScale
+
+                const ratio = currentScale / gestureRef.current.startTransform.scale
+
+                // Calculate current center relative to container
+                const rect = containerRef.current.getBoundingClientRect()
+                const currentRelX = centerX - rect.left
+                const currentRelY = centerY - rect.top
 
                 const cx = gestureRef.current.initialCenter.x
                 const cy = gestureRef.current.initialCenter.y
                 const sx = gestureRef.current.startTransform.x
                 const sy = gestureRef.current.startTransform.y
 
-                const newX = cx - (cx - sx) * ratio
-                const newY = cy - (cy - sy) * ratio
+                // Formula: moves the point under initial fingers to the point under current fingers
+                // Translate_New = ContainerPoint_Current - (ContainerPoint_Start - Translate_Start) * Ratio
+                const newX = currentRelX - (cx - sx) * ratio
+                const newY = currentRelY - (cy - sy) * ratio
 
                 setTransform({
                     x: newX,
