@@ -83,7 +83,7 @@ export function SkillMapPanel({
         return (
             <div className="rounded-lg border border-dashed border-border/70 bg-muted/40 p-4 md:p-5 space-y-3 text-sm text-muted-foreground">
                 <div className="space-y-1">
-                    <p className="font-semibold text-foreground">Generate a Skill Map</p>
+                    <p className="font-semibold text-foreground">Generate Skill Analysis</p>
                     <p>Analyze how your skills match the job requirements.</p>
                     <p className="text-xs md:text-sm">See what skills you have, which are transferable, and what to learn next.</p>
                 </div>
@@ -143,14 +143,14 @@ export function SkillMapPanel({
                             <p className="text-[11px] text-muted-foreground">{relativeTime}</p>
                             <div className="flex items-center gap-2">
                                 <Button variant="ghost" size="icon" asChild>
-                                    <Link href={`/skill-map/${skillMap.id}`} aria-label="Open skill map detail">
+                                    <Link href={`/skill-map/${skillMap.id}`} aria-label="Open skill analysis detail">
                                         <ExternalLink className="h-4 w-4" />
                                     </Link>
                                 </Button>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    aria-label="Delete skill map"
+                                    aria-label="Delete skill analysis"
                                     onClick={() => onDelete(skillMap.id)}
                                     disabled={deletingId === skillMap.id}
                                 >

@@ -36,11 +36,7 @@ export function WizardFlow({
     isCompleteDisabled,
     className,
 }: WizardFlowProps) {
-    // Find the first incomplete required step for initial state
-    const firstIncomplete = steps.findIndex((s) => !s.isComplete && !s.isOptional)
-    const initialStep = firstIncomplete === -1 ? steps[steps.length - 1]?.id : steps[firstIncomplete]?.id
-
-    const [openStep, setOpenStep] = useState<string | undefined>(initialStep)
+    const [openStep, setOpenStep] = useState<string | undefined>(steps[0]?.id)
 
     // Check which required steps are missing
     const missingRequiredSteps = steps.filter((s) => !s.isOptional && !s.isComplete)
@@ -56,7 +52,7 @@ export function WizardFlow({
         <div className={cn("space-y-2", className)}>
             <Accordion
                 type="single"
-                collapsible
+                collapsible={false}
                 value={openStep}
                 onValueChange={setOpenStep}
                 className="space-y-3"
@@ -82,7 +78,10 @@ export function WizardFlow({
                                         : "glass-card opacity-80"
                             )}
                         >
-                            <AccordionTrigger className="px-4 py-4 hover:no-underline gap-4">
+                            <AccordionTrigger
+                                className="px-4 py-4 hover:no-underline gap-4"
+                                hideChevron={isOpen}
+                            >
                                 <div className="flex items-center gap-4 flex-1">
                                     {/* Step Indicator Circle */}
                                     <div

@@ -25,11 +25,16 @@ function AccordionItem({
   )
 }
 
+type AccordionTriggerProps = React.ComponentProps<typeof AccordionPrimitive.Trigger> & {
+  hideChevron?: boolean
+}
+
 function AccordionTrigger({
   className,
   children,
+  hideChevron = false,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+}: AccordionTriggerProps) {
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
@@ -41,7 +46,9 @@ function AccordionTrigger({
         {...props}
       >
         {children}
-        <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 shrink-0 translate-y-0.5 transition-transform duration-200" />
+        {!hideChevron && (
+          <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 shrink-0 translate-y-0.5 transition-transform duration-200" />
+        )}
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   )

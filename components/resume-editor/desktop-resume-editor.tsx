@@ -96,7 +96,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                                         {showJobRelatedTabs && (
                                             <>
                                                 <TabsTrigger value="cover">Cover Letter</TabsTrigger>
-                                                <TabsTrigger value="skills">Skill Map</TabsTrigger>
+                                                <TabsTrigger value="skills">Skill Analysis</TabsTrigger>
                                             </>
                                         )}
                                     </TabsList>

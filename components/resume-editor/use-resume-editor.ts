@@ -140,7 +140,7 @@ export function useResumeEditor({
                 const data = await response.json().catch(() => ({}))
 
                 if (!response.ok) {
-                    const message = typeof data?.error === 'string' ? data.error : 'Failed to load skill maps'
+                    const message = typeof data?.error === 'string' ? data.error : 'Failed to load skill analysis'
                     throw new Error(message)
                 }
 
@@ -151,7 +151,7 @@ export function useResumeEditor({
                 setSkillMapsByResume((prev) => ({ ...prev, [resumeId]: items }))
             } catch (error) {
                 if (controller.signal.aborted) return
-                setSkillMapError(error instanceof Error ? error.message : 'Failed to load skill maps')
+                setSkillMapError(error instanceof Error ? error.message : 'Failed to load skill analysis')
                 if (options?.silent) {
                     setSkillMapLoading(false)
                 }
@@ -446,7 +446,7 @@ export function useResumeEditor({
             const response = await fetch(`/api/skill-map/${id}`, { method: 'DELETE' })
             const data = await response.json().catch(() => ({}))
             if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to delete skill map'
+                const message = typeof data.error === 'string' ? data.error : 'Failed to delete skill analysis'
                 throw new Error(message)
             }
 
@@ -454,9 +454,9 @@ export function useResumeEditor({
                 const existing = prev[activeResumeId] || []
                 return { ...prev, [activeResumeId]: existing.filter((sm) => sm.id !== id) }
             })
-            toast.success('Skill map deleted')
+            toast.success('Skill analysis deleted')
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete skill map')
+            toast.error(error instanceof Error ? error.message : 'Failed to delete skill analysis')
         } finally {
             setDeletingSkillMapId(null)
         }
@@ -566,14 +566,14 @@ export function useResumeEditor({
             }
 
             if (result.cached) {
-                toast.info('Skill map already exists')
+                toast.info('Skill analysis already exists')
             } else {
-                toast.success('Skill map generated!')
+                toast.success('Skill analysis generated!')
             }
 
             setActiveTab('skills')
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to generate skill map'
+            const message = error instanceof Error ? error.message : 'Failed to generate skill analysis'
             setSkillMapError(message)
             toast.error(message)
         } finally {

@@ -101,7 +101,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                         <TabsList className="w-full grid grid-cols-3">
                             <TabsTrigger value="resume" className="text-xs">Resume</TabsTrigger>
                             <TabsTrigger value="cover" className="text-xs">Cover</TabsTrigger>
-                            <TabsTrigger value="skills" className="text-xs">Skills</TabsTrigger>
+                            <TabsTrigger value="skills" className="text-xs">Skill Analysis</TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
