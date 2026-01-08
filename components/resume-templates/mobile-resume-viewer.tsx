@@ -13,6 +13,7 @@ interface MobileResumeViewerProps {
 const MIN_SCALE = 0.25
 const MAX_SCALE = 3.0
 const SCALE_STEP = 0.1
+const INITIAL_SCALE = 0.4
 
 interface TransformState {
     x: number
@@ -23,9 +24,10 @@ interface TransformState {
 export function MobileResumeViewer({ children, className }: MobileResumeViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const contentRef = useRef<HTMLDivElement>(null)
+    const baseScaleRef = useRef<number>(INITIAL_SCALE)
 
     // State for the transform
-    const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 0.4 })
+    const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: INITIAL_SCALE })
     const [isAnimating, setIsAnimating] = useState(false)
 
     // Track gestures
@@ -60,6 +62,7 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
         const padding = 16
         const availableWidth = containerWidth - padding
         const scale = Math.min(availableWidth / contentWidth, 0.5) // Cap initial scale
+        baseScaleRef.current = scale
 
         // Center horizontally
         const scaledWidth = contentWidth * scale
@@ -308,6 +311,8 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
         }
     }
 
+    const displayPercent = Math.round((transform.scale / (baseScaleRef.current || 1)) * 100)
+
     return (
         <div className={cn("relative flex flex-col h-full", className)}>
             {/* Zoom Controls */}
@@ -322,7 +327,7 @@ export function MobileResumeViewer({ children, className }: MobileResumeViewerPr
                     <ZoomOut className="h-3.5 w-3.5" />
                 </Button>
                 <span className="text-[11px] tabular-nums min-w-[36px] text-center text-muted-foreground">
-                    {Math.round(transform.scale * 100)}%
+                    {displayPercent}%
                 </span>
                 <Button
                     variant="ghost"

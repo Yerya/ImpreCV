@@ -33,6 +33,7 @@ export function GlobalHeader({
   const isLandingPage = pathname === "/"
   const isDashboardPage = pathname === "/dashboard"
   const isSettingsPage = pathname === "/settings"
+  const isResumeEditorPage = pathname?.startsWith("/resume-editor")
 
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -266,16 +267,18 @@ export function GlobalHeader({
                         </span>
                       </Link>
                     )}
-                    <Link
-                      href="/resume-editor"
-                      className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <span className="grid grid-cols-[20px_auto] items-center gap-3">
-                        <FileText className="h-4 w-4 text-primary shrink-0" />
-                        <span>Resume Editor</span>
-                      </span>
-                    </Link>
+                    {!isResumeEditorPage && (
+                      <Link
+                        href="/resume-editor"
+                        className="px-4 py-3 rounded-md hover:bg-accent/50 transition-colors text-sm font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <span className="grid grid-cols-[20px_auto] items-center gap-3">
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                          <span>Resume Editor</span>
+                        </span>
+                      </Link>
+                    )}
                     {!isSettingsPage && (
                       <Link
                         href="/settings"
