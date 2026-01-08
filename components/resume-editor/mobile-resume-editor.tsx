@@ -162,16 +162,24 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
             )}>
                 {activeTab === 'resume' ? (
                     mobileView === 'preview' ? (
-                        <MobileResumeViewer className="min-h-[60vh]">
-                            <WebResumeRenderer
-                                data={resumeData}
-                                variant={selectedVariant}
-                                onUpdate={setResumeData}
-                                themeMode={themeMode}
-                                onThemeModeChange={setThemeMode}
-                                isEditing={false}
-                            />
-                        </MobileResumeViewer>
+                        <div
+                            className="min-h-[60vh] select-none"
+                            style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
+                            onCopy={(event) => event.preventDefault()}
+                            onCut={(event) => event.preventDefault()}
+                            onContextMenu={(event) => event.preventDefault()}
+                        >
+                            <MobileResumeViewer className="min-h-[60vh]">
+                                <WebResumeRenderer
+                                    data={resumeData}
+                                    variant={selectedVariant}
+                                    onUpdate={setResumeData}
+                                    themeMode={themeMode}
+                                    onThemeModeChange={setThemeMode}
+                                    isEditing={false}
+                                />
+                            </MobileResumeViewer>
+                        </div>
                     ) : (
                         <MobileResumeForm
                             data={resumeData}
