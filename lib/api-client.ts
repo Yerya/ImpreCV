@@ -211,6 +211,8 @@ export interface ImproveResumeResult {
     theme: "light" | "dark";
     name?: string;
     mode: "improved";
+    atsScoreBefore?: number | null;
+    atsScoreAfter?: number | null;
 }
 
 export async function improveResume(payload: ImproveResumePayload): Promise<ImproveResumeResult> {
@@ -235,7 +237,7 @@ export async function improveResume(payload: ImproveResumePayload): Promise<Impr
     }
 
     const parsedData = data.resumeData as ResumeData | undefined;
-    const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; name?: string; mode?: string };
+    const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; name?: string; mode?: string; atsScoreBefore?: number | null; atsScoreAfter?: number | null };
 
     if (!item?.id || !parsedData) {
         throw new Error("Failed to prepare improved resume");
@@ -248,6 +250,8 @@ export async function improveResume(payload: ImproveResumePayload): Promise<Impr
         theme: item.theme || "light",
         name: item.name,
         mode: "improved",
+        atsScoreBefore: item.atsScoreBefore ?? null,
+        atsScoreAfter: item.atsScoreAfter ?? null,
     };
 }
 

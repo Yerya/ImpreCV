@@ -16,6 +16,7 @@ import { ResumeChatPanel } from "@/components/chat/resume-chat-panel"
 import { ResumeActionBar } from "./resume-action-bar"
 import { RecentResumesList } from "./recent-resumes-list"
 import { TemplatePreviewCarousel } from "./template-preview-carousel"
+import { ATSScoreCard } from "./ats-score-card"
 import type { UseResumeEditorReturn } from "./types"
 
 interface MobileResumeEditorProps {
@@ -41,7 +42,10 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
         themeMode,
         setThemeMode,
         activeResumeId,
+        activeResumeMode,
         activeResumeLabel,
+        activeAtsScoreBefore,
+        activeAtsScoreAfter,
         availableResumes,
         hasUnsavedChanges,
         saving,
@@ -254,6 +258,17 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 title="Recent Resumes"
                 description="Select a resume to edit"
             >
+                {/* ATS Score Card for improved resumes */}
+                {activeResumeMode === 'improved' && (activeAtsScoreBefore != null || activeAtsScoreAfter != null) && (
+                    <div className="mb-3">
+                        <ATSScoreCard
+                            scoreBefore={activeAtsScoreBefore}
+                            scoreAfter={activeAtsScoreAfter}
+                            variant="mobile"
+                        />
+                    </div>
+                )}
+                
                 <RecentResumesList
                     resumes={availableResumes}
                     activeResumeId={activeResumeId}

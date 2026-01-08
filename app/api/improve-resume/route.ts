@@ -183,9 +183,24 @@ SECTION CONTENT RULES:
    - "content": [{ "title": "...", "subtitle": "...", "date": "...", "bullets": ["..."] }]
    - If section exists but has no items: "content": []
 
+ATS SCORE ASSESSMENT:
+You MUST also evaluate and include ATS compatibility scores:
+- "atsScoreBefore": 0-100 score of the ORIGINAL resume's ATS compatibility
+- "atsScoreAfter": 0-100 score of YOUR IMPROVED resume's ATS compatibility
+
+Scoring criteria:
+- Keyword density and relevance (25%)
+- Standard section headings (20%)
+- Clean formatting, no tables/graphics (20%)
+- Quantified achievements (15%)
+- Contact info completeness (10%)
+- Consistent dates and tense (10%)
+
 MINIMAL VALID JSON TEMPLATE:
 
 {
+  "atsScoreBefore": 45,
+  "atsScoreAfter": 85,
   "personalInfo": {
     "name": "",
     "title": "",
@@ -318,6 +333,21 @@ MINIMAL VALID JSON TEMPLATE:
             );
         }
 
+        // Extract ATS scores from response
+        const rawParsed = parsedJson as Record<string, unknown> | null;
+        const atsScoreBefore = typeof rawParsed?.atsScoreBefore === "number" 
+            ? Math.min(100, Math.max(0, Math.round(rawParsed.atsScoreBefore))) 
+            : null;
+        const atsScoreAfter = typeof rawParsed?.atsScoreAfter === "number" 
+            ? Math.min(100, Math.max(0, Math.round(rawParsed.atsScoreAfter))) 
+            : null;
+
+        // Clean up parsedData - remove ATS scores from resume data (they're stored separately)
+        if (rawParsed) {
+            delete rawParsed.atsScoreBefore;
+            delete rawParsed.atsScoreAfter;
+        }
+
         const resumeName = targetRole
             ? `${parsedData.personalInfo.name || "Resume"} - ${targetRole}`
             : `${parsedData.personalInfo.name || "Resume"} - Improved`;
@@ -336,8 +366,10 @@ MINIMAL VALID JSON TEMPLATE:
                 name: resumeName,
                 variant: defaultResumeVariant,
                 theme: "light",
+                ats_score_before: atsScoreBefore,
+                ats_score_after: atsScoreAfter,
             })
-            .select("id, variant, theme, pdf_url, name, mode")
+            .select("id, variant, theme, pdf_url, name, mode, ats_score_before, ats_score_after")
             .single();
 
         if (insertError || !newResume) {
@@ -358,6 +390,8 @@ MINIMAL VALID JSON TEMPLATE:
                 pdf_url: newResume.pdf_url,
                 name: newResume.name,
                 mode: newResume.mode,
+                atsScoreBefore: newResume.ats_score_before,
+                atsScoreAfter: newResume.ats_score_after,
             },
             resumeData: parsedData,
         });

@@ -15,6 +15,8 @@ export interface SavedResume {
     createdAt?: string | null
     updatedAt?: string | null
     fileName?: string | null
+    atsScoreBefore?: number | null
+    atsScoreAfter?: number | null
 }
 
 export interface ResumeEditorProps {
@@ -39,6 +41,8 @@ export interface UseResumeEditorReturn {
     activeResumeId: string | null
     activeResumeMode: ResumeMode | null
     activeResumeLabel: string
+    activeAtsScoreBefore: number | null
+    activeAtsScoreAfter: number | null
     availableResumes: SavedResume[]
 
     // Unsaved state

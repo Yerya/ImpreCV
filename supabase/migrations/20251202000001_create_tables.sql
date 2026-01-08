@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS public.rewritten_resumes (
   pdf_url TEXT,
   pdf_path TEXT,
   file_name TEXT,
+  ats_score_before INTEGER CONSTRAINT check_ats_score_before CHECK (ats_score_before IS NULL OR (ats_score_before >= 0 AND ats_score_before <= 100)),
+  ats_score_after INTEGER CONSTRAINT check_ats_score_after CHECK (ats_score_after IS NULL OR (ats_score_after >= 0 AND ats_score_after <= 100)),
   last_adapted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

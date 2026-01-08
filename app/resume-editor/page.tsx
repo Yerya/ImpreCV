@@ -28,7 +28,9 @@ const mapRowToResume = (row: Record<string, unknown>): SavedResume => {
         pdfUrl: (row?.pdf_url as string) || null,
         createdAt: (row?.created_at as string) || null,
         updatedAt: (row?.updated_at as string) || null,
-        fileName: (row?.file_name as string) || data?.personalInfo?.name || "resume"
+        fileName: (row?.file_name as string) || data?.personalInfo?.name || "resume",
+        atsScoreBefore: typeof row?.ats_score_before === 'number' ? row.ats_score_before : null,
+        atsScoreAfter: typeof row?.ats_score_after === 'number' ? row.ats_score_after : null,
     }
 }
 
@@ -55,7 +57,7 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
 
     const { data: rows } = await supabase
         .from("rewritten_resumes")
-        .select("id, content, structured_data, variant, theme, mode, pdf_url, file_name, created_at, updated_at")
+        .select("id, content, structured_data, variant, theme, mode, pdf_url, file_name, created_at, updated_at, ats_score_before, ats_score_after")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(3)

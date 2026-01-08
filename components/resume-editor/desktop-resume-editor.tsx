@@ -14,6 +14,7 @@ import { ResumeChatPanel } from "@/components/chat/resume-chat-panel"
 import { ResumeActionBar } from "./resume-action-bar"
 import { RecentResumesList } from "./recent-resumes-list"
 import { TemplatePreviewCarousel } from "./template-preview-carousel"
+import { ATSScoreCard } from "./ats-score-card"
 import type { UseResumeEditorReturn } from "./types"
 
 interface DesktopResumeEditorProps {
@@ -37,7 +38,10 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
         themeMode,
         setThemeMode,
         activeResumeId,
+        activeResumeMode,
         activeResumeLabel,
+        activeAtsScoreBefore,
+        activeAtsScoreAfter,
         availableResumes,
         hasUnsavedChanges,
         saving,
@@ -222,7 +226,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                     </div>
 
                     {/* Sidebar */}
-                    <div className="hidden xl:block sticky top-[136px]">
+                    <div className="hidden xl:block sticky top-[136px] space-y-4">
                         <RecentResumesList
                             resumes={availableResumes}
                             activeResumeId={activeResumeId}
@@ -231,6 +235,15 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                             onDelete={handleDeleteSaved}
                             variant="desktop"
                         />
+                        
+                        {/* ATS Score Card - show only for improved resumes */}
+                        {activeResumeMode === 'improved' && (activeAtsScoreBefore != null || activeAtsScoreAfter != null) && (
+                            <ATSScoreCard
+                                scoreBefore={activeAtsScoreBefore}
+                                scoreAfter={activeAtsScoreAfter}
+                                variant="compact"
+                            />
+                        )}
                     </div>
                 </div>
             </div>

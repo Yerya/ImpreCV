@@ -110,6 +110,18 @@ export function useResumeEditor({
         }
         return resumeData.personalInfo.name || 'Resume'
     }, [activeResumeId, availableResumes, resumeData])
+    
+    const activeAtsScores = useMemo(() => {
+        if (activeResumeId) {
+            const existing = availableResumes.find((resume) => resume.id === activeResumeId)
+            return {
+                before: existing?.atsScoreBefore ?? null,
+                after: existing?.atsScoreAfter ?? null,
+            }
+        }
+        return { before: null, after: null }
+    }, [activeResumeId, availableResumes])
+    
     const waitingForCoverLetter = activeTab === 'cover' && !!activeResumeId && !activeCoverLetters.length && (coverLetterLoading || generatingCoverLetter)
     const waitingForSkillMap = activeTab === 'skills' && !!activeResumeId && !activeSkillMaps.length && (skillMapLoading || generatingSkillMap)
 
@@ -659,6 +671,8 @@ export function useResumeEditor({
             }
 
             toast.success('Resume deleted')
+            // Refresh server cache to ensure data is in sync on navigation
+            router.refresh()
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to delete resume')
         } finally {
@@ -816,6 +830,8 @@ export function useResumeEditor({
         activeResumeId,
         activeResumeMode,
         activeResumeLabel,
+        activeAtsScoreBefore: activeAtsScores.before,
+        activeAtsScoreAfter: activeAtsScores.after,
         availableResumes,
         hasUnsavedChanges,
         saving,
