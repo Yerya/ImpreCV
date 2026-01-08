@@ -318,7 +318,6 @@ MINIMAL VALID JSON TEMPLATE:
             );
         }
 
-        // Create the improved resume record
         const resumeName = targetRole
             ? `${parsedData.personalInfo.name || "Resume"} - ${targetRole}`
             : `${parsedData.personalInfo.name || "Resume"} - Improved`;

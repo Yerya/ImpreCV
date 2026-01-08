@@ -168,7 +168,6 @@ Extends Supabase `auth.users` with application-specific data.
 | id | UUID | Primary key, references auth.users |
 | email | TEXT | User email (validated by CHECK constraint) |
 | full_name | TEXT | Display name |
-| avatar_url | TEXT | Profile picture URL |
 | created_at | TIMESTAMPTZ | Registration timestamp |
 | updated_at | TIMESTAMPTZ | Last modification (auto-updated by trigger) |
 
@@ -212,6 +211,8 @@ AI-adapted resumes linked to specific job postings.
 | format | TEXT | Content format: 'json', 'text', 'markdown' |
 | variant | TEXT | Template variant: 'tailored', 'original', 'optimized' |
 | theme | TEXT | Visual theme: 'light', 'dark', 'modern', 'classic', 'minimal' |
+| source_type | TEXT | Origin: 'upload', 'paste', 'scratch' |
+| name | TEXT | User-friendly resume label |
 | pdf_url | TEXT | Generated PDF download URL |
 | last_adapted_at | TIMESTAMPTZ | Last AI processing timestamp |
 
@@ -322,6 +323,7 @@ CREATE INDEX idx_structured_data_skills ON rewritten_resumes
 | rewritten_resumes | `check_format_valid` | Enum: json, text, markdown |
 | rewritten_resumes | `check_variant_valid` | Enum: tailored, original, optimized |
 | rewritten_resumes | `check_theme_valid` | Enum: light, dark, modern, classic, minimal |
+| rewritten_resumes | `check_source_type_valid` | Enum: upload, paste, scratch |
 | skill_maps | `check_match_score` | Range: 0-100 |
 | skill_maps | `check_adaptation_score` | Range: 0-100 (nullable) |
 | chat_usage | `check_count_non_negative` | count >= 0 |

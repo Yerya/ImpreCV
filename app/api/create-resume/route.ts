@@ -326,7 +326,6 @@ Include additional sections (certifications, languages, projects) only if releva
             );
         }
 
-        // Create the resume record
         const resumeName = `${fullName} - ${targetRole}`;
 
         const { data: newResume, error: insertError } = await supabase

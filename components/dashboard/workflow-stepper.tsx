@@ -79,14 +79,14 @@ export function WizardFlow({
                             )}
                         >
                             <AccordionTrigger
-                                className="px-4 py-4 hover:no-underline gap-4"
+                                className="px-3 py-4 md:px-4 hover:no-underline gap-3 md:gap-4"
                                 hideChevron={isOpen}
                             >
-                                <div className="flex items-center gap-4 flex-1">
+                                <div className="flex items-center gap-3 md:gap-4 flex-1">
                                     {/* Step Indicator Circle */}
                                     <div
                                         className={cn(
-                                            "h-10 w-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 shrink-0",
+                                            "h-9 w-9 md:h-10 md:w-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 shrink-0",
                                             showCheckmark
                                                 ? "bg-gradient-to-br from-[var(--gradient-1)] to-[var(--gradient-2)] text-background"
                                                 : isOpen
@@ -122,8 +122,8 @@ export function WizardFlow({
                                 </div>
                             </AccordionTrigger>
 
-                            <AccordionContent className="px-4 pb-4">
-                                <div className="pl-14 space-y-4">
+                            <AccordionContent className="px-3 pb-4 md:px-4">
+                                <div className="pl-0 sm:pl-12 md:pl-14 space-y-4">
                                     {step.content}
 
                                     {/* Continue / Skip button */}

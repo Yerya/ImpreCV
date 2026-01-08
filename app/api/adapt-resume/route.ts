@@ -400,7 +400,7 @@ FINAL REMINDERS:
             .from("rewritten_resumes")
             .select(`
                 id, content, structured_data, resume_id, variant, theme, 
-                pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id,
+                pdf_url, pdf_path, created_at, updated_at, name, file_name, job_posting_id,
                 job_posting:job_postings(id, title, company, description, link)
             `)
             .eq("user_id", user.id)
@@ -525,7 +525,7 @@ FINAL REMINDERS:
                 .eq("id", existingAdaptedResume.id)
                 .select(`
                     id, content, structured_data, resume_id, variant, theme, 
-                    pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id
+                    pdf_url, pdf_path, created_at, updated_at, name, file_name, job_posting_id
                 `)
                 .single();
 
@@ -575,7 +575,7 @@ FINAL REMINDERS:
             })
             .select(`
                 id, content, structured_data, resume_id, variant, theme, 
-                pdf_url, pdf_path, created_at, updated_at, file_name, job_posting_id
+                pdf_url, pdf_path, created_at, updated_at, name, file_name, job_posting_id
             `)
             .single();
 
