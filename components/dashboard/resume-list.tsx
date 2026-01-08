@@ -12,8 +12,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { FileText, CheckCircle2, Trash2, Loader2 } from "lucide-react"
+import { FileText, CheckCircle2, Trash2, Loader2, MousePointerClick } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface ResumeRecord {
   id: string
@@ -47,83 +48,112 @@ export default function ResumeList({
     )
   }
 
+  const noneSelected = !selectedResumeId
+
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">Your Resumes</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">Your Resumes</p>
+        {noneSelected && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
+            <MousePointerClick className="h-3.5 w-3.5" />
+            <span>Tap to select</span>
+          </div>
+        )}
+      </div>
       <div className="space-y-2">
-        {resumes.map((resume) => (
-          <Card
-            key={resume.id}
-            onClick={() => onSelectResume(resume.id)}
-            className={`glass-row p-4 cursor-pointer ${selectedResumeId === resume.id ? "glass-row--selected" : ""
-              }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium truncate">{resume.file_name}</p>
-                  <div className="flex items-center gap-2">
-                    {selectedResumeId === resume.id && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
-                    {onDeleteResume && (
-                      <Dialog open={confirmId === resume.id} onOpenChange={(open) => setConfirmId(open ? resume.id : null)}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={(e) => e.stopPropagation()}
-                            disabled={deletingId === resume.id}
-                          >
-                            {deletingId === resume.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md glass-card" showCloseButton={false}>
-                          <DialogHeader>
-                            <DialogTitle>Delete this resume?</DialogTitle>
-                            <DialogDescription>
-                              The file and its metadata will be removed. This cannot be undone.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setConfirmId(null)} disabled={deletingId === resume.id}>
-                              Cancel
-                            </Button>
+        {resumes.map((resume) => {
+          const isSelected = selectedResumeId === resume.id
+
+          return (
+            <Card
+              key={resume.id}
+              onClick={() => onSelectResume(resume.id)}
+              className={cn(
+                "glass-row p-4 cursor-pointer transition-all",
+                isSelected
+                  ? "glass-row--selected"
+                  : noneSelected
+                    ? "ring-1 ring-[var(--gradient-2)]/30 hover:ring-[var(--gradient-2)]/60"
+                    : ""
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                  isSelected
+                    ? "bg-gradient-to-br from-[var(--gradient-1)]/20 to-[var(--gradient-2)]/20"
+                    : "bg-primary/10"
+                )}>
+                  <FileText className={cn(
+                    "h-5 w-5",
+                    isSelected ? "text-[var(--gradient-2)]" : "text-primary"
+                  )} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium truncate">{resume.file_name}</p>
+                    <div className="flex items-center gap-2">
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-[var(--gradient-2)] flex-shrink-0" />}
+                      {onDeleteResume && (
+                        <Dialog open={confirmId === resume.id} onOpenChange={(open) => setConfirmId(open ? resume.id : null)}>
+                          <DialogTrigger asChild>
                             <Button
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onDeleteResume(resume.id)
-                                setConfirmId(null)
-                              }}
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
                               disabled={deletingId === resume.id}
                             >
                               {deletingId === resume.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                "Delete"
+                                <Trash2 className="h-4 w-4" />
                               )}
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    )}
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md glass-card" showCloseButton={false}>
+                            <DialogHeader>
+                              <DialogTitle>Delete this resume?</DialogTitle>
+                              <DialogDescription>
+                                The file and its metadata will be removed. This cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setConfirmId(null)} disabled={deletingId === resume.id}>
+                                Cancel
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDeleteResume(resume.id)
+                                  setConfirmId(null)
+                                }}
+                                disabled={deletingId === resume.id}
+                              >
+                                {deletingId === resume.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Delete"
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Uploaded {formatDistanceToNow(new Date(resume.created_at), { addSuffix: true })}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Uploaded {formatDistanceToNow(new Date(resume.created_at), { addSuffix: true })}
-                </p>
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
 }
+

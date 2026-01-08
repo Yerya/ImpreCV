@@ -182,10 +182,16 @@ export async function POST(req: NextRequest) {
   })
 
   if (!txResult.success) {
-    if (txResult.error?.includes("23505")) {
+    // Check for duplicate key constraint violation (file name already exists for this user)
+    const errorLower = txResult.error?.toLowerCase() || ""
+    if (
+      errorLower.includes("duplicate key") ||
+      errorLower.includes("unique constraint") ||
+      errorLower.includes("23505")
+    ) {
       return NextResponse.json(
-        { error: "You already uploaded a resume with this name. Rename the file and try again." },
-        { status: 400 },
+        { error: "A resume with this file name already exists. Please rename the file and try again." },
+        { status: 409 },
       )
     }
     return NextResponse.json({ error: txResult.error || "Failed to save resume." }, { status: 500 })

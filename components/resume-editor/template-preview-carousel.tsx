@@ -197,7 +197,7 @@ export function TemplatePreviewCarousel({
                     <div className="absolute inset-0 overflow-hidden bg-muted/20 flex items-center justify-center">
                       {shouldRender ? (
                         <div
-                          className="pointer-events-none absolute top-0 left-0 right-0 bottom-0 flex items-start justify-start"
+                          className="flex items-center justify-center w-full h-full"
                         >
                           {/* 
                             Responsive scale using CSS calc:
@@ -205,12 +205,13 @@ export function TemplatePreviewCarousel({
                             Desktop (50vh): 50vh / 1123px ≈ 0.40
                           */}
                           <div
-                            className="[--resume-scale:calc(35vh/1123px)] sm:[--resume-scale:calc(40vh/1123px)] md:[--resume-scale:calc(45vh/1123px)] lg:[--resume-scale:calc(50vh/1123px)]"
+                            className="[--resume-scale:calc(35vh/1123px)] sm:[--resume-scale:calc(40vh/1123px)] md:[--resume-scale:calc(45vh/1123px)] lg:[--resume-scale:calc(50vh/1123px)] shadow-lg bg-white"
                             style={{
                               transform: 'scale(var(--resume-scale))',
-                              transformOrigin: 'top left',
+                              transformOrigin: 'center center',
                               width: '210mm',
                               height: '297mm',
+                              flexShrink: 0,
                             }}
                           >
                             <WebResumeRenderer

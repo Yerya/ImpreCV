@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Sparkles, CheckCircle2 } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
+import { WizardFlow } from "./workflow-stepper"
 import ResumeUpload from "./resume-upload"
 import ResumeList from "./resume-list"
 import type { ImproveResumePayload } from "@/lib/api-client"
@@ -18,6 +18,7 @@ interface StoredFormData {
     targetRole: string
     selectedImprovements: string[]
     resumeText: string
+    selectedResumeId: string | null
     timestamp: number
 }
 
@@ -70,12 +71,12 @@ interface ImproveResumeFormProps {
 }
 
 const IMPROVEMENT_OPTIONS = [
-    { id: "ats", label: "ATS Optimization", description: "Improve keyword matching for applicant tracking systems" },
-    { id: "bullets", label: "Stronger Bullet Points", description: "Add metrics and action verbs to achievements" },
-    { id: "formatting", label: "Professional Formatting", description: "Clean up structure and consistency" },
-    { id: "summary", label: "Better Summary", description: "Write a more compelling professional summary" },
-    { id: "keywords", label: "Industry Keywords", description: "Add relevant industry terminology" },
-    { id: "clarity", label: "Improved Clarity", description: "Remove jargon and improve readability" },
+    { id: "ats", label: "ATS Optimization", description: "Improve keyword matching" },
+    { id: "bullets", label: "Stronger Bullets", description: "Add metrics and action verbs" },
+    { id: "formatting", label: "Formatting", description: "Clean up structure" },
+    { id: "summary", label: "Better Summary", description: "More compelling summary" },
+    { id: "keywords", label: "Keywords", description: "Add industry terms" },
+    { id: "clarity", label: "Clarity", description: "Remove jargon" },
 ]
 
 export function ImproveResumeForm({
@@ -103,6 +104,7 @@ export function ImproveResumeForm({
             if (stored.targetRole) setTargetRole(stored.targetRole)
             if (stored.selectedImprovements) setSelectedImprovements(stored.selectedImprovements)
             if (stored.resumeText) setResumeText(stored.resumeText)
+            if (stored.selectedResumeId) setSelectedResumeId(stored.selectedResumeId)
         }
         setIsHydrated(true)
     }, [])
@@ -111,10 +113,10 @@ export function ImproveResumeForm({
     useEffect(() => {
         if (!isHydrated) return
         const timeout = setTimeout(() => {
-            saveToStorage({ targetRole, selectedImprovements, resumeText })
+            saveToStorage({ targetRole, selectedImprovements, resumeText, selectedResumeId })
         }, 500)
         return () => clearTimeout(timeout)
-    }, [targetRole, selectedImprovements, resumeText, isHydrated])
+    }, [targetRole, selectedImprovements, resumeText, selectedResumeId, isHydrated])
 
     const handleResumeUploaded = (resume: ResumeRecord) => {
         onResumeUploaded(resume)
@@ -151,132 +153,119 @@ export function ImproveResumeForm({
             targetRole: targetRole || undefined,
             improvements: improvementLabels,
         })
-        
+
         // Clear storage after successful submission
         clearStorage()
     }
 
-    const hasResume = selectedResumeId || resumeText.trim().length > 0
+    const hasResume = !!(selectedResumeId || resumeText.trim().length > 0)
     const canSubmit = hasResume && selectedImprovements.length > 0
 
     return (
-        <div className="space-y-6">
-            {/* Step 1: Resume Input */}
-            <Card className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                        1
-                    </div>
-                    <h2 className="text-xl font-bold">Your Resume</h2>
-                    {hasResume && <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />}
-                </div>
-
-                <ResumeUpload
-                    onResumeUploaded={handleResumeUploaded}
-                    onTextChange={handleTextChange}
-                    textValue={resumeText}
-                    currentCount={resumes.length}
-                    maxResumes={MAX_RESUMES_PER_USER}
-                />
-
-                {resumes.length > 0 && (
-                    <div className="mt-6">
-                        <h3 className="text-sm font-medium mb-3 text-muted-foreground">
-                            Or select from your uploaded resumes:
-                        </h3>
-                        <ResumeList
-                            resumes={resumes}
-                            selectedResumeId={selectedResumeId}
-                            onSelectResume={handleSelectResume}
-                            onDeleteResume={onDeleteResume}
-                            deletingId={deletingId}
-                        />
-                    </div>
-                )}
-            </Card>
-
-            {/* Step 2: Target Role (Optional) */}
-            <Card className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                        2
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold">Target Role</h2>
-                        <p className="text-sm text-muted-foreground">Optional - helps AI optimize for your goals</p>
-                    </div>
-                </div>
-                <Input
-                    placeholder="e.g., Senior Software Engineer, Product Manager, Data Scientist"
-                    value={targetRole}
-                    onChange={(e) => setTargetRole(e.target.value)}
-                />
-            </Card>
-
-            {/* Step 3: Improvement Options */}
-            <Card className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
-                        3
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold">Improvements</h2>
-                        <p className="text-sm text-muted-foreground">Select what to focus on</p>
-                    </div>
-                    {selectedImprovements.length > 0 && (
-                        <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />
-                    )}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {IMPROVEMENT_OPTIONS.map((option) => (
-                        <label
-                            key={option.id}
-                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                                selectedImprovements.includes(option.id)
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-primary/50"
-                            }`}
-                        >
-                            <Checkbox
-                                checked={selectedImprovements.includes(option.id)}
-                                onCheckedChange={() => toggleImprovement(option.id)}
-                                className="mt-0.5"
+        <WizardFlow
+            steps={[
+                {
+                    id: "resume",
+                    label: "Your Resume",
+                    isComplete: hasResume,
+                    hint: resumes.length > 0
+                        ? "Select a resume from the list or upload a new one"
+                        : "Upload or paste your resume",
+                    content: (
+                        <div className="space-y-4">
+                            <ResumeUpload
+                                onResumeUploaded={handleResumeUploaded}
+                                onTextChange={handleTextChange}
+                                textValue={resumeText}
+                                currentCount={resumes.length}
+                                maxResumes={MAX_RESUMES_PER_USER}
                             />
-                            <div>
-                                <div className="font-medium text-sm">{option.label}</div>
-                                <div className="text-xs text-muted-foreground">{option.description}</div>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-            </Card>
-
-            {/* Submit Button */}
-            <Button
-                onClick={handleSubmit}
-                disabled={!canSubmit || isSubmitting}
-                size="lg"
-                className="w-full"
-            >
-                {isSubmitting ? (
-                    <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Improving Resume...
-                    </>
-                ) : (
-                    <>
-                        <Sparkles className="mr-2 h-5 w-5" />
-                        Improve Resume with AI
-                    </>
-                )}
-            </Button>
-
-            {!hasResume && (
-                <p className="text-sm text-muted-foreground text-center">
-                    Please upload or paste your resume to continue
-                </p>
-            )}
-        </div>
+                            {resumes.length > 0 && (
+                                <div className="mt-4">
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        Or select an uploaded resume:
+                                    </p>
+                                    <ResumeList
+                                        resumes={resumes}
+                                        selectedResumeId={selectedResumeId}
+                                        onSelectResume={handleSelectResume}
+                                        onDeleteResume={onDeleteResume}
+                                        deletingId={deletingId}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ),
+                },
+                {
+                    id: "options",
+                    label: "Improvements",
+                    isComplete: selectedImprovements.length > 0,
+                    content: (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                            {IMPROVEMENT_OPTIONS.map((option) => (
+                                <label
+                                    key={option.id}
+                                    className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${selectedImprovements.includes(option.id)
+                                        ? "border-[var(--gradient-2)] bg-[var(--gradient-2)]/5"
+                                        : "border-border hover:border-[var(--gradient-2)]/50"
+                                        }`}
+                                >
+                                    <Checkbox
+                                        checked={selectedImprovements.includes(option.id)}
+                                        onCheckedChange={() => toggleImprovement(option.id)}
+                                        className="mt-0.5"
+                                    />
+                                    <div>
+                                        <div className="font-medium text-sm">{option.label}</div>
+                                        <div className="text-xs text-muted-foreground">{option.description}</div>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+                    ),
+                },
+                {
+                    id: "role",
+                    label: "Target Role",
+                    isComplete: targetRole.trim().length > 0, // Show checkmark only when filled
+                    isOptional: true,
+                    content: (
+                        <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                                Optional — helps AI optimize for your goals
+                            </p>
+                            <Input
+                                placeholder="e.g., Senior Software Engineer"
+                                value={targetRole}
+                                onChange={(e) => setTargetRole(e.target.value)}
+                            />
+                        </div>
+                    ),
+                },
+            ]}
+            onComplete={handleSubmit}
+            isCompleteDisabled={!canSubmit || isSubmitting}
+            completeButton={
+                <Button
+                    disabled={!canSubmit || isSubmitting}
+                    size="lg"
+                    className="w-full"
+                >
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Improving Resume...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="mr-2 h-5 w-5" />
+                            Improve Resume with AI
+                        </>
+                    )}
+                </Button>
+            }
+        />
     )
 }
+
