@@ -588,7 +588,7 @@ export function ResumeChatPanel({
                             maxLength={MAX_MESSAGE_CHARS + 50}
                             className={cn(
                                 "w-full resize-none rounded-xl border-0 bg-secondary/50 px-3 md:px-4 py-2 md:py-2.5 pr-12 md:pr-16",
-                                "text-sm placeholder:text-muted-foreground leading-5",
+                                "text-base md:text-sm placeholder:text-muted-foreground leading-5",
                                 "focus:outline-none focus:ring-2 focus:ring-primary/30",
                                 "min-h-9 md:min-h-10 max-h-32",
                                 isOverLimit && "ring-2 ring-destructive/50"
