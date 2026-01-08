@@ -8,7 +8,7 @@ import { ArrowRight, Sparkles } from "lucide-react"
 import { GlobalHeader } from "@/components/global-header"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { AnimateIn } from "@/components/anim/animate-in"
-import { MatchJourneySection } from "@/components/match-journey-section"
+import { HowItWorksSection } from "@/components/how-it-works-section"
 import { BrandMark } from "@/components/brand-mark"
 import { ThreeWaysSection } from "@/components/landing/three-ways-section"
 import { FeaturesCarousel } from "@/components/landing/features-carousel"
@@ -26,7 +26,7 @@ export default function LandingPage() {
         id="hero-anchor"
         entrance="bubble"
         variant="fadeUp"
-        className="relative z-10 min-h-[calc(100dvh-var(--header-h))] flex items-center py-12 md:py-20"
+        className="relative z-10 min-h-[calc(100dvh-var(--header-h))] flex items-center pt-12 pb-0 md:py-20"
       >
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
@@ -80,7 +80,7 @@ export default function LandingPage() {
       </AnimateIn>
 
       {/* Three Ways Section */}
-      <section id="ways" className="py-20 relative z-10">
+      <section id="ways" className="pt-20 pb-0 md:py-20 relative z-10">
         <div className="container mx-auto px-4 relative z-10">
           <AnimateIn variant="fadeUp" className="text-center mb-12 md:mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -95,7 +95,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 relative z-10 overflow-hidden">
+      <section id="features" className="pt-20 pb-0 md:py-20 relative z-10 overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <AnimateIn variant="fadeUp" className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -111,9 +111,9 @@ export default function LandingPage() {
         </AnimateIn>
       </section>
 
-      {/* How It Works / Match Journey */}
+      {/* How It Works */}
       <div id="how-it-works" className="relative z-10">
-        <MatchJourneySection />
+        <HowItWorksSection />
       </div>
 
       {/* CTA Section */}
@@ -122,7 +122,7 @@ export default function LandingPage() {
         variant="fadeUp"
         threshold={0.35}
         durationMs={800}
-        className="py-20 relative z-10"
+        className="pt-20 pb-0 md:py-20 relative z-10"
         style={{ "--y": "24px" } as React.CSSProperties}
       >
         <div className="container mx-auto px-4 relative z-10">
@@ -166,7 +166,7 @@ export default function LandingPage() {
         variant="fadeUp"
         threshold={0.4}
         durationMs={900}
-        className="py-12 relative z-10"
+        className="pt-12 pb-12 md:py-12 relative z-10"
         style={{ "--y": "28px" } as React.CSSProperties}
       >
         <div className="container mx-auto px-4">

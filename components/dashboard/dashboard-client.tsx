@@ -647,35 +647,35 @@ export default function DashboardClient({
               </div>
 
               {/* Sidebar */}
-              <div className="space-y-6 min-w-0">
+              <div className="grid grid-cols-2 gap-3 lg:block lg:space-y-6 min-w-0">
                 {/* Resume Editor - aligned with Your Resume */}
-                <Card className="glass-card-primary p-6 relative z-10 w-full">
-                  <div className="flex items-start justify-between gap-3">
+                <Card className="glass-card-primary p-4 lg:p-6 relative z-10 w-full flex flex-col justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="text-xl font-semibold mb-1">Resume Editor</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-lg lg:text-xl font-semibold mb-1 leading-tight">Resume Editor</h3>
+                      <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block">
                         Edit and export your tailored resumes in one place.
                       </p>
                     </div>
-                    <Sparkles className="h-5 w-5 text-primary mt-1" />
+                    <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-primary mt-1 shrink-0" />
                   </div>
-                  <Button className="w-full mt-4" onClick={() => router.push("/resume-editor")}>
+                  <Button className="w-full mt-3 lg:mt-4 text-xs lg:text-sm h-8 lg:h-10" onClick={() => router.push("/resume-editor")}>
                     Open Editor
                   </Button>
                 </Card>
 
                 {/* Quick Stats */}
-                <Card className="glass-card p-6 relative z-10 w-full">
-                  <h3 className="text-xl font-semibold mb-4">Quick Stats</h3>
-                  <div className="space-y-4">
+                <Card className="glass-card p-4 lg:p-6 relative z-10 w-full flex flex-col">
+                  <h3 className="text-lg lg:text-xl font-semibold mb-2 lg:mb-4 leading-tight">Quick Stats</h3>
+                  <div className="space-y-2 lg:space-y-4 flex-1">
                     <div>
-                      <div className="text-3xl font-bold gradient-text">{resumes.length}</div>
-                      <div className="text-sm text-muted-foreground">Resumes Uploaded</div>
+                      <div className="text-2xl lg:text-3xl font-bold gradient-text">{resumes.length}</div>
+                      <div className="text-xs lg:text-sm text-muted-foreground leading-tight">Resumes Uploaded</div>
                     </div>
                     {workflowMode === "adapt" && (
                       <div>
-                        <div className="text-3xl font-bold gradient-text">{recentSkillMaps.length}</div>
-                        <div className="text-sm text-muted-foreground">Skill Analyses</div>
+                        <div className="text-2xl lg:text-3xl font-bold gradient-text">{recentSkillMaps.length}</div>
+                        <div className="text-xs lg:text-sm text-muted-foreground leading-tight">Skill Analyses</div>
                       </div>
                     )}
                   </div>
