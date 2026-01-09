@@ -75,14 +75,23 @@ export function useResumeEditor({
     )
 
     // Sync availableResumes when server props change (e.g., after navigation)
+    // Use stable key based on IDs to avoid unnecessary updates from reference changes
+    const recentResumesKey = recentResumes.map(r => r.id).join(',')
     useEffect(() => {
-        const normalized = recentResumes.map((item) => ({
-            ...item,
-            variant: item.variant || defaultResumeVariant,
-            theme: item.theme || 'light'
-        }))
-        setAvailableResumes(normalized)
-    }, [recentResumes])
+        setAvailableResumes(prev => {
+            const prevIds = prev.map(r => r.id).join(',')
+            // Only update if the IDs have actually changed
+            if (prevIds !== recentResumesKey) {
+                return recentResumes.map((item) => ({
+                    ...item,
+                    variant: item.variant || defaultResumeVariant,
+                    theme: item.theme || 'light'
+                }))
+            }
+            return prev
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [recentResumesKey])
 
     const upsertAvailableResume = useCallback((item: SavedResume, moveToTop = false) => {
         setAvailableResumes((prev) => {
@@ -120,7 +129,7 @@ export function useResumeEditor({
         }
         return resumeData.personalInfo.name || 'Resume'
     }, [activeResumeId, availableResumes, resumeData])
-    
+
     const activeAtsScores = useMemo(() => {
         if (activeResumeId) {
             const existing = availableResumes.find((resume) => resume.id === activeResumeId)
@@ -131,7 +140,7 @@ export function useResumeEditor({
         }
         return { before: null, after: null }
     }, [activeResumeId, availableResumes])
-    
+
     const waitingForCoverLetter = activeTab === 'cover' && !!activeResumeId && !activeCoverLetters.length && (coverLetterLoading || generatingCoverLetter)
     const waitingForSkillMap = activeTab === 'skills' && !!activeResumeId && !activeSkillMaps.length && (skillMapLoading || generatingSkillMap)
 
@@ -250,6 +259,16 @@ export function useResumeEditor({
         if (lastSettings && lastSettings.variant === selectedVariant && lastSettings.theme === themeMode) {
             return // No changes, skip save
         }
+
+        // Update in-memory availableResumes IMMEDIATELY (optimistically)
+        // This ensures switching resumes and back will show the correct variant
+        setAvailableResumes((prev) =>
+            prev.map((resume) =>
+                resume.id === activeResumeId
+                    ? { ...resume, variant: selectedVariant, theme: themeMode }
+                    : resume
+            )
+        )
 
         // Clear previous timeout to debounce
         if (saveTimeoutRef.current) {

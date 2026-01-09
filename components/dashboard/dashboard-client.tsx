@@ -97,13 +97,24 @@ export default function DashboardClient({
   const displayName = authUser?.user_metadata?.full_name || user.user_metadata?.full_name || "there"
 
   // Sync resumes state when server props change (e.g., after navigation back from editor)
+  // Use JSON comparison to avoid unnecessary updates from reference changes
+  const initialResumesKey = JSON.stringify(initialResumes.map(r => r.id))
   useEffect(() => {
-    setResumes(initialResumes)
-    // If selected resume was deleted, clear selection
-    if (selectedResumeId && !initialResumes.some(r => r.id === selectedResumeId)) {
-      setSelectedResumeId(null)
-    }
-  }, [initialResumes, selectedResumeId])
+    setResumes(prev => {
+      // Only update if the IDs have actually changed
+      const prevIds = prev.map(r => r.id).join(',')
+      const newIds = initialResumes.map(r => r.id).join(',')
+      if (prevIds !== newIds) {
+        // If selected resume was deleted, clear selection
+        if (selectedResumeId && !initialResumes.some(r => r.id === selectedResumeId)) {
+          setSelectedResumeId(null)
+        }
+        return initialResumes
+      }
+      return prev
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialResumesKey])
 
   useEffect(() => {
     if (typeof window === "undefined") return
