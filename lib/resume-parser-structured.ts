@@ -262,6 +262,16 @@ export function parseMarkdownToResumeData(input: string): ResumeData {
     })
 
     if (resumeData.sections.length === 0) {
+        // Safety check: if input looks like malformed JSON, throw error instead of 
+        // creating a section with raw JSON content
+        const trimmedInput = markdown.trim()
+        if (
+            (trimmedInput.startsWith('{') || trimmedInput.startsWith('[')) &&
+            (trimmedInput.includes('"personalInfo"') || trimmedInput.includes('"sections"'))
+        ) {
+            throw new Error('Malformed JSON detected - cannot parse as markdown')
+        }
+        
         resumeData.sections.push({
             type: 'summary',
             title: 'Resume Content',

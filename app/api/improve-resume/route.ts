@@ -311,9 +311,32 @@ MINIMAL VALID JSON TEMPLATE:
         if (parsedJson && typeof parsedJson === "object") {
             parsedData = parsedJson as ResumeData;
         } else {
-            // Try markdown fallback
+            // Check if response looks like malformed JSON
+            const trimmed = cleanedResponse.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                // Malformed JSON - don't try markdown fallback
+                userLogger.error("malformed_json_response");
+                return NextResponse.json(
+                    { error: "AI returned malformed response. Please try again." },
+                    { status: 500 }
+                );
+            }
+            // Try markdown fallback only for non-JSON content
             try {
                 parsedData = parseMarkdownToResumeData(rawResponse);
+                // Validate the result - reject if it looks like raw fallback content
+                if (
+                    parsedData.sections.length === 1 &&
+                    parsedData.sections[0].title === 'Resume Content' &&
+                    typeof parsedData.sections[0].content === 'string' &&
+                    parsedData.sections[0].content.includes('"personalInfo"')
+                ) {
+                    userLogger.error("raw_json_in_content");
+                    return NextResponse.json(
+                        { error: "AI returned invalid format. Please try again." },
+                        { status: 500 }
+                    );
+                }
                 userLogger.info("markdown_fallback_success");
             } catch {
                 userLogger.error("markdown_fallback_failed");

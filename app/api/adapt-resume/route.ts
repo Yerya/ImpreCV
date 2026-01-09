@@ -461,7 +461,39 @@ FINAL REMINDERS:
             }, { status: 422 })
         }
 
-        const parsedData: ResumeData = parseMarkdownToResumeData(adaptedResume);
+        // Determine parsed data with proper validation
+        let parsedData: ResumeData;
+        if (parsedJson && typeof parsedJson === "object") {
+            parsedData = parsedJson as ResumeData;
+        } else {
+            // Check if response looks like malformed JSON
+            const trimmed = adaptedResume.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                // Malformed JSON - don't try markdown fallback
+                userLogger.error("malformed_json_response")
+                userLogger.requestComplete(500, { reason: "malformed_json" })
+                return NextResponse.json(
+                    { error: "AI returned malformed response. Please try again." },
+                    { status: 500 }
+                )
+            }
+            // Try markdown fallback only for non-JSON content
+            parsedData = parseMarkdownToResumeData(adaptedResume);
+            // Validate the result - reject if it looks like raw fallback content
+            if (
+                parsedData.sections.length === 1 &&
+                parsedData.sections[0].title === 'Resume Content' &&
+                typeof parsedData.sections[0].content === 'string' &&
+                parsedData.sections[0].content.includes('"personalInfo"')
+            ) {
+                userLogger.error("raw_json_in_content")
+                userLogger.requestComplete(500, { reason: "raw_json_fallback" })
+                return NextResponse.json(
+                    { error: "AI returned invalid format. Please try again." },
+                    { status: 500 }
+                )
+            }
+        }
         const serializedContent = JSON.stringify(parsedData);
 
         const { data: existing } = await supabase

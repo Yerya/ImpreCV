@@ -20,8 +20,8 @@ import type { GenerateContentResponse } from "@google/genai"
 
 // Model configuration
 export const LLM_MODELS = {
-    PRIMARY: "gemini-2.5-flash",
-    FALLBACK: "gemini-2.0-flash",
+    PRIMARY: "gemini-2.5-pro",
+    FALLBACK: "gemini-2.5-flash",
     PREVIEW: "gemini-2.5-flash-preview-05-20",
 } as const
 

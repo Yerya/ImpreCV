@@ -74,6 +74,16 @@ export function useResumeEditor({
             }))
     )
 
+    // Sync availableResumes when server props change (e.g., after navigation)
+    useEffect(() => {
+        const normalized = recentResumes.map((item) => ({
+            ...item,
+            variant: item.variant || defaultResumeVariant,
+            theme: item.theme || 'light'
+        }))
+        setAvailableResumes(normalized)
+    }, [recentResumes])
+
     const upsertAvailableResume = useCallback((item: SavedResume, moveToTop = false) => {
         setAvailableResumes((prev) => {
             const existingIndex = item.id ? prev.findIndex((resume) => resume.id === item.id) : -1

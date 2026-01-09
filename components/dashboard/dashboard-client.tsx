@@ -96,6 +96,15 @@ export default function DashboardClient({
   // Use Redux user name if available, fallback to props
   const displayName = authUser?.user_metadata?.full_name || user.user_metadata?.full_name || "there"
 
+  // Sync resumes state when server props change (e.g., after navigation back from editor)
+  useEffect(() => {
+    setResumes(initialResumes)
+    // If selected resume was deleted, clear selection
+    if (selectedResumeId && !initialResumes.some(r => r.id === selectedResumeId)) {
+      setSelectedResumeId(null)
+    }
+  }, [initialResumes, selectedResumeId])
+
   useEffect(() => {
     if (typeof window === "undefined") return
     const stored = window.localStorage.getItem("cvify:lastAdaptRequest")
