@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { CoverLetter } from "@/components/resume-templates/cover-letter-panel"
-import { generateCoverLetter } from "@/lib/api-client"
+import { generateCoverLetter, apiFetch, API_ENDPOINTS } from "@/lib/api-client"
 import {
     clearCoverLetterPending,
     isCoverLetterPending,
@@ -209,12 +209,7 @@ export function useCoverLetter({
         setDeletingCoverLetterId(id)
         setCoverLetterError(null)
         try {
-            const response = await fetch(`/api/cover-letter/${id}`, { method: 'DELETE' })
-            const data = await response.json().catch(() => ({}))
-            if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to delete cover letter'
-                throw new Error(message)
-            }
+            await apiFetch(`${API_ENDPOINTS.COVER_LETTER}/${id}`, { method: 'DELETE' })
 
             setCoverLettersByResume((prev) => {
                 const existing = prev[activeResumeId] || []

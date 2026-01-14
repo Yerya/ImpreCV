@@ -3,6 +3,7 @@ import { ResumeVariantTemplate } from '../resume-templates/renderers/variant-tem
 import type { ResumeData } from '../resume-templates/types'
 import type { ResumeVariantId } from '../resume-templates/variants'
 import { defaultResumeVariant } from '../resume-templates/variants'
+import { API_ENDPOINTS } from '../api-client'
 
 /**
  * Generate PDF from resume data using specified template
@@ -41,7 +42,7 @@ export async function downloadResumePDF(
     filename: string = 'resume.pdf'
 ): Promise<void> {
     try {
-        const response = await fetch('/api/export-resume', {
+        const response = await fetch(API_ENDPOINTS.EXPORT_RESUME, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data, templateId, format: 'pdf' })

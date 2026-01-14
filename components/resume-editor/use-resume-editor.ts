@@ -7,6 +7,7 @@ import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"
 import { MAX_ADAPTED_RESUMES } from "@/lib/constants"
+import { apiFetch, API_ENDPOINTS } from "@/lib/api-client"
 import { useCoverLetter } from "@/hooks/use-cover-letter"
 import { useSkillMap } from "@/hooks/use-skill-map"
 import { useResumeExport } from "@/hooks/use-resume-export"
@@ -177,20 +178,14 @@ export function useResumeEditor({
 
         saveTimeoutRef.current = setTimeout(async () => {
             try {
-                const response = await fetch(`/api/rewritten-resumes/${activeResumeId}`, {
+                await apiFetch(`${API_ENDPOINTS.REWRITTEN_RESUMES}/${activeResumeId}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                    body: {
                         variant: selectedVariant,
                         theme: themeMode,
-                    })
+                    }
                 })
-
-                if (response.ok) {
-                    lastSavedSettingsRef.current = { variant: selectedVariant, theme: themeMode }
-                } else {
-                    console.error('Failed to auto-save template settings')
-                }
+                lastSavedSettingsRef.current = { variant: selectedVariant, theme: themeMode }
             } catch (error) {
                 console.error('Auto-save error:', error)
             }
@@ -257,12 +252,7 @@ export function useResumeEditor({
         if (!id) return
         setDeletingId(id)
         try {
-            const response = await fetch(`/api/rewritten-resumes/${id}`, { method: 'DELETE' })
-            const data = await response.json().catch(() => ({}))
-            if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to delete resume'
-                throw new Error(message)
-            }
+            await apiFetch(`${API_ENDPOINTS.REWRITTEN_RESUMES}/${id}`, { method: 'DELETE' })
 
             const next = availableResumes.filter((resume) => resume.id !== id)
             setAvailableResumes(next)
@@ -317,19 +307,14 @@ export function useResumeEditor({
                 theme: themeMode,
                 fileName: resumeData.personalInfo.name || 'resume'
             }
-            const endpoint = activeResumeId ? `/api/rewritten-resumes/${activeResumeId}` : '/api/rewritten-resumes'
+            const endpoint = activeResumeId
+                ? `${API_ENDPOINTS.REWRITTEN_RESUMES}/${activeResumeId}`
+                : API_ENDPOINTS.REWRITTEN_RESUMES
             const method = activeResumeId ? 'PATCH' : 'POST'
-            const response = await fetch(endpoint, {
+            const data = await apiFetch<Record<string, unknown>>(endpoint, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: payload
             })
-
-            const data = await response.json().catch(() => ({}))
-            if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to save resume'
-                throw new Error(message)
-            }
 
             const item = (data.item || data) as Record<string, unknown>
             const mappedMode = (item.mode as SavedResume["mode"]) ?? activeResumeMode ?? null

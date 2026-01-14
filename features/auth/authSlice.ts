@@ -2,6 +2,7 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
+import { authApi } from "@/features/api/authApi"
 
 export interface AuthUser {
   id: string
@@ -47,11 +48,6 @@ export const refreshUser = createAsyncThunk("auth/refreshUser", async () => {
   return { user: (user as AuthUser | null) }
 })
 
-export const signOutThunk = createAsyncThunk("auth/signOut", async () => {
-  const supabase = getSupabaseBrowserClient()
-  await supabase.auth.signOut()
-})
-
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -78,14 +74,21 @@ const authSlice = createSlice({
       .addCase(refreshUser.fulfilled, (state, action) => {
         state.user = action.payload.user
       })
-      .addCase(signOutThunk.fulfilled, (state) => {
-        state.user = null
-      })
+      // Clear user when RTK Query signOut mutation succeeds
+      // signOut now properly rejects on error, so this only fires on actual success
+      .addMatcher(
+        authApi.endpoints.signOut.matchFulfilled,
+        (state) => {
+          state.user = null
+        }
+      )
   },
 })
 
 export const { setUser } = authSlice.actions
 export default authSlice.reducer
+
+
 
 
 

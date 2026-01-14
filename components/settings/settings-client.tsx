@@ -14,9 +14,8 @@ import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/appSlice"
-import { signOutThunk } from "@/features/auth/authSlice"
 import { SOLID_COLORS, type PaletteName } from "@/lib/theme/palettes"
-import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
+import { useUpdateProfileMutation, useDeleteAccountMutation, useSignOutMutation } from "@/features/api/authApi"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
@@ -50,6 +49,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
   const [mounted, setMounted] = useState(false)
   const [updateProfile] = useUpdateProfileMutation()
   const [deleteAccount] = useDeleteAccountMutation()
+  const [signOut] = useSignOutMutation()
   const dispatch = useAppDispatch()
   const paletteLight = useAppSelector((s) => s.app.paletteLight)
   const paletteDark = useAppSelector((s) => s.app.paletteDark)
@@ -82,7 +82,7 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
     try {
       const res = await deleteAccount()
       if ('data' in res && res.data?.ok) {
-        await dispatch(signOutThunk())
+        await signOut()
         router.push("/login")
         router.refresh()
       }

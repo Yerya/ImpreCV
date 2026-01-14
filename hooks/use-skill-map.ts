@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { SkillMapRecord } from "@/types/skill-map"
-import { generateSkillMap } from "@/lib/api-client"
+import { generateSkillMap, apiFetch, API_ENDPOINTS } from "@/lib/api-client"
 
 export interface UseSkillMapOptions {
     activeResumeId: string | null
@@ -132,12 +132,7 @@ export function useSkillMap({
         setDeletingSkillMapId(id)
         setSkillMapError(null)
         try {
-            const response = await fetch(`/api/skill-map/${id}`, { method: 'DELETE' })
-            const data = await response.json().catch(() => ({}))
-            if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to delete skill analysis'
-                throw new Error(message)
-            }
+            await apiFetch(`${API_ENDPOINTS.SKILL_MAP}/${id}`, { method: 'DELETE' })
 
             setSkillMapsByResume((prev) => {
                 const existing = prev[activeResumeId] || []

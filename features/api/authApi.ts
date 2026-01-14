@@ -2,29 +2,11 @@
 
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
-import type { AuthUser } from "@/features/auth/authSlice"
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fakeBaseQuery(),
   endpoints: (builder) => ({
-    getUser: builder.query<{ user: AuthUser | null }, void>({
-      async queryFn() {
-        if (!isSupabaseConfigured()) {
-          return { data: { user: null } }
-        }
-        try {
-          const supabase = getSupabaseBrowserClient()
-          const { data: { user }, error } = await supabase.auth.getUser()
-          if (error && error.message !== "Auth session missing!") {
-            return { error }
-          }
-          return { data: { user: (user as AuthUser | null) } }
-        } catch (e: unknown) {
-          return { error: e as Error }
-        }
-      },
-    }),
     signIn: builder.mutation<{ ok: boolean; message?: string }, { email: string; password: string }>({
       async queryFn({ email, password }) {
         if (!isSupabaseConfigured()) {
@@ -71,20 +53,18 @@ export const authApi = createApi({
         }
       },
     }),
-    signOut: builder.mutation<{ ok: boolean; message?: string }, void>({
+    // signOut uses proper error rejection so matcher only fires on actual success
+    signOut: builder.mutation<null, void>({
       async queryFn() {
         if (!isSupabaseConfigured()) {
-          return { data: { ok: true } }
+          return { data: null }
         }
-        try {
-          const supabase = getSupabaseBrowserClient()
-          const { error } = await supabase.auth.signOut()
-          if (error) return { data: { ok: false, message: error.message } }
-          return { data: { ok: true } }
-        } catch (e: unknown) {
-          const err = e as Error
-          return { data: { ok: false, message: err?.message || "Failed to sign out" } }
+        const supabase = getSupabaseBrowserClient()
+        const { error } = await supabase.auth.signOut()
+        if (error) {
+          return { error: { message: error.message } }
         }
+        return { data: null }
       },
     }),
     updateProfile: builder.mutation<{ ok: boolean; message?: string }, { id: string; fullName: string }>({
@@ -94,17 +74,17 @@ export const authApi = createApi({
             return { data: { ok: false, message: "Supabase is not configured." } }
           }
           const supabase = getSupabaseBrowserClient()
-          
+
           // Update profiles table
           const { error: profileError } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", id)
           if (profileError) return { data: { ok: false, message: profileError.message } }
-          
+
           // Update user_metadata in auth for immediate UI updates
           const { error: authError } = await supabase.auth.updateUser({
             data: { full_name: fullName }
           })
           if (authError) return { data: { ok: false, message: authError.message } }
-          
+
           return { data: { ok: true } }
         } catch (e: unknown) {
           const err = e as Error
@@ -130,6 +110,7 @@ export const authApi = createApi({
   }),
 })
 
-export const { useGetUserQuery, useSignInMutation, useSignUpMutation, useSignOutMutation, useUpdateProfileMutation, useDeleteAccountMutation } = authApi
+export const { useSignInMutation, useSignUpMutation, useSignOutMutation, useUpdateProfileMutation, useDeleteAccountMutation } = authApi
+
 
 

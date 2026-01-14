@@ -162,23 +162,54 @@ export function parseRefusalInfo(text: string): RefusalInfo | null {
  */
 export function extractResponseText(response: GenerateContentResponse | Record<string, unknown>): string {
     try {
-        // Method 1: response.text() function (SDK v1+)
-        if (typeof response?.text === "function") {
-            return response.text()
-        }
-
-        // Method 2: response.text string property
-        if (typeof response?.text === "string") {
+        // Method 1: response.text property (string or getter)
+        // For Gemini 3 with thinking, .text should aggregate all text parts
+        if (typeof response?.text === "string" && response.text.length > 0) {
             return response.text
         }
 
-        // Method 3: candidates array (raw API response)
-        const candidates = response?.candidates as Array<{ content?: { parts?: Array<{ text?: string }> } }> | undefined
-        if (candidates && candidates.length > 0) {
-            return candidates[0]?.content?.parts?.[0]?.text || ""
+        // Method 2: response.text() function (SDK v1+)
+        if (typeof response?.text === "function") {
+            const textOutput = response.text()
+            if (textOutput && textOutput.length > 0) {
+                return textOutput
+            }
         }
 
-        console.warn("[LLM] Could not extract text from response")
+        // Method 3: candidates array (raw API response or fallback)
+        // For thinking models, we need to find the text parts (not thought parts)
+        const candidates = response?.candidates as Array<{
+            content?: {
+                parts?: Array<{
+                    text?: string
+                    thought?: boolean
+                }>
+            }
+        }> | undefined
+
+        if (candidates && candidates.length > 0) {
+            const parts = candidates[0]?.content?.parts
+            if (parts && parts.length > 0) {
+                // Filter out thought parts, only get text parts
+                // In thinking models, regular output has thought: false or no thought field
+                const textParts = parts
+                    .filter(part => !part.thought && part.text)
+                    .map(part => part.text)
+                    .join("")
+
+                if (textParts.length > 0) {
+                    return textParts
+                }
+
+                // Fallback: just get the first text we find
+                const anyText = parts.find(part => part.text)?.text
+                if (anyText) {
+                    return anyText
+                }
+            }
+        }
+
+        console.warn("[LLM] Could not extract text from response. Response keys:", Object.keys(response || {}))
         return ""
     } catch (error) {
         console.error("[LLM] Error extracting response text:", error)
@@ -295,10 +326,10 @@ export class LLMClient {
 
         // Check if the model supports thinkingConfig (only Gemini 3 series and certain preview models)
         const supportsThinking = model.includes("gemini-3") || model.includes("gemini-2.5-flash-preview")
-        
+
         // Strip thinkingConfig for models that don't support it
-        const config = supportsThinking 
-            ? rawConfig 
+        const config = supportsThinking
+            ? rawConfig
             : (() => {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const { thinkingConfig, ...rest } = rawConfig as Record<string, unknown>

@@ -8,6 +8,7 @@ import { GlobalHeader } from "@/components/global-header"
 import { Download, Copy, CheckCircle2, Edit3, Eye, X, Save } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { apiFetch, API_ENDPOINTS } from "@/lib/api-client"
 
 interface CoverLetterData {
   id: string
@@ -50,16 +51,10 @@ export default function CoverLetterClient({ coverLetter }: CoverLetterClientProp
   const handleSave = async () => {
     setSaving(true)
     try {
-      const response = await fetch(`/api/cover-letter/${coverLetter.id}`, {
+      await apiFetch(`${API_ENDPOINTS.COVER_LETTER}/${coverLetter.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: { content },
       })
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || "Failed to save")
-      }
 
       setIsEditing(false)
       toast.success("Cover letter saved successfully")

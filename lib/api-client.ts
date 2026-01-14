@@ -4,6 +4,42 @@ import type { ResumeVariantId } from "@/lib/resume-templates/variants";
 import { AI_REFUSAL_ERROR } from "@/lib/constants";
 import type { SkillMapRecord } from "@/types/skill-map";
 
+// =============================================================================
+// API Endpoints Constants
+// =============================================================================
+
+export const API_ENDPOINTS = {
+    // Resume operations
+    ADAPT_RESUME: "/api/adapt-resume",
+    IMPROVE_RESUME: "/api/improve-resume",
+    CREATE_RESUME: "/api/create-resume",
+    RESUMES: "/api/resumes",
+    RESUMES_UPLOAD: "/api/resumes/upload",
+    REWRITTEN_RESUMES: "/api/rewritten-resumes",
+
+    // Cover letter
+    COVER_LETTER: "/api/cover-letter",
+    GENERATE_COVER_LETTER: "/api/generate-cover-letter",
+
+    // Skill map
+    SKILL_MAP: "/api/skill-map",
+    GENERATE_SKILL_MAP: "/api/generate-skill-map",
+
+    // Export
+    EXPORT_RESUME: "/api/export-resume",
+
+    // Chat
+    CHAT_RESUME: "/api/chat-resume",
+    CHAT_RESUME_USAGE: "/api/chat-resume/usage",
+
+    // Account
+    ACCOUNT_DELETE: "/api/account/delete",
+} as const;
+
+// =============================================================================
+// Error Handling
+// =============================================================================
+
 const getErrorMessage = (data: unknown, fallback: string): string => {
     if (!data || typeof data !== "object") return fallback;
     const record = data as Record<string, unknown>;
@@ -18,6 +54,47 @@ const getErrorMessage = (data: unknown, fallback: string): string => {
 
     return fallback;
 };
+
+// =============================================================================
+// Centralized Fetch Helper
+// =============================================================================
+
+interface ApiFetchOptions extends Omit<RequestInit, 'body'> {
+    body?: unknown;
+}
+
+/**
+ * Centralized fetch wrapper with standardized error handling.
+ * Automatically sets Content-Type to JSON and parses response.
+ */
+export async function apiFetch<T = unknown>(
+    url: string,
+    options?: ApiFetchOptions
+): Promise<T> {
+    const { body, headers, ...rest } = options || {};
+
+    const response = await fetch(url, {
+        ...rest,
+        headers: {
+            "Content-Type": "application/json",
+            ...headers,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const message = getErrorMessage(data, `Request failed with status ${response.status}`);
+        throw new Error(message);
+    }
+
+    return data as T;
+}
+
+// =============================================================================
+// Resume Analysis API
+// =============================================================================
 
 interface AnalyzeResumePayload {
     resumeText?: string;
@@ -34,46 +111,43 @@ export interface AnalyzeResumeResult {
     pdfUrl?: string | null;
 }
 
-export async function analyzeResume(payload: AnalyzeResumePayload): Promise<AnalyzeResumeResult> {
-    try {
-        const response = await fetch("/api/adapt-resume", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                resumeText: payload.resumeText,
-                resumeId: payload.resumeId,
-                jobDescription: payload.jobDescription || "",
-                jobLink: payload.jobLink,
-            }),
-        });
-
-        const data = await response.json().catch(() => ({})) as Record<string, unknown>;
-
-        if (!response.ok) {
-            const message = getErrorMessage(data, `Analysis failed with status ${response.status}`);
-            throw new Error(message);
-        }
-
-        const parsedData = data.resumeData as ResumeData | undefined;
-        const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; pdf_url?: string | null };
-
-        if (!item?.id || !parsedData) {
-            throw new Error("Failed to prepare adapted resume");
-        }
-
-        return {
-            id: item.id,
-            data: parsedData,
-            variant: item.variant || defaultResumeVariant,
-            theme: item.theme || "light",
-            pdfUrl: item.pdf_url || null,
-        };
-    } catch (error) {
-        throw error;
-    }
+interface AnalyzeResumeResponse {
+    resumeData?: ResumeData;
+    item?: {
+        id?: string;
+        variant?: ResumeVariantId;
+        theme?: "light" | "dark";
+        pdf_url?: string | null;
+    };
 }
+
+export async function analyzeResume(payload: AnalyzeResumePayload): Promise<AnalyzeResumeResult> {
+    const data = await apiFetch<AnalyzeResumeResponse>(API_ENDPOINTS.ADAPT_RESUME, {
+        method: "POST",
+        body: {
+            resumeText: payload.resumeText,
+            resumeId: payload.resumeId,
+            jobDescription: payload.jobDescription || "",
+            jobLink: payload.jobLink,
+        },
+    });
+
+    if (!data.item?.id || !data.resumeData) {
+        throw new Error("Failed to prepare adapted resume");
+    }
+
+    return {
+        id: data.item.id,
+        data: data.resumeData,
+        variant: data.item.variant || defaultResumeVariant,
+        theme: data.item.theme || "light",
+        pdfUrl: data.item.pdf_url || null,
+    };
+}
+
+// =============================================================================
+// Cover Letter API
+// =============================================================================
 
 export interface GenerateCoverLetterPayload {
     rewrittenResumeId: string;
@@ -89,39 +163,39 @@ export interface GenerateCoverLetterResult {
     metadata?: { title?: string; company?: string };
 }
 
+interface GenerateCoverLetterResponse {
+    content?: string;
+    coverLetterId?: string;
+    warning?: string;
+    metadata?: { title?: string; company?: string };
+}
+
 export async function generateCoverLetter(payload: GenerateCoverLetterPayload): Promise<GenerateCoverLetterResult> {
-    const response = await fetch("/api/generate-cover-letter", {
+    const data = await apiFetch<GenerateCoverLetterResponse>(API_ENDPOINTS.GENERATE_COVER_LETTER, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
             rewrittenResumeId: payload.rewrittenResumeId,
             jobDescription: payload.jobDescription || "",
             jobLink: payload.jobLink,
-        }),
+        },
     });
 
-    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
-
-    if (!response.ok) {
-        const message = getErrorMessage(data, `Cover letter failed with status ${response.status}`);
-        throw new Error(message);
-    }
-
-    const content = data.content;
-    if (!content || typeof content !== "string") {
+    if (!data.content || typeof data.content !== "string") {
         throw new Error("Failed to generate cover letter");
     }
 
     return {
-        id: (data.coverLetterId ?? null) as string | null,
-        content,
-        analysisId: null, // No longer using analysisId
-        warning: (data.warning as string) || null,
-        metadata: data.metadata as Record<string, unknown>,
+        id: data.coverLetterId ?? null,
+        content: data.content,
+        analysisId: null,
+        warning: data.warning || null,
+        metadata: data.metadata,
     };
 }
+
+// =============================================================================
+// Skill Map API
+// =============================================================================
 
 export interface GenerateSkillMapPayload {
     rewrittenResumeId: string;
@@ -135,25 +209,21 @@ export interface GenerateSkillMapResult {
     warning?: string | null;
 }
 
+interface GenerateSkillMapResponse {
+    skillMap?: SkillMapRecord;
+    cached?: boolean;
+    warning?: string;
+}
+
 export async function generateSkillMap(payload: GenerateSkillMapPayload): Promise<GenerateSkillMapResult> {
-    const response = await fetch("/api/generate-skill-map", {
+    const data = await apiFetch<GenerateSkillMapResponse>(API_ENDPOINTS.GENERATE_SKILL_MAP, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
             rewrittenResumeId: payload.rewrittenResumeId,
             jobDescription: payload.jobDescription || "",
             jobLink: payload.jobLink || "",
-        }),
+        },
     });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        const message = getErrorMessage(data, `Skill map generation failed with status ${response.status}`);
-        throw new Error(message);
-    }
 
     if (!data.skillMap) {
         throw new Error("Failed to generate skill map");
@@ -167,35 +237,21 @@ export async function generateSkillMap(payload: GenerateSkillMapPayload): Promis
 }
 
 export async function getSkillMap(id: string): Promise<SkillMapRecord> {
-    const response = await fetch(`/api/skill-map/${id}`, {
+    const data = await apiFetch<{ skillMap: SkillMapRecord }>(`${API_ENDPOINTS.SKILL_MAP}/${id}`, {
         method: "GET",
     });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        const message = getErrorMessage(data, "Failed to fetch skill map");
-        throw new Error(message);
-    }
-
     return data.skillMap;
 }
 
 export async function deleteSkillMap(id: string): Promise<void> {
-    const response = await fetch(`/api/skill-map/${id}`, {
+    await apiFetch(`${API_ENDPOINTS.SKILL_MAP}/${id}`, {
         method: "DELETE",
     });
-
-    if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        const message = getErrorMessage(data, "Failed to delete skill map");
-        throw new Error(message);
-    }
 }
 
-// ============================================================================
+// =============================================================================
 // Resume Improvement API
-// ============================================================================
+// =============================================================================
 
 export interface ImproveResumePayload {
     resumeText?: string;
@@ -215,49 +271,48 @@ export interface ImproveResumeResult {
     atsScoreAfter?: number | null;
 }
 
+interface ImproveResumeResponse {
+    resumeData?: ResumeData;
+    item?: {
+        id?: string;
+        variant?: ResumeVariantId;
+        theme?: "light" | "dark";
+        name?: string;
+        atsScoreBefore?: number | null;
+        atsScoreAfter?: number | null;
+    };
+}
+
 export async function improveResume(payload: ImproveResumePayload): Promise<ImproveResumeResult> {
-    const response = await fetch("/api/improve-resume", {
+    const data = await apiFetch<ImproveResumeResponse>(API_ENDPOINTS.IMPROVE_RESUME, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
             resumeText: payload.resumeText,
             resumeId: payload.resumeId,
             targetRole: payload.targetRole || "",
             improvements: payload.improvements || [],
-        }),
+        },
     });
 
-    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
-
-    if (!response.ok) {
-        const message = getErrorMessage(data, `Improvement failed with status ${response.status}`);
-        throw new Error(message);
-    }
-
-    const parsedData = data.resumeData as ResumeData | undefined;
-    const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; name?: string; mode?: string; atsScoreBefore?: number | null; atsScoreAfter?: number | null };
-
-    if (!item?.id || !parsedData) {
+    if (!data.item?.id || !data.resumeData) {
         throw new Error("Failed to prepare improved resume");
     }
 
     return {
-        id: item.id,
-        data: parsedData,
-        variant: item.variant || defaultResumeVariant,
-        theme: item.theme || "light",
-        name: item.name,
+        id: data.item.id,
+        data: data.resumeData,
+        variant: data.item.variant || defaultResumeVariant,
+        theme: data.item.theme || "light",
+        name: data.item.name,
         mode: "improved",
-        atsScoreBefore: item.atsScoreBefore ?? null,
-        atsScoreAfter: item.atsScoreAfter ?? null,
+        atsScoreBefore: data.item.atsScoreBefore ?? null,
+        atsScoreAfter: data.item.atsScoreAfter ?? null,
     };
 }
 
-// ============================================================================
+// =============================================================================
 // Resume Creation from Scratch API
-// ============================================================================
+// =============================================================================
 
 export interface CreateResumeExperience {
     title: string;
@@ -303,35 +358,33 @@ export interface CreateResumeResult {
     mode: "created";
 }
 
+interface CreateResumeResponse {
+    resumeData?: ResumeData;
+    item?: {
+        id?: string;
+        variant?: ResumeVariantId;
+        theme?: "light" | "dark";
+        name?: string;
+    };
+}
+
 export async function createResumeFromScratch(payload: CreateResumePayload): Promise<CreateResumeResult> {
-    const response = await fetch("/api/create-resume", {
+    const data = await apiFetch<CreateResumeResponse>(API_ENDPOINTS.CREATE_RESUME, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload,
     });
 
-    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
-
-    if (!response.ok) {
-        const message = getErrorMessage(data, `Creation failed with status ${response.status}`);
-        throw new Error(message);
-    }
-
-    const parsedData = data.resumeData as ResumeData | undefined;
-    const item = data.item as { id?: string; variant?: ResumeVariantId; theme?: "light" | "dark"; name?: string; mode?: string };
-
-    if (!item?.id || !parsedData) {
+    if (!data.item?.id || !data.resumeData) {
         throw new Error("Failed to create resume");
     }
 
     return {
-        id: item.id,
-        data: parsedData,
-        variant: item.variant || defaultResumeVariant,
-        theme: item.theme || "light",
-        name: item.name,
+        id: data.item.id,
+        data: data.resumeData,
+        variant: data.item.variant || defaultResumeVariant,
+        theme: data.item.theme || "light",
+        name: data.item.name,
         mode: "created",
     };
 }
+

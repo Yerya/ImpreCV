@@ -20,6 +20,8 @@ import {
   generateCoverLetter,
   improveResume,
   createResumeFromScratch,
+  apiFetch,
+  API_ENDPOINTS,
   type GenerateCoverLetterResult,
   type CreateResumePayload,
   type ImproveResumePayload,
@@ -224,12 +226,7 @@ export default function DashboardClient({
     setInputError(null)
     setDeletingId(id)
     try {
-      const response = await fetch(`/api/resumes/${id}`, { method: "DELETE" })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : "Failed to delete resume."
-        throw new Error(message)
-      }
+      await apiFetch(`${API_ENDPOINTS.RESUMES}/${id}`, { method: "DELETE" })
       setResumes((prev) => prev.filter((r) => r.id !== id))
       if (selectedResumeId === id) {
         setSelectedResumeId(null)

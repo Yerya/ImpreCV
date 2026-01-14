@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, LogOut, Settings, Menu, X, ListChecks, Route, LayoutDashboard, FileText } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PaletteToggle } from "@/components/palette-toggle"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { signOutThunk } from "@/features/auth/authSlice"
+import { useAppSelector } from "@/lib/redux/hooks"
+import { useSignOutMutation } from "@/features/api/authApi"
 import { AnimatePresence, motion } from "framer-motion"
 import { BrandMark } from "@/components/brand-mark"
 
@@ -25,7 +25,7 @@ export function GlobalHeader({
 }: GlobalHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const dispatch = useAppDispatch()
+  const [signOut] = useSignOutMutation()
   const { user, isLoading } = useAppSelector((s) => s.auth)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -68,7 +68,7 @@ export function GlobalHeader({
   }, [pathname])
 
   const handleLogout = async () => {
-    await dispatch(signOutThunk())
+    await signOut()
     // Redirect based on current page
     const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings"]
     const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))

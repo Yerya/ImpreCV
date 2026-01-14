@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { GlobalHeader } from "@/components/global-header"
 import { Download, Copy, CheckCircle2, Edit3, Eye } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+import { apiFetch } from "@/lib/api-client"
 
 interface RewrittenResume {
   id: string
@@ -46,13 +47,10 @@ export default function ResumeRewriteClient({ rewrittenResume }: ResumeRewriteCl
   const handleSave = async () => {
     setSaving(true)
     try {
-      const response = await fetch(`/api/resume-rewrite/${rewrittenResume.id}`, {
+      await apiFetch(`/api/resume-rewrite/${rewrittenResume.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: { content },
       })
-
-      if (!response.ok) throw new Error("Failed to save")
 
       setIsEditing(false)
     } catch (error) {
@@ -65,10 +63,10 @@ export default function ResumeRewriteClient({ rewrittenResume }: ResumeRewriteCl
 
   return (
     <div className="min-h-screen relative pb-20">
-      <GlobalHeader 
-        variant="back" 
-        backHref="/dashboard" 
-        backLabel="Back to Dashboard" 
+      <GlobalHeader
+        variant="back"
+        backHref="/dashboard"
+        backLabel="Back to Dashboard"
       />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
