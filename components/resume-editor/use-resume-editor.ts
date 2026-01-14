@@ -6,14 +6,10 @@ import { toast } from "sonner"
 import { defaultResumeVariant } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
 import type { ResumeVariantId } from "@/lib/resume-templates/variants"
-import type { CoverLetter } from "@/components/resume-templates/cover-letter-panel"
-import type { SkillMapRecord } from "@/types/skill-map"
-import { generateCoverLetter, generateSkillMap } from "@/lib/api-client"
 import { MAX_ADAPTED_RESUMES } from "@/lib/constants"
-import {
-    clearCoverLetterPending,
-    isCoverLetterPending,
-} from "@/lib/cover-letter-context"
+import { useCoverLetter } from "@/hooks/use-cover-letter"
+import { useSkillMap } from "@/hooks/use-skill-map"
+import { useResumeExport } from "@/hooks/use-resume-export"
 import type { SavedResume, ResumeEditorProps, UseResumeEditorReturn, ResumeMode } from "./types"
 
 const EMPTY_RESUME: ResumeData = {
@@ -29,9 +25,6 @@ const EMPTY_RESUME: ResumeData = {
     sections: []
 }
 
-const hasLoadedForResume = <T>(map: Record<string, T>, resumeId: string | null) =>
-    !!resumeId && map[resumeId] !== undefined
-
 export function useResumeEditor({
     initialData,
     initialVariant = defaultResumeVariant,
@@ -41,30 +34,21 @@ export function useResumeEditor({
     recentResumes = [],
 }: ResumeEditorProps): UseResumeEditorReturn {
     const router = useRouter()
+
+    // Core resume state
     const [resumeData, setResumeData] = useState<ResumeData>(initialData)
     const [baselineData, setBaselineData] = useState<ResumeData>(initialData)
     const [selectedVariant, setSelectedVariant] = useState<ResumeVariantId>(initialVariant)
-    const [exporting, setExporting] = useState(false)
-    const [saving, setSaving] = useState(false)
-    const [deletingId, setDeletingId] = useState<string | null>(null)
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(initialTheme)
     const [activeResumeId, setActiveResumeId] = useState<string | null>(resumeId)
     const [activeResumeMode, setActiveResumeMode] = useState<ResumeMode | null>(initialMode ?? null)
     const [activeTab, setActiveTab] = useState<'resume' | 'cover' | 'skills'>('resume')
-    const [coverLettersByResume, setCoverLettersByResume] = useState<Record<string, CoverLetter[]>>({})
-    const [coverLetterLoading, setCoverLetterLoading] = useState(false)
-    const [coverLetterError, setCoverLetterError] = useState<string | null>(null)
-    const coverLetterRequestRef = useRef<AbortController | null>(null)
-    const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false)
-    const [deletingCoverLetterId, setDeletingCoverLetterId] = useState<string | null>(null)
-    const coverLetterPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const coverLetterPollStartRef = useRef<number | null>(null)
-    const [generatingSkillMap, setGeneratingSkillMap] = useState(false)
-    const [skillMapsByResume, setSkillMapsByResume] = useState<Record<string, SkillMapRecord[]>>({})
-    const [skillMapLoading, setSkillMapLoading] = useState(false)
-    const [skillMapError, setSkillMapError] = useState<string | null>(null)
-    const skillMapRequestRef = useRef<AbortController | null>(null)
-    const [deletingSkillMapId, setDeletingSkillMapId] = useState<string | null>(null)
+
+    // CRUD loading states
+    const [saving, setSaving] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+
+    // Available resumes list
     const [availableResumes, setAvailableResumes] = useState<SavedResume[]>(
         () =>
             recentResumes.map((item) => ({
@@ -74,13 +58,29 @@ export function useResumeEditor({
             }))
     )
 
+    // Use extracted hooks
+    const coverLetter = useCoverLetter({
+        activeResumeId,
+        activeTab,
+    })
+
+    const skillMap = useSkillMap({
+        activeResumeId,
+        activeTab,
+    })
+
+    const resumeExport = useResumeExport({
+        resumeData,
+        selectedVariant,
+        themeMode,
+        activeResumeId,
+    })
+
     // Sync availableResumes when server props change (e.g., after navigation)
-    // Use stable key based on IDs to avoid unnecessary updates from reference changes
     const recentResumesKey = recentResumes.map(r => r.id).join(',')
     useEffect(() => {
         setAvailableResumes(prev => {
             const prevIds = prev.map(r => r.id).join(',')
-            // Only update if the IDs have actually changed
             if (prevIds !== recentResumesKey) {
                 return recentResumes.map((item) => ({
                     ...item,
@@ -105,22 +105,18 @@ export function useResumeEditor({
                 mode: item.mode ?? existing?.mode ?? activeResumeMode ?? null,
             }
 
-            // If existing item found and we don't want to move it, update in place
             if (existingIndex >= 0 && !moveToTop) {
                 const next = [...prev]
                 next[existingIndex] = merged
                 return next
             }
 
-            // Otherwise, add to top (for new items or explicit moveToTop)
             const filtered = item.id ? prev.filter((resume) => resume.id !== item.id) : prev
             const next = [merged, ...filtered]
             return next.slice(0, MAX_ADAPTED_RESUMES)
         })
     }, [activeResumeMode])
 
-    const activeCoverLetters = activeResumeId ? coverLettersByResume[activeResumeId] || [] : []
-    const activeSkillMaps = activeResumeId ? skillMapsByResume[activeResumeId] || [] : []
     const activeResumeLabel = useMemo(() => {
         if (activeResumeId) {
             const existing = availableResumes.find((resume) => resume.id === activeResumeId)
@@ -141,127 +137,32 @@ export function useResumeEditor({
         return { before: null, after: null }
     }, [activeResumeId, availableResumes])
 
-    const waitingForCoverLetter = activeTab === 'cover' && !!activeResumeId && !activeCoverLetters.length && (coverLetterLoading || generatingCoverLetter)
-    const waitingForSkillMap = activeTab === 'skills' && !!activeResumeId && !activeSkillMaps.length && (skillMapLoading || generatingSkillMap)
-
-    // Track unsaved changes - compare current data with baseline (last saved)
-    // Uses stable JSON comparison only when needed
+    // Track unsaved changes
     const hasUnsavedChanges = useMemo(() => {
-        // Quick reference check first
         if (resumeData === baselineData) return false
-        // Stable JSON comparison as fallback
         return JSON.stringify(resumeData) !== JSON.stringify(baselineData)
     }, [resumeData, baselineData])
-
-    const loadSkillMaps = useCallback(
-        async (resumeId: string, options?: { force?: boolean; silent?: boolean }) => {
-            if (!resumeId) return
-            if (!options?.force && skillMapsByResume[resumeId]) return
-
-            skillMapRequestRef.current?.abort()
-            const controller = new AbortController()
-            skillMapRequestRef.current = controller
-            if (!options?.silent) {
-                setSkillMapLoading(true)
-            }
-            setSkillMapError(null)
-
-            try {
-                const response = await fetch(`/api/skill-map?rewrittenResumeId=${resumeId}`, { signal: controller.signal })
-                const data = await response.json().catch(() => ({}))
-
-                if (!response.ok) {
-                    const message = typeof data?.error === 'string' ? data.error : 'Failed to load skill analysis'
-                    throw new Error(message)
-                }
-
-                if (controller.signal.aborted) return
-
-                const dataObj = data as Record<string, unknown>
-                const items = Array.isArray(dataObj.items) ? (dataObj.items as SkillMapRecord[]) : []
-                setSkillMapsByResume((prev) => ({ ...prev, [resumeId]: items }))
-            } catch (error) {
-                if (controller.signal.aborted) return
-                setSkillMapError(error instanceof Error ? error.message : 'Failed to load skill analysis')
-                if (options?.silent) {
-                    setSkillMapLoading(false)
-                }
-            } finally {
-                if (!controller.signal.aborted && !options?.silent) {
-                    setSkillMapLoading(false)
-                }
-            }
-        },
-        [skillMapsByResume]
-    )
-
-    const loadCoverLetters = useCallback(
-        async (resumeId: string, options?: { force?: boolean; silent?: boolean }) => {
-            if (!resumeId) return
-            if (!options?.force && coverLettersByResume[resumeId]) return
-
-            coverLetterRequestRef.current?.abort()
-            const controller = new AbortController()
-            coverLetterRequestRef.current = controller
-            if (!options?.silent) {
-                setCoverLetterLoading(true)
-            }
-            setCoverLetterError(null)
-
-            try {
-                const response = await fetch(`/api/cover-letter?rewrittenResumeId=${resumeId}`, { signal: controller.signal })
-                const data = await response.json().catch(() => ({}))
-
-                if (!response.ok) {
-                    const message = typeof data?.error === 'string' ? data.error : 'Failed to load cover letter'
-                    throw new Error(message)
-                }
-
-                if (controller.signal.aborted) return
-
-                const dataObj = data as Record<string, unknown>
-                const items = Array.isArray(dataObj.items) ? (dataObj.items as CoverLetter[]) : []
-                setCoverLettersByResume((prev) => ({ ...prev, [resumeId]: items }))
-            } catch (error) {
-                if (controller.signal.aborted) return
-                setCoverLetterError(error instanceof Error ? error.message : 'Failed to load cover letter')
-                if (options?.silent) {
-                    setCoverLetterLoading(false)
-                }
-            } finally {
-                if (!controller.signal.aborted && !options?.silent) {
-                    setCoverLetterLoading(false)
-                }
-            }
-        },
-        [coverLettersByResume]
-    )
 
     // Track if this is the first render to avoid saving on mount
     const isFirstRender = useRef(true)
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastSavedSettingsRef = useRef<{ variant: string; theme: string } | null>(null)
 
-    // Auto-save ONLY variant and theme settings (not resume data) when they change
+    // Auto-save ONLY variant and theme settings when they change
     useEffect(() => {
-        // Skip first render to avoid saving initial values loaded from DB
         if (isFirstRender.current) {
             isFirstRender.current = false
             lastSavedSettingsRef.current = { variant: selectedVariant, theme: themeMode }
             return
         }
 
-        // Only save if we have an active resume ID (saved resume)
         if (!activeResumeId) return
 
-        // Check if settings actually changed
         const lastSettings = lastSavedSettingsRef.current
         if (lastSettings && lastSettings.variant === selectedVariant && lastSettings.theme === themeMode) {
-            return // No changes, skip save
+            return
         }
 
-        // Update in-memory availableResumes IMMEDIATELY (optimistically)
-        // This ensures switching resumes and back will show the correct variant
         setAvailableResumes((prev) =>
             prev.map((resume) =>
                 resume.id === activeResumeId
@@ -270,12 +171,10 @@ export function useResumeEditor({
             )
         )
 
-        // Clear previous timeout to debounce
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current)
         }
 
-        // Debounce save to avoid too many requests
         saveTimeoutRef.current = setTimeout(async () => {
             try {
                 const response = await fetch(`/api/rewritten-resumes/${activeResumeId}`, {
@@ -295,7 +194,7 @@ export function useResumeEditor({
             } catch (error) {
                 console.error('Auto-save error:', error)
             }
-        }, 500) // 500ms debounce for settings only
+        }, 500)
 
         return () => {
             if (saveTimeoutRef.current) {
@@ -319,64 +218,6 @@ export function useResumeEditor({
         })
     }, [activeResumeId, activeResumeMode, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
 
-    // Load cover letters when tab changes
-    useEffect(() => {
-        if (activeTab !== 'cover' || !activeResumeId) {
-            setCoverLetterLoading(false)
-            return
-        }
-
-        const hasLoaded = hasLoadedForResume(coverLettersByResume, activeResumeId)
-        if (activeTab === 'cover' && !hasLoaded) {
-            setCoverLetterLoading(true)
-            loadCoverLetters(activeResumeId, { force: true })
-        }
-    }, [activeResumeId, activeTab, coverLettersByResume, loadCoverLetters])
-
-    // Load cover letters in background for chat panel
-    useEffect(() => {
-        if (!activeResumeId) return
-
-        const hasLoaded = hasLoadedForResume(coverLettersByResume, activeResumeId)
-        if (!hasLoaded) {
-            loadCoverLetters(activeResumeId, { silent: true })
-        }
-    }, [activeResumeId, coverLettersByResume, loadCoverLetters])
-
-    // Load skill maps when tab changes
-    useEffect(() => {
-        if (activeTab !== 'skills' || !activeResumeId) {
-            setSkillMapLoading(false)
-            return
-        }
-
-        const hasLoaded = hasLoadedForResume(skillMapsByResume, activeResumeId)
-        if (!hasLoaded) {
-            setSkillMapLoading(true)
-            loadSkillMaps(activeResumeId, { force: true })
-        }
-    }, [activeResumeId, activeTab, skillMapsByResume, loadSkillMaps])
-
-    // Load skill maps in background for faster tab open
-    useEffect(() => {
-        if (!activeResumeId) return
-
-        const hasLoaded = hasLoadedForResume(skillMapsByResume, activeResumeId)
-        if (!hasLoaded) {
-            loadSkillMaps(activeResumeId, { silent: true })
-        }
-    }, [activeResumeId, skillMapsByResume, loadSkillMaps])
-
-    // Clear errors when resume changes
-    useEffect(() => {
-        if (!activeResumeId) {
-            setCoverLetterError(null)
-            setCoverLetterLoading(false)
-            setSkillMapError(null)
-            setSkillMapLoading(false)
-        }
-    }, [activeResumeId])
-
     // Ensure we don't stay on job tabs when the active resume doesn't support them
     useEffect(() => {
         const supportsJobTabs = activeResumeMode === 'tailored' || activeResumeMode === null
@@ -385,245 +226,10 @@ export function useResumeEditor({
         }
     }, [activeResumeMode, activeTab])
 
-    const stopCoverLetterPoll = useCallback(() => {
-        if (coverLetterPollRef.current) {
-            clearInterval(coverLetterPollRef.current)
-            coverLetterPollRef.current = null
-        }
-        coverLetterPollStartRef.current = null
-    }, [])
-
-    const startCoverLetterPoll = useCallback(
-        (resumeId: string) => {
-            if (coverLetterPollRef.current) return
-            coverLetterPollStartRef.current = Date.now()
-            coverLetterPollRef.current = setInterval(() => {
-                const elapsed = coverLetterPollStartRef.current ? Date.now() - coverLetterPollStartRef.current : 0
-                if (elapsed > 45000) {
-                    stopCoverLetterPoll()
-                    setGeneratingCoverLetter(false)
-                    setCoverLetterLoading(false)
-                    clearCoverLetterPending(resumeId)
-                    return
-                }
-                loadCoverLetters(resumeId, { force: true, silent: true })
-            }, 3000)
-        },
-        [loadCoverLetters, stopCoverLetterPoll]
-    )
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            coverLetterRequestRef.current?.abort()
-            skillMapRequestRef.current?.abort()
-            stopCoverLetterPoll()
-        }
-    }, [stopCoverLetterPoll])
-
-    // Handle pending cover letter
-    useEffect(() => {
-        if (!activeResumeId) {
-            stopCoverLetterPoll()
-            return
-        }
-
-        if (isCoverLetterPending(activeResumeId)) {
-            setGeneratingCoverLetter(true)
-            setCoverLetterError(null)
-            setCoverLetterLoading(true)
-            loadCoverLetters(activeResumeId, { force: true, silent: true })
-            startCoverLetterPoll(activeResumeId)
-        }
-    }, [activeResumeId, loadCoverLetters, startCoverLetterPoll, stopCoverLetterPoll])
-
-    // Clear pending state when cover letters load
-    useEffect(() => {
-        if (!activeResumeId) return
-        if (!activeCoverLetters.length) return
-
-        clearCoverLetterPending(activeResumeId)
-        stopCoverLetterPoll()
-        setGeneratingCoverLetter(false)
-        setCoverLetterLoading(false)
-    }, [activeCoverLetters.length, activeResumeId, stopCoverLetterPoll])
-
     const handleReset = useCallback(() => {
         setResumeData(baselineData)
         toast.success('Reset to last saved version')
     }, [baselineData])
-
-    const handleUpdateCoverLetter = useCallback((id: string, newContent: string) => {
-        if (!activeResumeId) return
-        setCoverLettersByResume((prev) => {
-            const existing = prev[activeResumeId] || []
-            return {
-                ...prev,
-                [activeResumeId]: existing.map((letter) =>
-                    letter.id === id ? { ...letter, content: newContent } : letter
-                )
-            }
-        })
-        toast.success('Cover letter updated')
-    }, [activeResumeId])
-
-    const handleReloadCoverLetters = useCallback(() => {
-        if (activeResumeId) {
-            loadCoverLetters(activeResumeId, { force: true })
-        }
-    }, [activeResumeId, loadCoverLetters])
-
-    const handleReloadSkillMaps = useCallback(() => {
-        if (activeResumeId) {
-            loadSkillMaps(activeResumeId, { force: true })
-        }
-    }, [activeResumeId, loadSkillMaps])
-
-    const handleDeleteSkillMap = useCallback(async (id: string) => {
-        if (!activeResumeId || !id) return
-        setDeletingSkillMapId(id)
-        setSkillMapError(null)
-        try {
-            const response = await fetch(`/api/skill-map/${id}`, { method: 'DELETE' })
-            const data = await response.json().catch(() => ({}))
-            if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to delete skill analysis'
-                throw new Error(message)
-            }
-
-            setSkillMapsByResume((prev) => {
-                const existing = prev[activeResumeId] || []
-                return { ...prev, [activeResumeId]: existing.filter((sm) => sm.id !== id) }
-            })
-            toast.success('Skill analysis deleted')
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete skill analysis')
-        } finally {
-            setDeletingSkillMapId(null)
-        }
-    }, [activeResumeId])
-
-    const handleDeleteCoverLetter = useCallback(async (id: string) => {
-        if (!activeResumeId || !id) return
-        setDeletingCoverLetterId(id)
-        setCoverLetterError(null)
-        try {
-            const response = await fetch(`/api/cover-letter/${id}`, { method: 'DELETE' })
-            const data = await response.json().catch(() => ({}))
-            if (!response.ok) {
-                const message = typeof data.error === 'string' ? data.error : 'Failed to delete cover letter'
-                throw new Error(message)
-            }
-
-            setCoverLettersByResume((prev) => {
-                const existing = prev[activeResumeId] || []
-                return { ...prev, [activeResumeId]: existing.filter((letter) => letter.id !== id) }
-            })
-            toast.success('Cover letter deleted')
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete cover letter')
-        } finally {
-            setDeletingCoverLetterId(null)
-        }
-    }, [activeResumeId])
-
-    const handleGenerateCoverLetter = useCallback(async () => {
-        if (!activeResumeId) {
-            toast.error('Save this resume first')
-            return
-        }
-
-        setGeneratingCoverLetter(true)
-        setCoverLetterError(null)
-        setCoverLetterLoading(true)
-        try {
-            const result = await generateCoverLetter({
-                rewrittenResumeId: activeResumeId,
-            })
-
-            const now = new Date().toISOString()
-            const newLetter: CoverLetter = {
-                id: result.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
-                content: result.content,
-                jobTitle: result.metadata?.title || null,
-                jobCompany: result.metadata?.company || null,
-                rewrittenResumeId: activeResumeId,
-                createdAt: now,
-                updatedAt: now
-            }
-
-            setCoverLettersByResume((prev) => {
-                const existing = prev[activeResumeId] || []
-                return { ...prev, [activeResumeId]: [newLetter, ...existing] }
-            })
-            setActiveTab('cover')
-            toast.success('Cover letter ready')
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to generate cover letter'
-            setCoverLetterError(message)
-            toast.error(message)
-        } finally {
-            setGeneratingCoverLetter(false)
-            if (!activeCoverLetters.length) {
-                setCoverLetterLoading(false)
-            }
-        }
-    }, [activeResumeId, activeCoverLetters.length])
-
-    const handleGenerateSkillMap = useCallback(async () => {
-        if (!activeResumeId) {
-            toast.error('Save this resume first')
-            return
-        }
-
-        setGeneratingSkillMap(true)
-        setSkillMapError(null)
-        setSkillMapLoading(true)
-        try {
-            const result = await generateSkillMap({
-                rewrittenResumeId: activeResumeId,
-            })
-
-            if (result.skillMap) {
-                const newSkillMap: SkillMapRecord = {
-                    id: result.skillMap.id,
-                    user_id: result.skillMap.user_id,
-                    resume_id: result.skillMap.resume_id,
-                    rewritten_resume_id: result.skillMap.rewritten_resume_id,
-                    match_score: result.skillMap.match_score,
-                    adaptation_score: result.skillMap.adaptation_score,
-                    data: result.skillMap.data,
-                    job_title: result.skillMap.job_title,
-                    job_company: result.skillMap.job_company,
-                    created_at: result.skillMap.created_at,
-                    updated_at: result.skillMap.updated_at
-                }
-
-                setSkillMapsByResume((prev) => {
-                    const existing = prev[activeResumeId] || []
-                    const filtered = existing.filter((sm) => sm.id !== newSkillMap.id)
-                    return { ...prev, [activeResumeId]: [newSkillMap, ...filtered] }
-                })
-            }
-
-            if (result.cached) {
-                toast.info('Skill analysis already exists')
-            } else {
-                toast.success('Skill analysis generated!')
-            }
-
-            setActiveTab('skills')
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to generate skill analysis'
-            setSkillMapError(message)
-            toast.error(message)
-        } finally {
-            setGeneratingSkillMap(false)
-            if (!activeSkillMaps.length) {
-                setSkillMapLoading(false)
-            }
-        }
-    }, [activeResumeId, activeSkillMaps.length])
 
     const handleSelectSaved = useCallback((item: SavedResume) => {
         setActiveResumeId(item.id)
@@ -632,18 +238,15 @@ export function useResumeEditor({
         setSelectedVariant(item.variant || defaultResumeVariant)
         setThemeMode(item.theme || 'light')
         setActiveResumeMode(item.mode ?? null)
-        // Update last saved settings to prevent unnecessary auto-save on switch
         lastSavedSettingsRef.current = {
             variant: item.variant || defaultResumeVariant,
             theme: item.theme || 'light'
         }
 
-        // Update URL to selected resume so refresh stays on the same resume
         if (item.id) {
             router.replace(`/resume-editor?id=${item.id}`, { scroll: false })
         }
 
-        // Reset to resume tab if switching to a resume that doesn't support job-related tabs
         const supportsJobTabs = item.mode === 'tailored' || item.mode === null || item.mode === undefined
         if (!supportsJobTabs) {
             setActiveTab('resume')
@@ -663,7 +266,7 @@ export function useResumeEditor({
 
             const next = availableResumes.filter((resume) => resume.id !== id)
             setAvailableResumes(next)
-            setCoverLettersByResume((prev) => {
+            coverLetter.setCoverLettersByResume((prev) => {
                 const updated = { ...prev }
                 delete updated[id]
                 return updated
@@ -678,12 +281,10 @@ export function useResumeEditor({
                     setSelectedVariant(fallback.variant || defaultResumeVariant)
                     setThemeMode(fallback.theme || 'light')
                     setActiveResumeMode(fallback.mode ?? null)
-                    // Update last saved settings to prevent unnecessary auto-save
                     lastSavedSettingsRef.current = {
                         variant: fallback.variant || defaultResumeVariant,
                         theme: fallback.theme || 'light'
                     }
-                    // Update URL to fallback resume to prevent stale ID issues on refresh
                     router.replace(`/resume-editor?id=${fallback.id}`, { scroll: false })
                 } else {
                     setActiveResumeId(null)
@@ -693,21 +294,19 @@ export function useResumeEditor({
                     setThemeMode('light')
                     setActiveResumeMode(null)
                     lastSavedSettingsRef.current = null
-                    // Redirect to dashboard if no resumes left
                     router.push('/dashboard')
                     return
                 }
             }
 
             toast.success('Resume deleted')
-            // Refresh server cache to ensure data is in sync on navigation
             router.refresh()
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to delete resume')
         } finally {
             setDeletingId(null)
         }
-    }, [activeResumeId, availableResumes, router])
+    }, [activeResumeId, availableResumes, coverLetter, router])
 
     const handleSave = useCallback(async () => {
         setSaving(true)
@@ -753,7 +352,7 @@ export function useResumeEditor({
             setActiveResumeId(mapped.id)
             setActiveResumeMode(mapped.mode ?? null)
             setBaselineData(resumeData)
-            upsertAvailableResume(mapped, true) // Move to top when saving
+            upsertAvailableResume(mapped, true)
             toast.success('Resume saved')
             router.refresh()
         } catch (error) {
@@ -764,91 +363,42 @@ export function useResumeEditor({
     }, [activeResumeId, activeResumeMode, resumeData, router, selectedVariant, themeMode, upsertAvailableResume])
 
     const handleExport = useCallback(async () => {
-        setExporting(true)
-        try {
-            const response = await fetch('/api/export-resume', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    data: resumeData,
-                    templateId: selectedVariant,
-                    format: 'pdf',
-                    themeConfig: { mode: themeMode },
-                    resumeId: activeResumeId,
-                    fileName: resumeData.personalInfo.name || 'resume'
-                })
-            })
-
-            if (!response.ok) {
-                let errorMessage = 'Failed to export resume'
-                let errorDetails: { error?: string } = {}
-
-                try {
-                    const contentType = response.headers.get('content-type')
-
-                    if (contentType?.includes('application/json')) {
-                        errorDetails = await response.json()
-                        errorMessage = errorDetails.error || errorMessage
-                    } else {
-                        const textError = await response.text()
-                        errorMessage = textError || errorMessage
-                    }
-                } catch (parseError) {
-                    console.error('Failed to parse error response:', parseError)
-                }
-
-                throw new Error(errorMessage)
-            }
-
-            const blob = await response.blob()
-
-            if (blob.size === 0) throw new Error('Generated PDF is empty')
-
-            const suggestedName = (resumeData.personalInfo.name || 'resume').replace(/\s+/g, '-').toLowerCase()
-            const downloadName = response.headers.get('x-export-name') || `resume-${suggestedName}.pdf`
-
-            const url = URL.createObjectURL(blob)
-            const anchor = document.createElement('a')
-            anchor.href = url
-            anchor.download = downloadName
-            document.body.appendChild(anchor)
-            anchor.click()
-            document.body.removeChild(anchor)
-            URL.revokeObjectURL(url)
-
-            const pdfUrl = response.headers.get('x-export-url')
-            if (pdfUrl && activeResumeId) {
-                const current = availableResumes.find((resume) => resume.id === activeResumeId)
-                upsertAvailableResume({
-                    ...(current || {
-                        id: activeResumeId,
-                        data: resumeData,
-                        variant: selectedVariant,
-                        theme: themeMode,
-                        mode: activeResumeMode ?? null,
-                    }),
+        const pdfUrl = await resumeExport.handleExport()
+        if (pdfUrl && activeResumeId) {
+            const current = availableResumes.find((resume) => resume.id === activeResumeId)
+            upsertAvailableResume({
+                ...(current || {
                     id: activeResumeId,
-                    pdfUrl,
-                    fileName: (current?.fileName || resumeData.personalInfo.name || 'resume'),
-                    updatedAt: current?.updatedAt || null,
-                    createdAt: current?.createdAt || null,
                     data: resumeData,
                     variant: selectedVariant,
                     theme: themeMode,
-                    mode: current?.mode ?? activeResumeMode ?? null,
-                })
-            }
-
-            toast.success('PDF ready')
-        } catch (error) {
-            console.error('PDF export error:', error)
-            toast.error(error instanceof Error ? error.message : 'Failed to export resume')
-        } finally {
-            setExporting(false)
+                    mode: activeResumeMode ?? null,
+                }),
+                id: activeResumeId,
+                pdfUrl,
+                fileName: (current?.fileName || resumeData.personalInfo.name || 'resume'),
+                updatedAt: current?.updatedAt || null,
+                createdAt: current?.createdAt || null,
+                data: resumeData,
+                variant: selectedVariant,
+                theme: themeMode,
+                mode: current?.mode ?? activeResumeMode ?? null,
+            })
         }
-    }, [activeResumeId, activeResumeMode, availableResumes, resumeData, selectedVariant, themeMode, upsertAvailableResume])
+    }, [activeResumeId, activeResumeMode, availableResumes, resumeData, resumeExport, selectedVariant, themeMode, upsertAvailableResume])
+
+    const handleGenerateCoverLetter = useCallback(async () => {
+        await coverLetter.handleGenerateCoverLetter()
+        setActiveTab('cover')
+    }, [coverLetter])
+
+    const handleGenerateSkillMap = useCallback(async () => {
+        await skillMap.handleGenerateSkillMap()
+        setActiveTab('skills')
+    }, [skillMap])
 
     return {
+        // Core state
         resumeData,
         setResumeData,
         baselineData,
@@ -864,33 +414,41 @@ export function useResumeEditor({
         availableResumes,
         hasUnsavedChanges,
         saving,
-        exporting,
+        exporting: resumeExport.exporting,
         deletingId,
-        activeCoverLetters,
-        coverLetterLoading,
-        coverLetterError,
-        generatingCoverLetter,
-        deletingCoverLetterId,
-        waitingForCoverLetter,
-        activeSkillMaps,
-        skillMapLoading,
-        skillMapError,
-        generatingSkillMap,
-        deletingSkillMapId,
-        waitingForSkillMap,
+
+        // Cover letter (from extracted hook)
+        activeCoverLetters: coverLetter.activeCoverLetters,
+        coverLetterLoading: coverLetter.coverLetterLoading,
+        coverLetterError: coverLetter.coverLetterError,
+        generatingCoverLetter: coverLetter.generatingCoverLetter,
+        deletingCoverLetterId: coverLetter.deletingCoverLetterId,
+        waitingForCoverLetter: coverLetter.waitingForCoverLetter,
+
+        // Skill map (from extracted hook)
+        activeSkillMaps: skillMap.activeSkillMaps,
+        skillMapLoading: skillMap.skillMapLoading,
+        skillMapError: skillMap.skillMapError,
+        generatingSkillMap: skillMap.generatingSkillMap,
+        deletingSkillMapId: skillMap.deletingSkillMapId,
+        waitingForSkillMap: skillMap.waitingForSkillMap,
+
+        // Tab state
         activeTab,
         setActiveTab,
+
+        // Actions
         handleReset,
         handleSave,
         handleExport,
         handleSelectSaved,
         handleDeleteSaved,
         handleGenerateCoverLetter,
-        handleDeleteCoverLetter,
-        handleReloadCoverLetters,
-        handleUpdateCoverLetter,
+        handleDeleteCoverLetter: coverLetter.handleDeleteCoverLetter,
+        handleReloadCoverLetters: coverLetter.handleReloadCoverLetters,
+        handleUpdateCoverLetter: coverLetter.handleUpdateCoverLetter,
         handleGenerateSkillMap,
-        handleDeleteSkillMap,
-        handleReloadSkillMaps,
+        handleDeleteSkillMap: skillMap.handleDeleteSkillMap,
+        handleReloadSkillMaps: skillMap.handleReloadSkillMaps,
     }
 }
