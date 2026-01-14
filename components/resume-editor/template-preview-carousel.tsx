@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { resumeVariants, type ResumeVariantId } from "@/lib/resume-templates/variants"
 import type { ResumeData } from "@/lib/resume-templates/types"
-import { WebResumeRenderer } from "@/components/resume-templates/web-renderer"
+
 import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 import { ResumePreviewSlot } from "./resume-preview-slot"
 

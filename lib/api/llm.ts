@@ -20,7 +20,7 @@ import type { GenerateContentResponse } from "@google/genai"
 
 // Model configuration
 export const LLM_MODELS = {
-    PRIMARY: "gemini-2.5-pro",
+    PRIMARY: "gemini-3-flash-preview",
     FALLBACK: "gemini-2.5-flash",
     PREVIEW: "gemini-2.5-flash-preview-05-20",
 } as const
@@ -33,21 +33,33 @@ export const LLM_CONFIGS = {
         maxOutputTokens: 8192,
         temperature: 0.2,
         responseMimeType: "application/json" as const,
+        thinkingConfig: {
+            thinkingLevel: "medium" as const,
+        },
     },
     adaptation: {
         maxOutputTokens: 8192,
         temperature: 0.4,
         responseMimeType: "application/json" as const,
+        thinkingConfig: {
+            thinkingLevel: "medium" as const,
+        },
     },
     coverLetter: {
         maxOutputTokens: 4096,
         temperature: 0.45,
         responseMimeType: "text/plain" as const,
+        thinkingConfig: {
+            thinkingLevel: "medium" as const,
+        },
     },
     skillMap: {
         maxOutputTokens: 8192,
         temperature: 0.2,
         responseMimeType: "application/json" as const,
+        thinkingConfig: {
+            thinkingLevel: "medium" as const,
+        },
     },
 } as const
 
@@ -81,6 +93,9 @@ interface LLMRequestOptions {
         maxOutputTokens?: number
         temperature?: number
         responseMimeType?: "application/json" | "text/plain"
+        thinkingConfig?: {
+            thinkingLevel: "medium"
+        }
     }
     enableFallback?: boolean
     maxRetries?: number
@@ -273,14 +288,27 @@ export class LLMClient {
             logPrefix = this.logPrefix,
         } = options
 
-        const config = customConfig || LLM_CONFIGS[configType]
+        const rawConfig = customConfig || LLM_CONFIGS[configType]
         const contents = typeof prompt === "string"
             ? [{ role: "user" as const, parts: [{ text: prompt }] }]
             : prompt
 
+        // Check if the model supports thinkingConfig (only Gemini 3 series and certain preview models)
+        const supportsThinking = model.includes("gemini-3") || model.includes("gemini-2.5-flash-preview")
+        
+        // Strip thinkingConfig for models that don't support it
+        const config = supportsThinking 
+            ? rawConfig 
+            : (() => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { thinkingConfig, ...rest } = rawConfig as Record<string, unknown>
+                return rest
+            })()
+
         // Try primary model
         try {
             const response = await this.callWithRetry(model, contents, config, maxRetries, logPrefix)
+            console.log(`${logPrefix} ✓ Success with model: ${model} (thinking: ${supportsThinking ? "enabled" : "disabled"})`)
             return {
                 text: extractResponseText(response),
                 model,
@@ -293,16 +321,20 @@ export class LLMClient {
             if (enableFallback && model !== LLM_MODELS.FALLBACK) {
                 console.log(`${logPrefix} Attempting fallback to ${LLM_MODELS.FALLBACK}`)
 
+                // Ensure thinkingConfig is removed for fallback (gemini-2.5-flash doesn't support it)
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { thinkingConfig, ...fallbackConfig } = config as Record<string, unknown>
+
                 try {
                     const response = await this.callWithRetry(
                         LLM_MODELS.FALLBACK,
                         contents,
-                        config,
+                        fallbackConfig,
                         maxRetries,
                         logPrefix
                     )
 
-                    console.log(`${logPrefix} Fallback successful`)
+                    console.log(`${logPrefix} ✓ Fallback success with model: ${LLM_MODELS.FALLBACK} (thinking: disabled)`)
                     return {
                         text: extractResponseText(response),
                         model: LLM_MODELS.FALLBACK,
@@ -338,6 +370,9 @@ export class LLMClient {
             maxOutputTokens?: number
             temperature?: number
             responseMimeType?: "application/json" | "text/plain"
+            thinkingConfig?: {
+                thinkingLevel: "medium"
+            }
         },
         maxRetries: number,
         logPrefix: string
@@ -355,7 +390,8 @@ export class LLMClient {
                 const response = await this.ai.models.generateContent({
                     model,
                     contents,
-                    config,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    config: config as any,
                 })
 
                 return response

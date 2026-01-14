@@ -65,6 +65,11 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
     const saved = (rows || []).map(mapRowToResume)
     const activeResume = activeId ? saved.find((item) => item.id === activeId) : saved[0]
 
+    // If requested resume not found but we have other resumes, redirect to the first one
+    if (saved.length > 0 && !activeResume && activeId) {
+        redirect(`/resume-editor?id=${saved[0].id}`)
+    }
+
     if (!saved.length || !activeResume) {
         return (
             <div className="min-h-screen relative pb-20">
@@ -73,7 +78,7 @@ export default async function ResumeEditorPage({ searchParams }: PageProps) {
                     <Card className="glass-card p-8 text-center space-y-4">
                         <h1 className="text-3xl font-bold">{!saved.length ? "No resumes yet" : "Resume not found"}</h1>
                         <p className="text-muted-foreground">
-                            {!saved.length 
+                            {!saved.length
                                 ? "Upload a resume and run an analysis from the dashboard to start editing in the Resume Editor."
                                 : "The requested resume may have been deleted. Please select another resume or create a new one."}
                         </p>

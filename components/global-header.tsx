@@ -82,11 +82,9 @@ export function GlobalHeader({
   }
 
   const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back()
-    } else {
-      router.push(backHref)
-    }
+    // Instead of using router.back() which can lead to deleted resume URLs,
+    // we always navigate to the safe backHref (typically dashboard)
+    router.push(backHref)
   }
 
   return (
