@@ -124,16 +124,18 @@ export function WizardFlow({
 
                                     {/* Continue / Skip button */}
                                     {!isLastStep && (
-                                        <Button
-                                            type="button"
-                                            variant={canContinue ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => goToNextStep(index)}
-                                            className="gap-2"
-                                        >
-                                            {step.isOptional && !step.isComplete ? "Skip" : "Continue"}
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex justify-end">
+                                            <Button
+                                                type="button"
+                                                variant={canContinue ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => goToNextStep(index)}
+                                                className="gap-2"
+                                            >
+                                                {step.isOptional && !step.isComplete ? "Skip" : "Continue"}
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
                             </AccordionContent>

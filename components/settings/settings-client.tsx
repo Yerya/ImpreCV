@@ -9,13 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { GlobalHeader } from "@/components/global-header"
-import { Loader2 } from "lucide-react"
+import { Loader2, Check } from "lucide-react"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { setPaletteForTheme, setUiScale, type UiScale } from "@/features/app/appSlice"
 import { signOutThunk } from "@/features/auth/authSlice"
-import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
+import { SOLID_COLORS, type PaletteName } from "@/lib/theme/palettes"
 import { useUpdateProfileMutation, useDeleteAccountMutation } from "@/features/api/authApi"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
@@ -173,7 +173,6 @@ export default function SettingsClient({ user, profile: initialProfile }: Settin
                     <PaletteSection
                       title="Palette"
                       current={current}
-                      themeKey={themeKey}
                       onSelect={(p) => dispatch(setPaletteForTheme({ theme: themeKey, palette: p }))}
                     />
                   )
@@ -293,12 +292,10 @@ function UiScaleSection({
 function PaletteSection({
   title,
   current,
-  themeKey,
   onSelect,
 }: {
   title: string
   current: PaletteName
-  themeKey: "light" | "dark"
   onSelect: (p: PaletteName) => void
 }) {
   const options: { value: PaletteName; label: string }[] = [
@@ -310,13 +307,12 @@ function PaletteSection({
   ]
 
   const chip = (p: PaletteName) => {
-    const def = PALETTES[p]
-    const [c1, c2, c3] = themeKey === "dark" ? def.gradientDark : def.gradientLight
+    const color = SOLID_COLORS[p]
     return (
       <span
         aria-hidden
         className="inline-block h-4 w-8 rounded"
-        style={{ background: `linear-gradient(90deg, ${c1}, ${c2}, ${c3})` }}
+        style={{ background: color }}
       />
     )
   }
@@ -336,7 +332,7 @@ function PaletteSection({
             <span className="flex items-center gap-2">
               {chip(opt.value)}
               {current === opt.value ? (
-                <span className="text-xs text-muted-foreground">Selected</span>
+                <Check className="h-4 w-4" style={{ color: SOLID_COLORS[opt.value] }} />
               ) : null}
             </span>
           </button>

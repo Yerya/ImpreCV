@@ -2,12 +2,12 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
-import { Paintbrush } from "lucide-react"
+import { Paintbrush, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { setPaletteForTheme } from "@/features/app/appSlice"
-import { PALETTES, type PaletteName } from "@/lib/theme/palettes"
+import { SOLID_COLORS, type PaletteName } from "@/lib/theme/palettes"
 
 const OPTIONS: { value: PaletteName; label: string }[] = [
   { value: "blue", label: "Blue" },
@@ -31,13 +31,12 @@ export function PaletteToggle() {
   }
 
   const chip = (p: PaletteName) => {
-    const { gradientLight } = PALETTES[p]
-    const [c1, c2, c3] = gradientLight
+    const color = SOLID_COLORS[p]
     return (
       <span
         aria-hidden
         className="inline-block h-3 w-6 rounded"
-        style={{ background: `linear-gradient(90deg, ${c1}, ${c2}, ${c3})` }}
+        style={{ background: color }}
       />
     )
   }
@@ -66,15 +65,14 @@ export function PaletteToggle() {
               <button
                 key={opt.value}
                 onClick={() => handleChange(opt.value)}
-                className={`glass-row flex items-center justify-between w-full rounded-md px-2 py-1.5 text-sm ${
-                  current === opt.value ? "glass-row--selected" : ""
-                }`}
+                className={`glass-row flex items-center justify-between w-full rounded-md px-2 py-1.5 text-sm ${current === opt.value ? "glass-row--selected" : ""
+                  }`}
               >
                 <span>{opt.label}</span>
                 <span className="flex items-center gap-2">
                   {chip(opt.value)}
                   {current === opt.value ? (
-                    <span className="text-xs text-muted-foreground">Selected</span>
+                    <Check className="h-4 w-4" style={{ color: SOLID_COLORS[opt.value] }} />
                   ) : null}
                 </span>
               </button>

@@ -11,6 +11,15 @@ export interface PaletteDefinition {
   gradientDark: [string, string, string]
 }
 
+/** Solid representative color for each palette (middle/primary color) */
+export const SOLID_COLORS: Record<PaletteName, string> = {
+  blue: "#6366f1",
+  raspberry: "#ec4899",
+  emerald: "#22c55e",
+  violet: "#a855f7",
+  orange: "#f97316",
+}
+
 export const PALETTES: Record<PaletteName, PaletteDefinition> = {
   blue: {
     name: "blue",
