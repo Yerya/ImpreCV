@@ -16,12 +16,14 @@ interface GlobalHeaderProps {
   variant?: "landing" | "dashboard" | "back"
   backHref?: string
   backLabel?: string
+  onBack?: () => void
 }
 
 export function GlobalHeader({
   variant = "landing",
   backHref = "/dashboard",
-  backLabel = "Back to Dashboard"
+  backLabel = "Back to Dashboard",
+  onBack
 }: GlobalHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -82,6 +84,10 @@ export function GlobalHeader({
   }
 
   const handleBack = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
     // Instead of using router.back() which can lead to deleted resume URLs,
     // we always navigate to the safe backHref (typically dashboard)
     router.push(backHref)

@@ -1,12 +1,13 @@
 "use client"
 
+import * as React from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
@@ -103,8 +104,8 @@ export function WorkflowSelector({ selectedMode, onModeChange, className }: Work
                                 <div
                                     className={cn(
                                         "h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 transition-all duration-200",
-                                        isSelected 
-                                            ? option.iconBgActive 
+                                        isSelected
+                                            ? option.iconBgActive
                                             : cn(option.iconBg, "group-hover:from-[var(--gradient-2)]/30 group-hover:to-[var(--gradient-3)]/10 group-hover:text-[var(--gradient-2)]")
                                     )}
                                 >
@@ -128,8 +129,8 @@ export function WorkflowSelector({ selectedMode, onModeChange, className }: Work
                                     >
                                         <span className={cn(
                                             "opacity-70 transition-all duration-200",
-                                            isSelected 
-                                                ? "text-primary opacity-100" 
+                                            isSelected
+                                                ? "text-primary opacity-100"
                                                 : "group-hover:text-[var(--gradient-2)] group-hover:opacity-100"
                                         )}>
                                             {feature.icon}
@@ -145,10 +146,10 @@ export function WorkflowSelector({ selectedMode, onModeChange, className }: Work
 
             {/* Mobile: Accordion layout */}
             <div className="md:hidden">
-                <Accordion 
-                    type="single" 
-                    defaultValue={selectedMode} 
-                    collapsible 
+                <Accordion
+                    type="single"
+                    defaultValue={selectedMode}
+                    collapsible
                     className="space-y-3"
                     onValueChange={(value) => {
                         if (value) onModeChange(value as WorkflowMode)
@@ -157,13 +158,13 @@ export function WorkflowSelector({ selectedMode, onModeChange, className }: Work
                     {WORKFLOW_OPTIONS.map((option) => {
                         const isSelected = selectedMode === option.id
                         return (
-                            <AccordionItem 
-                                key={option.id} 
+                            <AccordionItem
+                                key={option.id}
                                 value={option.id}
                                 className={cn(
                                     "border rounded-2xl px-4 overflow-hidden transition-all",
-                                    isSelected 
-                                        ? "glass-card-primary ring-2 ring-primary/50" 
+                                    isSelected
+                                        ? "glass-card-primary ring-2 ring-primary/50"
                                         : "glass-card"
                                 )}
                             >
@@ -251,15 +252,70 @@ interface InlineModePickerProps {
 }
 
 export function InlineModePicker({ selectedMode, onModeChange }: InlineModePickerProps) {
+    const [open, setOpen] = React.useState(false)
     const currentOption = WORKFLOW_OPTIONS.find((o) => o.id === selectedMode)
+    const scrollStartRef = React.useRef<{ x: number; y: number } | null>(null)
+    const wheelAccumulatorRef = React.useRef(0)
+
+    // Close dropdown after scrolling past threshold (100px)
+    React.useEffect(() => {
+        if (!open) return
+
+        const SCROLL_THRESHOLD = 100
+        wheelAccumulatorRef.current = 0
+
+        // Desktop: wheel event
+        const handleWheel = (e: WheelEvent) => {
+            wheelAccumulatorRef.current += Math.abs(e.deltaY) + Math.abs(e.deltaX)
+            if (wheelAccumulatorRef.current > SCROLL_THRESHOLD) {
+                setOpen(false)
+            }
+        }
+
+        // Mobile: touch events
+        const handleTouchStart = (e: TouchEvent) => {
+            const touch = e.touches[0]
+            scrollStartRef.current = { x: touch.clientX, y: touch.clientY }
+        }
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!scrollStartRef.current) return
+
+            const touch = e.touches[0]
+            const deltaX = Math.abs(touch.clientX - scrollStartRef.current.x)
+            const deltaY = Math.abs(touch.clientY - scrollStartRef.current.y)
+
+            if (deltaX > SCROLL_THRESHOLD || deltaY > SCROLL_THRESHOLD) {
+                setOpen(false)
+                scrollStartRef.current = null
+            }
+        }
+
+        const handleTouchEnd = () => {
+            scrollStartRef.current = null
+        }
+
+        document.addEventListener('wheel', handleWheel, { passive: true })
+        document.addEventListener('touchstart', handleTouchStart, { passive: true })
+        document.addEventListener('touchmove', handleTouchMove, { passive: true })
+        document.addEventListener('touchend', handleTouchEnd, { passive: true })
+
+        return () => {
+            document.removeEventListener('wheel', handleWheel)
+            document.removeEventListener('touchstart', handleTouchStart)
+            document.removeEventListener('touchmove', handleTouchMove)
+            document.removeEventListener('touchend', handleTouchEnd)
+        }
+    }, [open])
+
     if (!currentOption) return null
 
     return (
-        <DropdownMenu>
+        <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
             <DropdownMenuTrigger asChild>
-                <Button 
-                    variant="ghost" 
-                    size="lg" 
+                <Button
+                    variant="ghost"
+                    size="lg"
                     className="gap-3 px-4 h-12 text-base glass-card-primary hover:opacity-90"
                 >
                     <div className={cn(
@@ -272,9 +328,9 @@ export function InlineModePicker({ selectedMode, onModeChange }: InlineModePicke
                     <ChevronDown className="h-5 w-5 text-muted-foreground" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-                align="center" 
-                sideOffset={8} 
+            <DropdownMenuContent
+                align="center"
+                sideOffset={8}
                 className="w-[min(16rem,calc(100vw-2rem))] bg-white/60 dark:bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-border/30 shadow-lg rounded-xl"
             >
                 {WORKFLOW_OPTIONS.map((option) => {

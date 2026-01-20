@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useState } from "react"
+import { memo, useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GlobalHeader } from "@/components/global-header"
@@ -33,6 +33,14 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
     const [mobileView, setMobileView] = useState<'preview' | 'edit'>('preview')
     const [showStyleDrawer, setShowStyleDrawer] = useState(false)
     const [showResumesDrawer, setShowResumesDrawer] = useState(false)
+    const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+    // Reset scroll position when switching to preview mode
+    useEffect(() => {
+        if (mobileView === 'preview' && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0
+        }
+    }, [mobileView])
 
     const {
         resumeData,
@@ -78,8 +86,31 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
         handleReloadSkillMaps,
     } = editor
 
+    // Lock body scroll when component is mounted to prevent dual scrollbars
+    useEffect(() => {
+        // Save original value
+        const originalOverflow = document.body.style.overflow
+        // Prevent scrolling on the body
+        document.body.style.overflow = 'hidden'
+
+        return () => {
+            // Restore original value
+            document.body.style.overflow = originalOverflow
+        }
+    }, [])
+
+    // Re-lock body scroll when drawers close, as Radix UI might unlock it
+    useEffect(() => {
+        if (!showStyleDrawer && !showResumesDrawer) {
+            document.body.style.overflow = 'hidden'
+        }
+    }, [showStyleDrawer, showResumesDrawer])
+
     return (
-        <div className="h-screen flex flex-col overflow-hidden">
+        <div
+            className="fixed inset-0 flex flex-col overflow-hidden z-50"
+            style={{ overscrollBehavior: 'none' }}
+        >
             <GlobalHeader variant="back" backHref={backHref} backLabel="Back" />
 
             <div className="px-4 pt-3 pb-2">
@@ -160,10 +191,14 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                 </div>
             )}
 
-            <div className={cn(
-                "flex-1 px-4 pb-20 min-h-0",
-                mobileView === 'edit' || activeTab !== 'resume' ? "overflow-auto" : "overflow-hidden"
-            )}>
+            <div
+                ref={scrollContainerRef}
+                className={cn(
+                    "flex-1 px-4 pb-20 min-h-0",
+                    mobileView === 'edit' || activeTab !== 'resume' ? "overflow-auto" : "overflow-hidden"
+                )}
+                style={{ overscrollBehavior: 'contain' }}
+            >
                 {activeTab === 'resume' ? (
                     mobileView === 'preview' ? (
                         <div
@@ -268,7 +303,7 @@ export const MobileResumeEditor = memo(function MobileResumeEditor({
                         />
                     </div>
                 )}
-                
+
                 <RecentResumesList
                     resumes={availableResumes}
                     activeResumeId={activeResumeId}

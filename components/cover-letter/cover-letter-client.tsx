@@ -8,6 +8,7 @@ import { GlobalHeader } from "@/components/global-header"
 import { Download, Copy, CheckCircle2, Edit3, Eye, X, Save } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useRouter } from "next/navigation"
 import { apiFetch, API_ENDPOINTS } from "@/lib/api-client"
 
 interface CoverLetterData {
@@ -27,6 +28,7 @@ export default function CoverLetterClient({ coverLetter }: CoverLetterClientProp
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
   const isMobile = useIsMobile()
+  const router = useRouter()
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content)
@@ -71,8 +73,8 @@ export default function CoverLetterClient({ coverLetter }: CoverLetterClientProp
     <div className="min-h-screen relative pb-24 md:pb-20">
       <GlobalHeader
         variant="back"
-        backHref="/dashboard"
-        backLabel="Back to Dashboard"
+        onBack={() => router.back()}
+        backLabel="Back"
       />
 
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 relative z-10 max-w-4xl">

@@ -47,8 +47,8 @@ const SkillBadge = memo(function SkillBadge({ skill }: { skill: Skill }) {
   const config = categoryConfig[skill.category] || categoryConfig.matched
 
   return (
-    <Badge 
-      variant="outline" 
+    <Badge
+      variant="outline"
       className={cn("text-xs py-1 px-2.5 font-medium", config.bgColor, config.color)}
     >
       {skill.name}
@@ -74,7 +74,11 @@ export default function SkillMapClient({ skillMap }: SkillMapClientProps) {
 
   return (
     <div className="min-h-screen relative pb-24 md:pb-20">
-      <GlobalHeader variant="back" backHref="/resume-editor" backLabel="Back to Editor" />
+      <GlobalHeader
+        variant="back"
+        onBack={() => router.back()}
+        backLabel="Back"
+      />
 
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-6 relative z-10 max-w-4xl">
         {/* Header */}
