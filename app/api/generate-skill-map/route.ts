@@ -334,6 +334,18 @@ export async function POST(request: NextRequest) {
       userLogger.info("llm_analysis_complete", { analysisType })
 
       const rawText = response.text
+
+      // Check for empty response first
+      if (!rawText || rawText.trim().length === 0) {
+        const emptyError = new Error("AI returned an empty response") as Error & {
+          code?: string;
+          analysisType?: string
+        }
+        emptyError.code = "EMPTY_RESPONSE"
+        emptyError.analysisType = analysisType
+        throw emptyError
+      }
+
       if (isLikelyRefusalResponse(rawText)) {
         const refusal = new Error(AI_REFUSAL_ERROR) as Error & { code?: string; analysisType?: string }
         refusal.code = "LLM_REFUSAL"
@@ -361,6 +373,10 @@ export async function POST(request: NextRequest) {
       return error instanceof Error && (error as { code?: string }).code === "LLM_REFUSAL"
     }
 
+    const isEmptyResponseError = (error: unknown): error is Error & { code?: string; analysisType?: string } => {
+      return error instanceof Error && (error as { code?: string }).code === "EMPTY_RESPONSE"
+    }
+
     // Step 1: Gap Analysis (original resume vs job)
     let gapData: unknown
     try {
@@ -368,6 +384,15 @@ export async function POST(request: NextRequest) {
       gapData = await callLLM(gapPrompt, "gap_analysis")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error"
+
+      if (isEmptyResponseError(error)) {
+        userLogger.error("empty_llm_response", undefined, { analysisType: error.analysisType || "gap_analysis" })
+        userLogger.requestComplete(500, { reason: "empty_response", analysisType: error.analysisType || "gap_analysis" })
+        return NextResponse.json({
+          error: "AI returned an empty response. Please try again."
+        }, { status: 500 })
+      }
+
       if (isRefusalError(error)) {
         userLogger.warn("llm_refusal_detected", { analysisType: error.analysisType || "gap_analysis" })
         userLogger.requestComplete(422, { reason: "llm_refusal", analysisType: error.analysisType || "gap_analysis" })
@@ -402,6 +427,15 @@ export async function POST(request: NextRequest) {
         adaptationData = await callLLM(adaptPrompt, "adaptation_comparison")
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
+
+        if (isEmptyResponseError(error)) {
+          userLogger.error("empty_llm_response", undefined, { analysisType: error.analysisType || "adaptation_comparison" })
+          userLogger.requestComplete(500, { reason: "empty_response", analysisType: error.analysisType || "adaptation_comparison" })
+          return NextResponse.json({
+            error: "AI returned an empty response. Please try again."
+          }, { status: 500 })
+        }
+
         if (isRefusalError(error)) {
           userLogger.warn("llm_refusal_detected", { analysisType: error.analysisType || "adaptation_comparison" })
           userLogger.requestComplete(422, { reason: "llm_refusal", analysisType: error.analysisType || "adaptation_comparison" })

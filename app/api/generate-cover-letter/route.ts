@@ -218,6 +218,16 @@ export async function POST(request: NextRequest) {
         logPrefix: "[Cover Letter]"
       })
       const rawText = response.text
+
+      // Check for empty response first
+      if (!rawText || rawText.trim().length === 0) {
+        userLogger.error("empty_llm_response", undefined, { model: response.model, usedFallback: response.usedFallback })
+        userLogger.requestComplete(500, { reason: "empty_response" })
+        return NextResponse.json({
+          error: "AI returned an empty response. Please try again."
+        }, { status: 500 })
+      }
+
       const refusalInfo = parseRefusalInfo(rawText)
       if (refusalInfo) {
         userLogger.warn("llm_refusal_detected", { model: response.model, usedFallback: response.usedFallback })
@@ -242,6 +252,20 @@ export async function POST(request: NextRequest) {
         success: true
       })
     } catch (error) {
+      // Check for blocked response (SAFETY, MAX_TOKENS, etc.)
+      if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+        const blockError = error as Error & { finishReason?: string }
+        userLogger.warn("llm_blocked_response", { finishReason: blockError.finishReason })
+
+        return NextResponse.json({
+          error: blockError.finishReason === "SAFETY"
+            ? "The AI couldn't generate a cover letter due to safety filters. Please try with different resume content."
+            : blockError.finishReason === "MAX_TOKENS"
+              ? "The content is too long to process. Please shorten your resume."
+              : blockError.message || "AI service couldn't process this request"
+        }, { status: 422 })
+      }
+
       userLogger.llmComplete({
         model: modelUsed,
         usedFallback: false,

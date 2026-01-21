@@ -16,55 +16,58 @@
 import { GoogleGenAI } from "@google/genai"
 import type { GenerateContentResponse } from "@google/genai"
 
-// Model configuration
+// Model configuration - Using stable models
 export const LLM_MODELS = {
-    PRIMARY: "gemini-3-flash-preview",
-    FALLBACK: "gemini-2.5-flash",
+    PRIMARY: "gemini-2.5-flash",      // Fast, efficient, cost-effective
+    FALLBACK: "gemini-2.5-pro",       // Powerful fallback for complex cases
+    // PREVIEW: "gemini-3-flash-preview", // Unstable - commented out for when stable version is available
 } as const
 
 export type LLMModel = typeof LLM_MODELS[keyof typeof LLM_MODELS]
 
 // Default configuration for different use cases
+// NOTE: thinkingConfig removed - was causing issues with gemini-3-flash-preview
+// Uncomment and add back when using stable gemini-3.x models in the future
 export const LLM_CONFIGS = {
     chat: {
         maxOutputTokens: 8192,
         temperature: 0.2,
         responseMimeType: "application/json" as const,
-        thinkingConfig: {
-            thinkingLevel: "minimal" as const,
-        },
+        // thinkingConfig: {
+        //     thinkingLevel: "minimal" as const,
+        // },
     },
     creation: {
         maxOutputTokens: 8192,
         temperature: 0.2,
         responseMimeType: "application/json" as const,
-        thinkingConfig: {
-            thinkingLevel: "medium" as const,
-        },
+        // thinkingConfig: {
+        //     thinkingLevel: "medium" as const,
+        // },
     },
     adaptation: {
         maxOutputTokens: 8192,
         temperature: 0.4,
         responseMimeType: "application/json" as const,
-        thinkingConfig: {
-            thinkingLevel: "medium" as const,
-        },
+        // thinkingConfig: {
+        //     thinkingLevel: "medium" as const,
+        // },
     },
     coverLetter: {
         maxOutputTokens: 4096,
         temperature: 0.45,
         responseMimeType: "text/plain" as const,
-        thinkingConfig: {
-            thinkingLevel: "medium" as const,
-        },
+        // thinkingConfig: {
+        //     thinkingLevel: "medium" as const,
+        // },
     },
     skillMap: {
         maxOutputTokens: 8192,
         temperature: 0.2,
         responseMimeType: "application/json" as const,
-        thinkingConfig: {
-            thinkingLevel: "medium" as const,
-        },
+        // thinkingConfig: {
+        //     thinkingLevel: "medium" as const,
+        // },
     },
 } as const
 
@@ -98,9 +101,6 @@ interface LLMRequestOptions {
         maxOutputTokens?: number
         temperature?: number
         responseMimeType?: "application/json" | "text/plain"
-        thinkingConfig?: {
-            thinkingLevel: "minimal" | "low" | "medium" | "high"
-        }
     }
     enableFallback?: boolean
     maxRetries?: number
@@ -168,7 +168,6 @@ export function parseRefusalInfo(text: string): RefusalInfo | null {
 export function extractResponseText(response: GenerateContentResponse | Record<string, unknown>): string {
     try {
         // Method 1: response.text property (string or getter)
-        // For Gemini 3 with thinking, .text should aggregate all text parts
         if (typeof response?.text === "string" && response.text.length > 0) {
             return response.text
         }
@@ -193,40 +192,75 @@ export function extractResponseText(response: GenerateContentResponse | Record<s
         }> | undefined
 
         if (candidates && candidates.length > 0) {
+            const firstCandidate = candidates[0] as any
+            const finishReason = firstCandidate?.finishReason
+            const partsCount = firstCandidate?.content?.parts?.length || 0
+
+            // EARLY CHECK: Detect SAFETY and other blocking reasons BEFORE trying to extract text
+            if (finishReason && finishReason !== "STOP") {
+                console.warn(`[LLM] ⚠ Response blocked with finishReason: ${finishReason}`)
+
+                // Throw a special error that routes can catch
+                const blockError = new Error(
+                    finishReason === "SAFETY"
+                        ? "Content blocked by safety filters"
+                        : finishReason === "MAX_TOKENS"
+                            ? "Response truncated due to token limit"
+                            : finishReason === "RECITATION"
+                                ? "Content blocked due to recitation detection"
+                                : `Response blocked: ${finishReason}`
+                ) as Error & { code?: string; finishReason?: string }
+                blockError.code = "BLOCKED_RESPONSE"
+                blockError.finishReason = finishReason
+
+                throw blockError
+            }
+
             const parts = candidates[0]?.content?.parts
+
             if (parts && parts.length > 0) {
-                // Filter out thought parts, only get text parts
-                // In thinking models, regular output has thought: false or no thought field
-                const textParts = parts
-                    .filter(part => !part.thought && part.text)
-                    .map(part => part.text)
-                    .join("")
-
-                if (textParts.length > 0) {
-                    return textParts
-                }
-
-                if (textParts.length > 0) {
-                    return textParts
-                }
-
-                // Fallback: concatenate ALL text parts if filtering resulted in empty string
-                // Sometimes the SDK might not flag 'thought' correctly or we want to capture everything
+                // Simply concatenate all text parts (no thought filtering needed for stable models)
                 const allTextParts = parts
-                    .filter(part => part.text)
-                    .map(part => part.text)
+                    .filter((part: any) => part.text)
+                    .map((part: any) => part.text)
                     .join("")
 
                 if (allTextParts.length > 0) {
+                    console.log("[LLM] ✓ Extracted text, length:", allTextParts.length)
                     return allTextParts
                 }
+
+                console.warn("[LLM] ✗ Parts exist but no text content")
+
+                // LEGACY CODE for gemini-3-flash-preview with thinking mode (commented out)
+                // Uncomment when using stable gemini-3.x models with thinking support
+                // const textParts = parts
+                //     .filter(part => !part.thought && part.text)
+                //     .map(part => part.text)
+                //     .join("")
+                // if (textParts.length > 0) {
+                //     console.log("[LLM] ✓ Extracted via thought-filtered parts")
+                //     return textParts
+                // }
+            } else {
+                console.warn("[LLM] ✗ No parts array in candidates[0].content - parts is",
+                    parts === undefined ? "undefined" : parts === null ? "null" : "empty array")
             }
+        } else {
+            console.warn("[LLM] ✗ No candidates in response or candidates array is empty. Candidates:",
+                candidates === undefined ? "undefined" : candidates === null ? "null" : `array length ${candidates.length}`)
         }
 
-        console.warn("[LLM] Could not extract text from response. Response keys:", Object.keys(response || {}))
+
+        console.warn("[LLM] ✗ Could not extract text from response")
         return ""
     } catch (error) {
-        console.error("[LLM] Error extracting response text:", error)
+        // CRITICAL: Re-throw BLOCKED_RESPONSE errors so routes can handle them
+        if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+            throw error
+        }
+
+        console.error("[LLM] ✗ Error extracting response text:", error instanceof Error ? error.message : "Unknown error")
         return ""
     }
 }
@@ -338,37 +372,29 @@ export class LLMClient {
             ? [{ role: "user" as const, parts: [{ text: prompt }] }]
             : prompt
 
-        // Check if the model supports thinkingConfig (only Gemini 3 series and certain preview models)
-        const supportsThinking = model.includes("gemini-3") || model.includes("gemini-2.5-flash-preview")
+        console.log(`${logPrefix} Starting generation - Model: ${model}`)
 
-        // Strip thinkingConfig for models that don't support it
-        const config = supportsThinking
-            ? rawConfig
-            : (() => {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { thinkingConfig, ...rest } = rawConfig as Record<string, unknown>
-                return rest
-            })()
+        // Use config as-is for stable models (no thinkingConfig to strip)
+        const config = rawConfig
 
         // Try primary model
         try {
             const response = await this.callWithRetry(model, contents, config, maxRetries, logPrefix)
-            console.log(`${logPrefix} ✓ Success with model: ${model} (thinking: ${supportsThinking ? "enabled" : "disabled"})`)
+            const extractedText = extractResponseText(response)
+            console.log(`${logPrefix} ✓ model: ${model}, length: ${extractedText.length}`)
             return {
-                text: extractResponseText(response),
+                text: extractedText,
                 model,
                 usedFallback: false,
             }
         } catch (primaryError) {
-            console.error(`${logPrefix} Primary model (${model}) failed:`, primaryError)
+            console.error(`${logPrefix} ✗ Primary failed:`, primaryError instanceof Error ? primaryError.message : "Unknown")
 
             // Attempt fallback if enabled
             if (enableFallback && model !== LLM_MODELS.FALLBACK) {
-                console.log(`${logPrefix} Attempting fallback to ${LLM_MODELS.FALLBACK}`)
+                console.log(`${logPrefix} ⚠ Attempting fallback`)
 
-                // Ensure thinkingConfig is removed for fallback (gemini-2.5-flash doesn't support it)
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { thinkingConfig, ...fallbackConfig } = config as Record<string, unknown>
+                const fallbackConfig = config
 
                 try {
                     const response = await this.callWithRetry(
@@ -379,14 +405,15 @@ export class LLMClient {
                         logPrefix
                     )
 
-                    console.log(`${logPrefix} ✓ Fallback success with model: ${LLM_MODELS.FALLBACK} (thinking: disabled)`)
+                    const extractedText = extractResponseText(response)
+                    console.log(`${logPrefix} ✓ Fallback OK, length: ${extractedText.length}`)
                     return {
-                        text: extractResponseText(response),
+                        text: extractedText,
                         model: LLM_MODELS.FALLBACK,
                         usedFallback: true,
                     }
                 } catch (fallbackError) {
-                    console.error(`${logPrefix} Fallback model also failed:`, fallbackError)
+                    console.error(`${logPrefix} ✗ Fallback failed:`, fallbackError instanceof Error ? fallbackError.message : "Unknown")
                     throw new LLMError(
                         "All models failed to generate content",
                         categorizeError(fallbackError),
@@ -428,7 +455,7 @@ export class LLMClient {
             try {
                 if (attempt > 0) {
                     const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 8000)
-                    console.log(`${logPrefix} Retry ${attempt}/${maxRetries} after ${backoffMs}ms`)
+                    console.log(`${logPrefix} ⏱ Retry ${attempt}/${maxRetries}`)
                     await sleep(backoffMs)
                 }
 
@@ -442,12 +469,13 @@ export class LLMClient {
                 return response
             } catch (error) {
                 lastError = error
+                const errorType = categorizeError(error)
+                const isRetryable = isRetryableError(error)
 
-                if (!isRetryableError(error) || attempt === maxRetries) {
+                if (!isRetryable || attempt === maxRetries) {
+                    console.error(`${logPrefix} ✗ Failed after ${attempt + 1} attempts (${errorType})`)
                     throw error
                 }
-
-                console.warn(`${logPrefix} Attempt ${attempt + 1} failed, will retry:`, error)
             }
         }
 

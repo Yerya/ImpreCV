@@ -210,6 +210,21 @@ export async function POST(req: NextRequest) {
                 success: true
             })
         } catch (error) {
+            // Check for blocked response (SAFETY, MAX_TOKENS, etc.)
+            if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+                const blockError = error as Error & { finishReason?: string }
+                userLogger.warn("llm_blocked_response", { finishReason: blockError.finishReason })
+
+                return NextResponse.json({
+                    message: blockError.finishReason === "SAFETY"
+                        ? "I couldn't process this due to safety filters. Please rephrase your message."
+                        : blockError.finishReason === "MAX_TOKENS"
+                            ? "The content is too long. Please try a shorter message."
+                            : "I couldn't process this request.",
+                    modifications: []
+                }, { status: 422 })
+            }
+
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback: false,

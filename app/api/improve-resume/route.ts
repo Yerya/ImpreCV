@@ -263,6 +263,20 @@ MINIMAL VALID JSON TEMPLATE:
             modelUsed = response.model;
             usedFallback = response.usedFallback;
         } catch (error) {
+            // Check for blocked response (SAFETY, MAX_TOKENS, etc.)
+            if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+                const blockError = error as Error & { finishReason?: string }
+                userLogger.warn("llm_blocked_response", { finishReason: blockError.finishReason })
+
+                return NextResponse.json({
+                    error: blockError.finishReason === "SAFETY"
+                        ? "The AI couldn't process this resume due to content safety filters. Please try rephrasing sensitive information."
+                        : blockError.finishReason === "MAX_TOKENS"
+                            ? "The resume is too long to process. Please shorten it and try again."
+                            : blockError.message || "AI service couldn't process this request"
+                }, { status: 422 })
+            }
+
             if (error instanceof LLMError) {
                 userLogger.error("llm_error");
                 if (error.type === "RATE_LIMIT") {

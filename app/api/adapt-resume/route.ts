@@ -416,6 +416,20 @@ FINAL REMINDERS:
                 success: true
             })
         } catch (error) {
+            // Check for blocked response (SAFETY, MAX_TOKENS, etc.)
+            if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+                const blockError = error as Error & { finishReason?: string }
+                userLogger.warn("llm_blocked_response", { finishReason: blockError.finishReason })
+
+                return NextResponse.json({
+                    error: blockError.finishReason === "SAFETY"
+                        ? "The AI couldn't process this content due to safety filters. Please try rephrasing sensitive information."
+                        : blockError.finishReason === "MAX_TOKENS"
+                            ? "The content is too long to process. Please shorten it and try again."
+                            : blockError.message || "AI service couldn't process this request"
+                }, { status: 422 })
+            }
+
             userLogger.llmComplete({
                 model: modelUsed,
                 usedFallback: false,
@@ -433,6 +447,15 @@ FINAL REMINDERS:
             }
             userLogger.requestComplete(500, { reason: "llm_failed" })
             return NextResponse.json({ error: "Failed to adapt resume" }, { status: 500 })
+        }
+
+        // Check for empty response
+        if (!rawResponseText || rawResponseText.trim().length === 0) {
+            userLogger.error("empty_llm_response", undefined, { model: modelUsed, usedFallback })
+            userLogger.requestComplete(500, { reason: "empty_response" })
+            return NextResponse.json({
+                error: "AI returned an empty response. Please try again."
+            }, { status: 500 })
         }
 
         if (isLikelyRefusalResponse(rawResponseText)) {
