@@ -259,7 +259,7 @@ Include additional sections (certifications, languages, projects) only if releva
         try {
             const response = await llmClient.generate(prompt, {
                 model: LLM_MODELS.PRIMARY,
-                configType: "adaptation",
+                configType: "creation",
                 enableFallback: true,
                 logPrefix: "[Create]"
             });

@@ -4,9 +4,7 @@
  * This module provides a unified interface for interacting with Google Gemini models,
  * implementing automatic fallback between models and robust error handling.
  * 
- * Architecture:
- * - Primary model: gemini-2.5-flash (latest, most capable)
- * - Fallback model: gemini-2.0-flash (stable, reliable)
+
  * 
  * Features:
  * - Automatic model fallback on errors
@@ -30,6 +28,14 @@ export type LLMModel = typeof LLM_MODELS[keyof typeof LLM_MODELS]
 // Default configuration for different use cases
 export const LLM_CONFIGS = {
     chat: {
+        maxOutputTokens: 8192,
+        temperature: 0.2,
+        responseMimeType: "application/json" as const,
+        thinkingConfig: {
+            thinkingLevel: "minimal" as const,
+        },
+    },
+    creation: {
         maxOutputTokens: 8192,
         temperature: 0.2,
         responseMimeType: "application/json" as const,
@@ -94,7 +100,7 @@ interface LLMRequestOptions {
         temperature?: number
         responseMimeType?: "application/json" | "text/plain"
         thinkingConfig?: {
-            thinkingLevel: "medium"
+            thinkingLevel: "minimal" | "low" | "medium" | "high"
         }
     }
     enableFallback?: boolean
@@ -201,10 +207,19 @@ export function extractResponseText(response: GenerateContentResponse | Record<s
                     return textParts
                 }
 
-                // Fallback: just get the first text we find
-                const anyText = parts.find(part => part.text)?.text
-                if (anyText) {
-                    return anyText
+                if (textParts.length > 0) {
+                    return textParts
+                }
+
+                // Fallback: concatenate ALL text parts if filtering resulted in empty string
+                // Sometimes the SDK might not flag 'thought' correctly or we want to capture everything
+                const allTextParts = parts
+                    .filter(part => part.text)
+                    .map(part => part.text)
+                    .join("")
+
+                if (allTextParts.length > 0) {
+                    return allTextParts
                 }
             }
         }
@@ -402,7 +417,7 @@ export class LLMClient {
             temperature?: number
             responseMimeType?: "application/json" | "text/plain"
             thinkingConfig?: {
-                thinkingLevel: "medium"
+                thinkingLevel: "minimal" | "low" | "medium" | "high"
             }
         },
         maxRetries: number,
