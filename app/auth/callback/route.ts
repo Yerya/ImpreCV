@@ -4,23 +4,43 @@ import { cookies } from "next/headers"
 import { getSafeRedirectPath } from "@/lib/auth/redirect"
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
+  const requestUrl = new URL(request.url)
+  const { searchParams } = requestUrl
   const code = searchParams.get("code")
   const next = getSafeRedirectPath(searchParams.get("next"), "/dashboard")
   const error = searchParams.get("error")
   const errorDescription = searchParams.get("error_description")
 
+  // Helper to determine the correct origin (handles proxies/containers)
+  const getOrigin = () => {
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      return process.env.NEXT_PUBLIC_SITE_URL
+    }
+
+    const forwardedHost = request.headers.get("x-forwarded-host")
+    const forwardedProto = request.headers.get("x-forwarded-proto")
+
+    if (forwardedHost) {
+      return `${forwardedProto || "https"}://${forwardedHost}`
+    }
+
+    return requestUrl.origin
+  }
+
+  const origin = getOrigin()
+
   // Handle OAuth errors
   if (error) {
     console.error("OAuth error:", error, errorDescription)
-    const url = new URL("/login", request.url)
+    // Use the computed origin for redirects
+    const url = new URL("/login", origin)
     url.searchParams.set("error", "oauth_error")
     url.searchParams.set("message", errorDescription || "Failed to sign in with provider")
     return NextResponse.redirect(url)
   }
 
   if (!code) {
-    const url = new URL("/login", request.url)
+    const url = new URL("/login", origin)
     url.searchParams.set("error", "missing_code")
     return NextResponse.redirect(url)
   }
@@ -29,7 +49,7 @@ export async function GET(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    const url = new URL("/login", request.url)
+    const url = new URL("/login", origin)
     url.searchParams.set("error", "supabase_not_configured")
     return NextResponse.redirect(url)
   }
@@ -55,11 +75,11 @@ export async function GET(request: NextRequest) {
 
   if (exchangeError) {
     console.error("Code exchange error:", exchangeError.message)
-    const url = new URL("/login", request.url)
+    const url = new URL("/login", origin)
     url.searchParams.set("error", "exchange_failed")
     url.searchParams.set("message", exchangeError.message)
     return NextResponse.redirect(url)
   }
 
-  return NextResponse.redirect(new URL(next, request.url))
+  return NextResponse.redirect(new URL(next, origin))
 }
