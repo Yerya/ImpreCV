@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -24,8 +24,29 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [hasSession, setHasSession] = useState<boolean | null>(null)
 
   const supabaseConfigured = isSupabaseConfigured()
+
+  // Check if user has a valid session (from recovery link)
+  useEffect(() => {
+    if (!supabaseConfigured) {
+      setHasSession(false)
+      return
+    }
+
+    const checkSession = async () => {
+      const supabase = getSupabaseBrowserClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setHasSession(!!user)
+      
+      if (!user) {
+        setError("Invalid or expired reset link. Please request a new password reset.")
+      }
+    }
+    
+    checkSession()
+  }, [supabaseConfigured])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,7 +149,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  disabled={!supabaseConfigured}
+                  disabled={!supabaseConfigured || hasSession === false || hasSession === null}
                   className="bg-background/50 pr-10"
                 />
                 <button
@@ -157,7 +178,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
-                  disabled={!supabaseConfigured}
+                  disabled={!supabaseConfigured || hasSession === false || hasSession === null}
                   className="bg-background/50 pr-10"
                 />
                 <button
@@ -179,8 +200,13 @@ export default function ResetPasswordPage() {
                 {error}
               </div>
             )}
-            <Button type="submit" className="w-full" disabled={loading || !supabaseConfigured}>
-              {loading ? (
+            <Button type="submit" className="w-full" disabled={loading || !supabaseConfigured || hasSession === false}>
+              {hasSession === null ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying session...
+                </>
+              ) : loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating password...
@@ -189,6 +215,16 @@ export default function ResetPasswordPage() {
                 "Update Password"
               )}
             </Button>
+            {hasSession === false && (
+              <div className="text-center">
+                <Link 
+                  href="/forgot-password" 
+                  className="text-sm text-primary hover:underline"
+                >
+                  Request a new password reset link
+                </Link>
+              </div>
+            )}
           </form>
         </Card>
       </div>

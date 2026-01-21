@@ -45,8 +45,9 @@ export default function ForgotPasswordPage() {
 
     try {
       const supabase = getSupabaseBrowserClient()
+      // Redirect to /auth/confirm which will verify the token and then redirect to /reset-password
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/confirm`,
       })
 
       if (error) throw error

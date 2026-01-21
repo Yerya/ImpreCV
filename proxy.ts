@@ -43,8 +43,8 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes
-  const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings", "/resume-editor"]
+  // Protected routes - require authentication
+  const protectedPaths = ["/dashboard", "/analysis", "/resume-rewrite", "/cover-letter", "/settings", "/resume-editor", "/skill-map"]
   const isProtectedPath = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path))
 
   if (isProtectedPath && !user) {
@@ -54,8 +54,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages
-  if ((request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup") && user) {
+  // Auth pages that logged-in users should be redirected away from
+  const authPages = ["/login", "/signup", "/forgot-password"]
+  const isAuthPage = authPages.includes(request.nextUrl.pathname)
+  
+  // Redirect authenticated users away from auth pages (except reset-password which needs session)
+  if (isAuthPage && user) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     return NextResponse.redirect(url)

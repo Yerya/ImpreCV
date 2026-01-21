@@ -3,7 +3,6 @@
 import { useState } from "react"
 import type React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,10 +14,10 @@ import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSignUpMutation } from "@/features/api/authApi"
 import { BrandMark } from "@/components/brand-mark"
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
 import { toast } from "sonner"
 
 export default function SignupPage() {
-  const router = useRouter()
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -57,15 +56,14 @@ export default function SignupPage() {
     setLoading(true)
     setError(null)
     try {
-      const redirectTo = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`
+      // Note: emailRedirectTo is for the link in the email - it should point to auth/confirm
+      // The auth/confirm route will then redirect to /dashboard after verification
+      const redirectTo = `${window.location.origin}/auth/confirm`
       const res = await signUp({ fullName, email, password, redirectTo })
       if ('data' in res) {
         if (res.data?.ok) {
           toast.success(`Confirmation email sent to ${email}. Check your inbox to finish signup.`)
           setSuccess(true)
-          setTimeout(() => {
-            router.push("/dashboard")
-          }, 2000)
         } else {
           setError(res.data?.message || "Failed to sign up")
         }
@@ -94,8 +92,11 @@ export default function SignupPage() {
             Confirmation email sent to <span className="font-medium text-foreground">{email}</span>.
           </p>
           <p className="text-muted-foreground mb-3">Check your inbox to finish signup.</p>
-          <p className="text-muted-foreground mb-6">Redirecting you to your dashboard...</p>
-          <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+          <Link href="/login" className="inline-block mt-4">
+            <Button variant="outline" className="bg-transparent">
+              Go to Login
+            </Button>
+          </Link>
         </Card>
       </div>
     )
@@ -131,7 +132,7 @@ export default function SignupPage() {
             <h1 className="text-3xl font-bold mb-2">Create your account</h1>
             <p className="text-muted-foreground">Start optimizing your job applications today</p>
           </div>
-          <form onSubmit={handleSignup} className="space-y-6">
+          <form onSubmit={handleSignup} className="flex flex-col gap-6">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
@@ -202,6 +203,15 @@ export default function SignupPage() {
                 "Create Account"
               )}
             </Button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border/50" />
+              <span className="text-xs text-muted-foreground/70">or</span>
+              <div className="flex-1 h-px bg-border/50" />
+            </div>
+
+            <GoogleSignInButton />
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}

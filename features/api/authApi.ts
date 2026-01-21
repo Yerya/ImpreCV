@@ -107,10 +107,30 @@ export const authApi = createApi({
         }
       },
     }),
+    signInWithGoogle: builder.mutation<{ ok: boolean; message?: string }, { redirectTo?: string }>({
+      async queryFn({ redirectTo }) {
+        if (!isSupabaseConfigured()) {
+          return { data: { ok: false, message: "Supabase is not configured." } }
+        }
+        try {
+          const supabase = getSupabaseBrowserClient()
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: redirectTo || `${window.location.origin}/auth/callback`,
+            },
+          })
+          if (error) return { data: { ok: false, message: error.message } }
+          return { data: { ok: true } }
+        } catch (e: unknown) {
+          const err = e as Error
+          return { data: { ok: false, message: err?.message || "Failed to sign in with Google" } }
+        }
+      },
+    }),
   }),
 })
 
-export const { useSignInMutation, useSignUpMutation, useSignOutMutation, useUpdateProfileMutation, useDeleteAccountMutation } = authApi
-
+export const { useSignInMutation, useSignUpMutation, useSignOutMutation, useUpdateProfileMutation, useDeleteAccountMutation, useSignInWithGoogleMutation } = authApi
 
 

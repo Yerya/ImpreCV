@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
 import type React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { PasswordEyeIcon, PasswordEyeOffIcon } from "@/components/icons/password-eye"
 import { isSupabaseConfigured } from "@/lib/supabase/client"
 import { SupabaseBanner } from "@/components/supabase-banner"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSignInMutation } from "@/features/api/authApi"
 import { BrandMark } from "@/components/brand-mark"
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
+import { getSafeRedirectPath } from "@/lib/auth/redirect"
 import LoginSkeleton from "./login-skeleton"
 
 function LoginForm() {
@@ -24,11 +26,31 @@ function LoginForm() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [signIn] = useSignInMutation()
 
   const supabaseConfigured = isSupabaseConfigured()
-  const redirectTo = searchParams.get("redirect") || "/dashboard"
+  const redirectTo = getSafeRedirectPath(searchParams.get("redirect"), "/dashboard")
+
+  // Handle URL error and success messages from auth confirmation
+  useEffect(() => {
+    const urlError = searchParams.get("error")
+    const urlMessage = searchParams.get("message")
+    const confirmed = searchParams.get("confirmed")
+
+    if (urlError && urlMessage) {
+      setError(urlMessage)
+    } else if (urlError === "link_expired") {
+      setError("Your confirmation link has expired. Please request a new one.")
+    } else if (urlError === "invalid_token") {
+      setError("Invalid confirmation link. Please try again.")
+    }
+
+    if (confirmed === "true") {
+      setSuccessMessage("Your email has been confirmed! You can now log in.")
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,7 +122,7 @@ function LoginForm() {
             <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
             <p className="text-muted-foreground">Log in to your account to continue</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="flex flex-col gap-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -145,6 +167,12 @@ function LoginForm() {
                 </button>
               </div>
             </div>
+            {successMessage && (
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                {successMessage}
+              </div>
+            )}
             {error && (
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                 {error}
@@ -160,7 +188,18 @@ function LoginForm() {
                 "Log In"
               )}
             </Button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border/50" />
+              <span className="text-xs text-muted-foreground/70">or</span>
+              <div className="flex-1 h-px bg-border/50" />
+            </div>
+
+            {/* Google Sign In */}
+            <GoogleSignInButton redirectTo={redirectTo} />
           </form>
+
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-foreground hover:underline font-medium">
