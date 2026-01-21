@@ -2,7 +2,7 @@ import { type EmailOtpType } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { getSafeRedirectPath } from "@/lib/auth/redirect"
+import { getSafeRedirectPath, getServerOrigin } from "@/lib/auth/redirect"
 
 export async function HEAD() {
   return new NextResponse(null, { status: 200 })
@@ -15,23 +15,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null
   const next = getSafeRedirectPath(searchParams.get("next") ?? searchParams.get("redirect_to"), "/dashboard")
 
-  // Helper to determine the correct origin (handles proxies/containers)
-  const getOrigin = () => {
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      return process.env.NEXT_PUBLIC_SITE_URL
-    }
-
-    const forwardedHost = request.headers.get("x-forwarded-host")
-    const forwardedProto = request.headers.get("x-forwarded-proto")
-
-    if (forwardedHost) {
-      return `${forwardedProto || "https"}://${forwardedHost}`
-    }
-
-    return requestUrl.origin
-  }
-
-  const origin = getOrigin()
+  const origin = getServerOrigin(request)
 
   if (!token_hash || !type) {
     const url = new URL("/login", origin)

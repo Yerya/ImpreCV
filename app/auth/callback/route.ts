@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { getSafeRedirectPath } from "@/lib/auth/redirect"
+import { getSafeRedirectPath, getServerOrigin } from "@/lib/auth/redirect"
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -11,23 +11,7 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error")
   const errorDescription = searchParams.get("error_description")
 
-  // Helper to determine the correct origin (handles proxies/containers)
-  const getOrigin = () => {
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      return process.env.NEXT_PUBLIC_SITE_URL
-    }
-
-    const forwardedHost = request.headers.get("x-forwarded-host")
-    const forwardedProto = request.headers.get("x-forwarded-proto")
-
-    if (forwardedHost) {
-      return `${forwardedProto || "https"}://${forwardedHost}`
-    }
-
-    return requestUrl.origin
-  }
-
-  const origin = getOrigin()
+  const origin = getServerOrigin(request)
 
   // Handle OAuth errors
   if (error) {
