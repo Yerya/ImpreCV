@@ -20,7 +20,6 @@ import type { GenerateContentResponse } from "@google/genai"
 export const LLM_MODELS = {
     PRIMARY: "gemini-3-flash-preview",
     FALLBACK: "gemini-2.5-flash",
-    PREVIEW: "gemini-2.5-flash-preview-05-20",
 } as const
 
 export type LLMModel = typeof LLM_MODELS[keyof typeof LLM_MODELS]

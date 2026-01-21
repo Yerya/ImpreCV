@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  const userLogger = createLogger("skill-map", user.id)
-  userLogger.requestStart("/api/generate-skill-map")
+    const userLogger = createLogger("skill-map", user.id)
+    userLogger.requestStart("/api/generate-skill-map")
 
     const body = await request.json().catch(() => ({}))
     const { rewrittenResumeId } = body
@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
     // Helper to call LLM with fallback and parse JSON
     const callLLM = async (prompt: string, analysisType: string): Promise<unknown> => {
       const response = await llmClient.generate(prompt, {
-        model: LLM_MODELS.FALLBACK, // Use 2.0-flash for skill-map (more stable for analysis)
+        model: LLM_MODELS.PRIMARY,
         configType: "skillMap",
         enableFallback: true,
         logPrefix: "[SkillMap]"
