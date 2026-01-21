@@ -120,10 +120,7 @@ export default function DashboardClient({
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem("cvify:lastAdaptRequest")
-    if (stored) {
-      setLastRequestKey(stored)
-    }
+
     const storedCoverLetterPref = window.localStorage.getItem("cvify:shouldGenerateCoverLetter")
     if (storedCoverLetterPref) {
       setShouldGenerateCoverLetter(storedCoverLetterPref === "true")
@@ -165,16 +162,10 @@ export default function DashboardClient({
 
   const setRequestKey = (key: string) => {
     setLastRequestKey(key)
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("cvify:lastAdaptRequest", key)
-    }
   }
 
   const clearRequestKey = () => {
     setLastRequestKey(null)
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("cvify:lastAdaptRequest")
-    }
   }
 
   const updateCoverLetterPreference = (value: boolean) => {
