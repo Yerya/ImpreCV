@@ -9,13 +9,32 @@ export async function HEAD() {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
+  const requestUrl = new URL(request.url)
+  const { searchParams } = requestUrl
   const token_hash = searchParams.get("token_hash")
   const type = searchParams.get("type") as EmailOtpType | null
   const next = getSafeRedirectPath(searchParams.get("next") ?? searchParams.get("redirect_to"), "/dashboard")
 
+  // Helper to determine the correct origin (handles proxies/containers)
+  const getOrigin = () => {
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      return process.env.NEXT_PUBLIC_SITE_URL
+    }
+
+    const forwardedHost = request.headers.get("x-forwarded-host")
+    const forwardedProto = request.headers.get("x-forwarded-proto")
+
+    if (forwardedHost) {
+      return `${forwardedProto || "https"}://${forwardedHost}`
+    }
+
+    return requestUrl.origin
+  }
+
+  const origin = getOrigin()
+
   if (!token_hash || !type) {
-    const url = new URL("/login", request.url)
+    const url = new URL("/login", origin)
     url.searchParams.set("error", "missing_params")
     return NextResponse.redirect(url)
   }
@@ -24,7 +43,7 @@ export async function GET(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    const url = new URL("/login", request.url)
+    const url = new URL("/login", origin)
     url.searchParams.set("error", "supabase_not_configured")
     return NextResponse.redirect(url)
   }
@@ -54,20 +73,20 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("Auth confirmation error:", error.message)
-    
+
     // Handle specific error cases
     if (error.message.includes("expired")) {
-      const url = new URL("/login", request.url)
+      const url = new URL("/login", origin)
       url.searchParams.set("error", "link_expired")
       url.searchParams.set("message", "Your confirmation link has expired. Please request a new one.")
       return NextResponse.redirect(url)
     } else if (error.message.includes("invalid")) {
-      const url = new URL("/login", request.url)
+      const url = new URL("/login", origin)
       url.searchParams.set("error", "invalid_token")
       url.searchParams.set("message", "Invalid confirmation link. Please try again.")
       return NextResponse.redirect(url)
     } else {
-      const url = new URL("/login", request.url)
+      const url = new URL("/login", origin)
       url.searchParams.set("error", "verification_failed")
       url.searchParams.set("message", error.message)
       return NextResponse.redirect(url)
@@ -76,8 +95,8 @@ export async function GET(request: NextRequest) {
 
   // Special handling for password recovery
   if (type === "recovery") {
-    return NextResponse.redirect(new URL("/reset-password", request.url))
+    return NextResponse.redirect(new URL("/reset-password", origin))
   }
 
-  return NextResponse.redirect(new URL(next, request.url))
+  return NextResponse.redirect(new URL(next, origin))
 }
