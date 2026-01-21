@@ -94,9 +94,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                             <div className="flex items-center gap-3">
                                 {(showJobRelatedTabs || availableResumes.length > 1) && (
                                     <TabsList>
-                                        {availableResumes.length > 1 && (
-                                            <TabsTrigger value="resume">Resume</TabsTrigger>
-                                        )}
+                                        <TabsTrigger value="resume">Resume</TabsTrigger>
                                         {showJobRelatedTabs && (
                                             <>
                                                 <TabsTrigger value="cover">Cover Letter</TabsTrigger>
@@ -235,7 +233,7 @@ export const DesktopResumeEditor = memo(function DesktopResumeEditor({
                             onDelete={handleDeleteSaved}
                             variant="desktop"
                         />
-                        
+
                         {/* ATS Score Card - show only for improved resumes */}
                         {activeResumeMode === 'improved' && (activeAtsScoreBefore != null || activeAtsScoreAfter != null) && (
                             <ATSScoreCard
