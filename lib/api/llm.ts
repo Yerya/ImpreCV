@@ -63,7 +63,7 @@ export const LLM_CONFIGS = {
     },
     skillMap: {
         maxOutputTokens: 8192,
-        temperature: 0.2,
+        temperature: 0.1,
         responseMimeType: "application/json" as const,
         // thinkingConfig: {
         //     thinkingLevel: "medium" as const,

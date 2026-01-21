@@ -31,13 +31,18 @@ Return this JSON:
 If you must refuse or cannot comply, return ONLY:
 {"status":"refused","message":"...","refusalReason":"..."}
 
+SCORING (be consistent, variance <5 pts):
+- 90-100: Covers 80%+ requirements explicitly
+- 80-89: Covers 60-80% requirements (adapted resumes should score here minimum)
+- 70-79: Covers 40-60% requirements  
+- Below 70: Significant gaps
+
 Rules:
-- matched: skills in BOTH resume and job
-- transferable: related skills from resume applicable to job
-- missing: job requirements NOT in resume
+- matched: skills explicitly in BOTH resume and job description
+- transferable: related skills from resume applicable to job requirements
+- missing: job requirements clearly NOT demonstrated in resume
 - priority: high=must-have, medium=nice-to-have, low=bonus
-- Keep skill names concise (1-3 words)
-- Max 5 skills per category`
+- Max 5 skills per category, concise names (1-3 words)`
 }
 
 // Prompt for comparing original vs adapted resume (adaptation quality)
@@ -64,6 +69,12 @@ Return this JSON:
 }
 If you must refuse or cannot comply, return ONLY:
 {"status":"refused","message":"...","refusalReason":"..."}
+
+SCORING (be consistent, variance <5 pts):
+- 85-100: Excellent keyword alignment + experience reframing
+- 80-84: Strong job-specific improvements (good adaptations score here minimum)
+- 70-79: Moderate improvements
+- Below 70: Minimal or poor adaptation
 
 Focus on: keyword alignment, skill emphasis, experience reframing.`
 }
