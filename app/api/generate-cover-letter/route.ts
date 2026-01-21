@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
       })
     } catch (error) {
       // Check for blocked response (SAFETY, MAX_TOKENS, etc.)
-      if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+      if (error instanceof Error && (error as Error & { code?: string }).code === "BLOCKED_RESPONSE") {
         const blockError = error as Error & { finishReason?: string }
         userLogger.warn("llm_blocked_response", { finishReason: blockError.finishReason })
 

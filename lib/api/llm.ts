@@ -182,19 +182,23 @@ export function extractResponseText(response: GenerateContentResponse | Record<s
 
         // Method 3: candidates array (raw API response or fallback)
         // For thinking models, we need to find the text parts (not thought parts)
-        const candidates = response?.candidates as Array<{
+        interface CandidatePart {
+            text?: string
+            thought?: boolean
+        }
+
+        interface Candidate {
             content?: {
-                parts?: Array<{
-                    text?: string
-                    thought?: boolean
-                }>
+                parts?: CandidatePart[]
             }
-        }> | undefined
+            finishReason?: string
+        }
+
+        const candidates = response?.candidates as Candidate[] | undefined
 
         if (candidates && candidates.length > 0) {
-            const firstCandidate = candidates[0] as any
+            const firstCandidate = candidates[0]
             const finishReason = firstCandidate?.finishReason
-            const partsCount = firstCandidate?.content?.parts?.length || 0
 
             // EARLY CHECK: Detect SAFETY and other blocking reasons BEFORE trying to extract text
             if (finishReason && finishReason !== "STOP") {
@@ -221,8 +225,8 @@ export function extractResponseText(response: GenerateContentResponse | Record<s
             if (parts && parts.length > 0) {
                 // Simply concatenate all text parts (no thought filtering needed for stable models)
                 const allTextParts = parts
-                    .filter((part: any) => part.text)
-                    .map((part: any) => part.text)
+                    .filter((part) => part.text)
+                    .map((part) => part.text)
                     .join("")
 
                 if (allTextParts.length > 0) {
@@ -256,7 +260,7 @@ export function extractResponseText(response: GenerateContentResponse | Record<s
         return ""
     } catch (error) {
         // CRITICAL: Re-throw BLOCKED_RESPONSE errors so routes can handle them
-        if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+        if (error instanceof Error && (error as Error & { code?: string }).code === "BLOCKED_RESPONSE") {
             throw error
         }
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isMeaningfulText, sanitizePlainText } from "@/lib/text-utils";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { parseMarkdownToResumeData } from "@/lib/resume-parser-structured";
 import { defaultResumeVariant } from "@/lib/resume-templates/variants";
 import { createLLMClient, LLMError, LLM_MODELS, cleanJsonResponse, isLikelyRefusalResponse, getRefusalInfo } from "@/lib/api/llm";
 import { createLogger } from "@/lib/api/logger";
@@ -264,7 +263,7 @@ MINIMAL VALID JSON TEMPLATE:
             usedFallback = response.usedFallback;
         } catch (error) {
             // Check for blocked response (SAFETY, MAX_TOKENS, etc.)
-            if (error instanceof Error && (error as any).code === "BLOCKED_RESPONSE") {
+            if (error instanceof Error && (error as Error & { code?: string }).code === "BLOCKED_RESPONSE") {
                 const blockError = error as Error & { finishReason?: string }
                 userLogger.warn("llm_blocked_response", { finishReason: blockError.finishReason })
 
