@@ -255,7 +255,7 @@ MINIMAL VALID JSON TEMPLATE:
         try {
             const response = await llmClient.generate(prompt, {
                 model: LLM_MODELS.PRIMARY,
-                configType: "adaptation",
+                configType: "creation",
                 enableFallback: true,
                 logPrefix: "[Improve]"
             });
@@ -277,6 +277,11 @@ MINIMAL VALID JSON TEMPLATE:
 
         userLogger.info("llm_response_received", { responseLength: rawResponse.length });
 
+        if (!rawResponse || rawResponse.trim().length === 0) {
+            userLogger.error("empty_llm_response", "Empty text returned from LLM", { model: modelUsed });
+            return NextResponse.json({ error: "AI returned an empty response. Please try again." }, { status: 500 });
+        }
+
         if (isLikelyRefusalResponse(rawResponse)) {
             userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback });
             userLogger.requestComplete(422, { reason: "llm_refusal" });
@@ -286,12 +291,19 @@ MINIMAL VALID JSON TEMPLATE:
         // Parse the response
         let parsedData: ResumeData;
         const cleanedResponse = cleanJsonResponse(rawResponse);
-        let parsedJson: unknown = null;
+        let parsedJson: null | Record<string, unknown> = null;
 
         try {
             parsedJson = JSON.parse(cleanedResponse);
         } catch {
             userLogger.error("json_parse_failed");
+
+            // If strict JSON parsing fails, we consider it a failure for "Improve" mode 
+            // because we asked for strict JSON. Markdown fallback is risky here.
+            return NextResponse.json(
+                { error: "Failed to parse AI response. Please try again." },
+                { status: 500 }
+            );
         }
 
         const refusalInfo = getRefusalInfo(parsedJson);
@@ -308,43 +320,14 @@ MINIMAL VALID JSON TEMPLATE:
             );
         }
 
-        if (parsedJson && typeof parsedJson === "object") {
-            parsedData = parsedJson as ResumeData;
+        if (parsedJson && typeof parsedJson === "object" && !Array.isArray(parsedJson)) {
+            parsedData = parsedJson as unknown as ResumeData;
         } else {
-            // Check if response looks like malformed JSON
-            const trimmed = cleanedResponse.trim();
-            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                // Malformed JSON - don't try markdown fallback
-                userLogger.error("malformed_json_response");
-                return NextResponse.json(
-                    { error: "AI returned malformed response. Please try again." },
-                    { status: 500 }
-                );
-            }
-            // Try markdown fallback only for non-JSON content
-            try {
-                parsedData = parseMarkdownToResumeData(rawResponse);
-                // Validate the result - reject if it looks like raw fallback content
-                if (
-                    parsedData.sections.length === 1 &&
-                    parsedData.sections[0].title === 'Resume Content' &&
-                    typeof parsedData.sections[0].content === 'string' &&
-                    parsedData.sections[0].content.includes('"personalInfo"')
-                ) {
-                    userLogger.error("raw_json_in_content");
-                    return NextResponse.json(
-                        { error: "AI returned invalid format. Please try again." },
-                        { status: 500 }
-                    );
-                }
-                userLogger.info("markdown_fallback_success");
-            } catch {
-                userLogger.error("markdown_fallback_failed");
-                return NextResponse.json(
-                    { error: "Failed to parse AI response. Please try again." },
-                    { status: 500 }
-                );
-            }
+            userLogger.error("invalid_json_structure");
+            return NextResponse.json(
+                { error: "AI returned invalid structure. Please try again." },
+                { status: 500 }
+            );
         }
 
         // Validate parsed data
@@ -358,11 +341,11 @@ MINIMAL VALID JSON TEMPLATE:
 
         // Extract ATS scores from response
         const rawParsed = parsedJson as Record<string, unknown> | null;
-        const atsScoreBefore = typeof rawParsed?.atsScoreBefore === "number" 
-            ? Math.min(100, Math.max(0, Math.round(rawParsed.atsScoreBefore))) 
+        const atsScoreBefore = typeof rawParsed?.atsScoreBefore === "number"
+            ? Math.min(100, Math.max(0, Math.round(rawParsed.atsScoreBefore)))
             : null;
-        const atsScoreAfter = typeof rawParsed?.atsScoreAfter === "number" 
-            ? Math.min(100, Math.max(0, Math.round(rawParsed.atsScoreAfter))) 
+        const atsScoreAfter = typeof rawParsed?.atsScoreAfter === "number"
+            ? Math.min(100, Math.max(0, Math.round(rawParsed.atsScoreAfter)))
             : null;
 
         // Clean up parsedData - remove ATS scores from resume data (they're stored separately)
