@@ -276,31 +276,58 @@ export async function POST(req: NextRequest) {
             }
 
         } catch (parseError) {
-            if (isLikelyRefusalResponse(rawText)) {
-                userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback })
-                userLogger.requestComplete(200, { parseMode: "refusal" })
-                return NextResponse.json({
-                    message: AI_REFUSAL_ERROR,
-                    modifications: [],
-                    blocked: true,
-                    usage: {
-                        count: currentCount,
-                        maxCount: MAX_MODIFICATIONS_PER_DAY,
-                        resetAt: resetAt.getTime()
+            // Attempt to recover: if it's just plain text (not JSON), wrap it
+            // This handles cases where the model forgets to use JSON format for simple answers
+            if (rawText && !rawText.trim().startsWith("{") && !rawText.trim().startsWith("[")) {
+                // If it looks like a normal sentence, accept it
+                const cleanedText = rawText.trim()
+                if (cleanedText.length > 0 && !isLikelyRefusalResponse(cleanedText)) {
+                    parsed = {
+                        message: cleanedText,
+                        modifications: [],
+                        action: undefined
                     }
+                    // Continue to processing...
+                } else {
+                    // Fall through to error
+                    userLogger.warn("json_parse_failed", {
+                        responseLength: rawText?.length,
+                        preview: rawText?.slice(0, 200),
+                        error: parseError instanceof Error ? parseError.message : "Unknown"
+                    })
+                    userLogger.requestComplete(200, { parseMode: "error_message" })
+                    return NextResponse.json({
+                        message: "Could not parse the response. Please rephrase more specifically.",
+                        modifications: []
+                    })
+                }
+            } else {
+                if (isLikelyRefusalResponse(rawText)) {
+                    userLogger.warn("llm_refusal_detected", { model: modelUsed, usedFallback })
+                    userLogger.requestComplete(200, { parseMode: "refusal" })
+                    return NextResponse.json({
+                        message: AI_REFUSAL_ERROR,
+                        modifications: [],
+                        blocked: true,
+                        usage: {
+                            count: currentCount,
+                            maxCount: MAX_MODIFICATIONS_PER_DAY,
+                            resetAt: resetAt.getTime()
+                        }
+                    })
+                }
+                userLogger.warn("json_parse_failed_structure", {
+                    responseLength: rawText?.length,
+                    preview: rawText?.slice(0, 200),
+                    error: parseError instanceof Error ? parseError.message : "Unknown"
+                })
+                // AI returned invalid JSON - return friendly error
+                userLogger.requestComplete(200, { parseMode: "error_message" })
+                return NextResponse.json({
+                    message: "Could not parse the response. Please rephrase more specifically.",
+                    modifications: []
                 })
             }
-            userLogger.warn("json_parse_failed", {
-                responseLength: rawText?.length,
-                preview: rawText?.slice(0, 200),
-                error: parseError instanceof Error ? parseError.message : "Unknown"
-            })
-            // AI returned invalid JSON - return friendly error
-            userLogger.requestComplete(200, { parseMode: "error_message" })
-            return NextResponse.json({
-                message: "Could not parse the response. Please rephrase more specifically.",
-                modifications: []
-            })
         }
 
         const refusalInfo = getRefusalInfo(parsed)
